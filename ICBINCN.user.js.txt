@@ -40,6 +40,7 @@
 
   const RESULTS_READY_TIMEOUT_MS = 20000; // total time you're willing to wait
   const RESULTS_READY_POLL_MS = 250; // how often to check
+  const TAB_ID_KEY = 'mo_casenet_tab_id_v1';
 
   /************************************************************
    * Helpers (storage / utils)
@@ -88,6 +89,14 @@
   function loadLastHtml() {return loadJson(KEY_LAST_HTML, null);}
 
   function uniq(arr) {return [...new Set(arr.filter(Boolean))];}
+
+  function getTabId() {try {let id = sessionStorage.getItem(TAB_ID_KEY);
+                            if (!id) {id = `tab_${Date.now().toString(36)}_${Math.random().toString(36).slice(2,8)}`;
+                                     sessionStorage.setItem(TAB_ID_KEY,id);}
+                            return id;}
+                       catch {return `tab_fallback_${Math.random().toString(36).slice(2,10)}`;}}
+
+  const TAB_ID = getTabId();
 
   function isJndiDatasourceError(err) {const msg = String(err?.message || '');
                                        const prev = String(err?.preview || '');
@@ -602,6 +611,15 @@ async function trackTick() {const st = loadTrackState();
                             if (st.done) return;
                             if (isStop()) return;
                             if (isRun()) return;
+                            const onTrackFlowPage = isTrackLandingPage() || isTrackEntryPage();
+                            if (st.ownerTabId && st.ownerTabId !== TAB_ID) {if (st.awaitingPopupClaim && onTrackFlowPage) {st.ownerTabId = TAB_ID;
+                                                                                                                           st.awaitingPopupClaim = false;
+                                                                                                                           st.popupOpened = false;
+                                                                                                                           saveTrackState({...st});
+                                                                                                                           dbg('track_claim_owner',{ownerTabId:TAB_ID});}
+                                                                             else {return;}}
+                            else if (!st.ownerTabId) {st.ownerTabId = TAB_ID;
+                                                      saveTrackState({...st});}
                             const caseNumber = getTrackCaseNumber(st);
                             if (!caseNumber) {st.error = 'missing_case_number';
                                               saveTrackState({...st,active:false,done:true});
@@ -632,6 +650,7 @@ async function trackTick() {const st = loadTrackState();
                             if (trackLink && !st.popupOpened) {uiStatus('Track This Case: opening in new window...');
                                                            dbg('track_open_popup',{href:trackLink.href || ''});
                                                            st.popupOpened = true;
+                                                           st.awaitingPopupClaim = true;
                                                            st.navPendingUntil = Date.now() + 1500;
                                                            saveTrackState({...st});
                                                            try {window.open(trackLink.href,'_blank','noopener,noreferrer');}
@@ -677,11 +696,12 @@ async function trackTick() {const st = loadTrackState();
                                                      const hasMore = queue.length > 0 && currentIndex < queue.length - 1;
                                                      if (hasMore) {const nextIndex = currentIndex + 1;
                                                                    const nextCase = queue[nextIndex] || '';
-                                                                   st.caseIndex = nextIndex;
-                                                                   st.caseNumber = nextCase;
-                                                                   st.popupOpened = false;
-                                                                   st.navPendingUntil = Date.now() + 1200;
-                                                                   saveTrackState({...st});
+                                                                           st.caseIndex = nextIndex;
+                                                                           st.caseNumber = nextCase;
+                                                                           st.popupOpened = false;
+                                                                           st.awaitingPopupClaim = false;
+                                                                           st.navPendingUntil = Date.now() + 1200;
+                                                                           saveTrackState({...st});
                                                                    btn.click();
                                                                    uiStatus(`Track This Case: submitted ${currentIndex + 1}/${queue.length}; next ${nextCase}`);
                                                                    dbg('track_case_complete',{caseNumber,completed: currentIndex + 1,total: queue.length,nextCase});
@@ -689,6 +709,7 @@ async function trackTick() {const st = loadTrackState();
                                                                    return;}
                                                      st.done = true;
                                                      st.active = false;
+                                                     st.awaitingPopupClaim = false;
                                                      saveTrackState({...st});
                                                      btn.click();
                                                      uiStatus(`Track This Case complete (${Math.max(queue.length,1)} case${Math.max(queue.length,1) === 1 ? '' : 's'}) - close this browser window.`);
@@ -1344,8 +1365,8 @@ Cases in Log: ${log.length}
                                                                                                    return;}
                                                                           setStop(false);
                                                                           setRun(false);
-                                                                          saveTrackDraft({caseNumbersText:raw,caseNumber:caseNumbers[0]});
-                                                                          saveTrackState({active:true,caseNumbers,caseIndex:0,caseNumber:caseNumbers[0],step:'go_case_search',startedAt:Date.now(),popupOpened:false,done:false,error:''});
+                                                                         saveTrackDraft({caseNumbersText:raw,caseNumber:caseNumbers[0]});
+                                                                          saveTrackState({active:true,caseNumbers,caseIndex:0,caseNumber:caseNumbers[0],step:'go_case_search',startedAt:Date.now(),popupOpened:false,awaitingPopupClaim:false,ownerTabId:TAB_ID,done:false,error:''});
                                                                           uiStatus(`Track This Case: starting batch (${caseNumbers.length} case${caseNumbers.length === 1 ? '' : 's'})...`);
                                                                           dbg('track_start_batch',{count:caseNumbers.length,firstCase:caseNumbers[0]});
                                                                           location.href = new URL('/casenet/caseNoSearch.do',location.origin).toString();
@@ -1419,6 +1440,5 @@ setInterval(() => {try {nameSearchTick();}
                    catch (e) {/* ignore */}
                    try {trackTick();}
                    catch (e) {}},900);})();
-
 
 
