@@ -1,0 +1,1330 @@
+// ==UserScript==
+// @name         ICBINCN 2.17
+// @namespace    http://tampermonkey.net/
+// @version      2026-02-17
+// @description  Background Case.net scraper using JSON/XHR endpoints. Navs to search results pages, pulls case data via POST requests, then writes to a persistent log for copying. Now with Track This Case.
+// @author       Mason Scott
+// @match        https://www.courts.mo.gov/casenet/*
+// @match        https://www.courts.mo.gov/cases/*
+// @match        https://www.courts.mo.gov/cnet/*
+// @run-at       document-idle
+// @grant        GM_addStyle
+// @grant        GM_setClipboard
+// @grant        GM_getValue
+// @grant        GM_setValue
+// ==/UserScript==
+
+(function () {
+  'use strict';
+
+  /************************************************************
+   * Storage keys (JSON tool)
+   ************************************************************/
+  const KEY_LOG = 'mo_casenet_json_log_v1'; // array of entries
+  const KEY_RUN = 'mo_casenet_json_run_v1'; // boolean
+  const KEY_STOP = 'mo_casenet_json_stop_v1'; // boolean
+  const KEY_STATUS = 'mo_casenet_json_status_v1'; // string
+  const KEY_DEBUG = 'mo_casenet_json_debug_v1'; // array of last N debug rows
+  const DEBUG_MAX = 180;
+
+  const KEY_NAMESEARCH = 'mo_casenet_json_namesearch_state_v1';
+  const KEY_UI_DRAFT = 'mo_casenet_json_ui_draft_v1';
+  const KEY_TRACK_STATE = 'mo_casenet_track_state_v1';
+  const KEY_TRACK_DRAFT = 'mo_casenet_track_draft_v1';
+  const TRACK_EMAIL = 'tapinstl@gmail.com';
+
+  const DEFAULT_CONCURRENCY = 7;
+
+  const KEY_LAST_HTML = 'mo_casenet_json_last_html_v1'; // {ts, url, path, status, ct, respUrl, redirected, title, sig, html}
+  const KEY_NET_STATS = 'mo_casenet_json_net_stats_v1'; // { byPath: { [path]: {html: n, json: n, httpErr: n} } }
+
+  const RESULTS_READY_TIMEOUT_MS = 20000; // total time you're willing to wait
+  const RESULTS_READY_POLL_MS = 250; // how often to check
+
+  /************************************************************
+   * Helpers (storage / utils)
+   ************************************************************/
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  const norm = (s) => String(s || '').replace(/\s+/g, ' ').trim();
+
+  function loadJson(key, fallback) {try {const raw = GM_getValue(key, JSON.stringify(fallback));
+                                        const parsed = JSON.parse(raw);
+                                        return parsed === undefined || parsed === null ? fallback : parsed;}
+                                   catch {return fallback;}}
+
+  function saveJson(key, val) {GM_setValue(key, JSON.stringify(val));}
+
+  const loadLog = () => loadJson(KEY_LOG, []);
+  const saveLog = (arr) => saveJson(KEY_LOG, Array.isArray(arr) ? arr : []);
+
+  const setRun = (v) => GM_setValue(KEY_RUN, v === true);
+  const isRun = () => GM_getValue(KEY_RUN, false) === true;
+
+  const setStop = (v) => GM_setValue(KEY_STOP, v === true);
+  const isStop = () => GM_getValue(KEY_STOP, false) === true;
+
+  const setStatus = (s) => GM_setValue(KEY_STATUS, String(s || ''));
+  const getStatus = () => String(GM_getValue(KEY_STATUS, ''));
+
+  function hasRealTitle(title) {const t = norm(title || '');
+                                if (!t) return false;
+                                if (t === '(- - -)') return false;
+                                return true;}
+
+  function loadDebug() {return loadJson(KEY_DEBUG, []);}
+
+  function saveDebug(a) {saveJson(KEY_DEBUG, Array.isArray(a) ? a.slice(-DEBUG_MAX) : []);}
+
+  function dbg(event, data = {}) {const row = {ts: new Date().toISOString(),
+                                              event: String(event || ''),
+                                              url: location.href,
+                                              ...data,};
+                                  const cur = loadDebug();
+                                  cur.push(row);
+                                  saveDebug(cur);}
+
+  function saveLastHtml(obj) {saveJson(KEY_LAST_HTML, obj || null);}
+
+  function loadLastHtml() {return loadJson(KEY_LAST_HTML, null);}
+
+  function uniq(arr) {return [...new Set(arr.filter(Boolean))];}
+
+  function isJndiDatasourceError(err) {const msg = String(err?.message || '');
+                                       const prev = String(err?.preview || '');
+                                       const combined = `${msg} ${prev}`;
+                                       return (/UNABLE\s+TO\s+LOCATE\s+JNDI\s+NAME\s+FOR\s+CT\d+/i.test(combined) ||
+                                               /DataSourceLookupFailureException/i.test(combined) ||
+                                               /PersistenceException/i.test(combined));}
+
+  function bumpNetStat(path, field) {const st = loadJson(KEY_NET_STATS, { byPath: {} });
+                                     st.byPath[path] = st.byPath[path] || { html: 0, json: 0, httpErr: 0 };
+                                     st.byPath[path][field] = (st.byPath[path][field] || 0) + 1;
+                                     saveJson(KEY_NET_STATS, st);}
+
+  function extractHtmlTitle(html) {const m = String(html || '').match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+                                   return norm(m ? m[1] : '');}
+
+  function htmlSignatures(html) {const t = String(html || '').toLowerCase();
+                                 return {hasLogin: t.includes('login') && (t.includes('password') || t.includes('user')),
+                                         hasHelpDesk: t.includes('osca') && t.includes('help desk'),
+                                         hasErrorRetrieving: (t.includes('error retrieving') || t.includes('there was an error retrieving')),
+                                         hasNameSearch: t.includes('namesearch') && t.includes('lastname'),
+                                         hasCaseHeader: t.includes('case header') || t.includes('keyvaluesection'),
+                                         hasCaptcha: t.includes('captcha'),
+                                         hasAccessDenied: t.includes('access denied') || t.includes('not authorized'),};}
+
+  function openLastHtmlInNewTab() {const obj = loadLastHtml();
+                                  if (!obj?.html) {uiStatus('No captured HTML yet.');
+                                                   return;}
+                                  const blob = new Blob([obj.html], { type: 'text/html' });
+                                  const url = URL.createObjectURL(blob);
+                                  window.open(url, '_blank', 'noopener,noreferrer');}
+
+  function loadDraft() {return loadJson(KEY_UI_DRAFT, { first: '', middle: '', last: '', yob: '' });}
+
+  function saveDraft(d) {saveJson(KEY_UI_DRAFT, d || { first: '', middle: '', last: '', yob: '' });}
+
+  function clearDraft() {saveDraft({ first: '', middle: '', last: '', yob: '' });}
+
+  function clearLastHtml() {saveLastHtml(null);}
+
+  function readUiParams() {return {first:  norm(document.getElementById('moNsFirst')?.value || ''),
+                                  middle: norm(document.getElementById('moNsMiddle')?.value || ''),
+                                  last:   norm(document.getElementById('moNsLast')?.value || ''),
+                                  yob:    norm(document.getElementById('moNsYob')?.value || ''),};}
+
+  function writeUiParams(p) {const x = p || {};
+                             const set = (id, v) => {const el = document.getElementById(id);
+                                                    if (!el) return;
+                                                    el.value = String(v || '');};
+                             set('moNsFirst', x.first);
+                             set('moNsMiddle', x.middle);
+                             set('moNsLast', x.last);
+                             set('moNsYob', x.yob);}
+
+  function gateNewSearch() {const logLen = loadLog().length;
+                            const dbgLen = loadDebug().length;
+                            if (logLen > 0 || dbgLen > 0) {uiStatus('Clear Log/Debug before starting a new Search.');
+                                                           dbg('search_blocked_not_cleared', { logLen, dbgLen });
+                                                           render();
+                                                           return false;}
+                            return true;}
+
+  /************************************************************
+   * Page Detection
+   ************************************************************/
+  function isNoMatchesMessagePage() {const text = (document.querySelector('#nameSearchResult')?.innerText ||
+                                                  document.body?.innerText ||
+                                                  '')
+                                                 .replace(/\s+/g,' ')
+                                                 .toLowerCase();
+                                    return text.includes('your query returned no matches');}
+
+  function isNameSearchResultsPage() {return !!document.querySelector('select[name="nameSearchResult_length"]');}
+
+  async function waitForResultsReady() {const start = Date.now();
+                                       while (Date.now() - start < RESULTS_READY_TIMEOUT_MS) {
+                                         if (isNoMatchesMessagePage()) return {ready:true,noMatches:true};
+                                         const hasAnyCaseLink = document.querySelector('a[href*="inputVO.caseNumber"]') ||
+                                                                document.querySelector('a[href*="caseNumber="]');
+                                         const hasResultsLengthSelect = document.querySelector('select[name="nameSearchResult_length"]');
+                                         if (hasAnyCaseLink || hasResultsLengthSelect) return {ready:true,noMatches:false};
+                                         await sleep(RESULTS_READY_POLL_MS);}
+                                       return {ready:false,noMatches:false};}
+
+  /************************************************************
+   * Name Search (two-pass) state machine
+   ************************************************************/
+  function loadNameState() {return loadJson(KEY_NAMESEARCH,null);}
+
+  function saveNameState(s) {saveJson(KEY_NAMESEARCH,s || null);}
+
+  function loadTrackState() {return loadJson(KEY_TRACK_STATE,null);}
+
+  function saveTrackState(s) {saveJson(KEY_TRACK_STATE,s || null);}
+
+  function clearTrackState() {saveTrackState(null);}
+
+  function loadTrackDraft() {return loadJson(KEY_TRACK_DRAFT,{caseNumber:''});}
+
+  function saveTrackDraft(d) {saveJson(KEY_TRACK_DRAFT,d || {caseNumber:''});}
+
+  function clearNameState() {saveNameState(null);}
+
+  function isNameSearchPage() {const hasLast = !!document.querySelector('#lastName') ||
+                                              !!document.querySelector('input[name="lastName"]') ||
+                                              !!document.querySelector('input[name="inputVO.lastName"]') ||
+                                              !!document.querySelector('input[name*="lastName"]');
+                               const hasSubmit = !!document.querySelector('#findButton') ||
+                                                 !!document.querySelector('form#nameSearchModel') ||
+                                                 !!document.querySelector('form[name="nameSearchModel"]') ||
+                                                 !!document.querySelector('button[type="submit"], input[type="submit"]');
+                               return hasLast && hasSubmit;}
+
+  function canonicalNameSearchUrl() {return new URL('/casenet/nameSearch.do?newSearch=Y',location.origin).toString();}
+
+  function setCaseTypeForPass(passKey) {const sel = document.querySelector('#caseType');
+                                        if (!sel) return false;
+                                        const wantValue = passKey === 'criminal' ? 'Criminal' : 'Traffic/Municipal';
+                                        const opt = Array.from(sel.options || []).find((o) => (o.value || '') === wantValue);
+                                        if (!opt) return false;
+                                        sel.value = wantValue;
+                                        sel.dispatchEvent(new Event('input',{bubbles:true}));
+                                        sel.dispatchEvent(new Event('change',{bubbles:true}));
+                                        return true;}
+
+  function setInputIfPresent(selectors,value) {const v = String(value || '');
+                                               for (const sel of selectors) {const el = document.querySelector(sel);
+                                                                            if (!el) continue;
+                                                                            el.focus();
+                                                                            el.value = v;
+                                                                            el.dispatchEvent(new Event('input',{bubbles:true}));
+                                                                            el.dispatchEvent(new Event('change',{bubbles:true}));
+                                                                            return true;}
+                                               return false;}
+
+  function fillNameSearchForm(params,passKey) {setInputIfPresent(['#firstName','input[name="firstName"]','input[name="inputVO.firstName"]','input[name*="firstName"]'],params.first);
+                                               setInputIfPresent(['#middleName','input[name="middleName"]','input[name="inputVO.middleName"]','input[name*="middleName"]'],params.middle);
+                                               setInputIfPresent(['#lastName','input[name="lastName"]','input[name="inputVO.lastName"]','input[name*="lastName"]'],params.last);
+                                               setInputIfPresent(['#birthYear','#yearOfBirth','#yob','input[name="birthYear"]','input[name="yearOfBirth"]','input[name="yob"]','input[name="inputVO.birthYear"]','input[name="inputVO.yearOfBirth"]','input[name*="birth"]','input[name*="yob"]'],params.yob);
+                                               setCaseTypeForPass(passKey);}
+
+  function submitNameSearchForm() {const btn = document.querySelector('#findButton') ||
+                                             document.querySelector('input#findButton') ||
+                                             Array.from(document.querySelectorAll('button, input[type="button"], input[type="submit"]')).find((el) => /find|search/i.test(el.value || el.textContent || ''));
+                                   if (btn) {btn.click();
+                                             return true;}
+                                   const form = document.querySelector('form#nameSearchModel') ||
+                                                document.querySelector('form[name="nameSearchModel"]') ||
+                                                document.querySelector('#lastName')?.form ||
+                                                null;
+                                   if (form) {form.submit();
+                                              return true;}
+                                   return false;}
+
+  function setShowEntriesTo100() {const sel = document.querySelector('select[name="nameSearchResult_length"]');
+                                 if (!sel) return;
+                                 sel.value = '100';
+                                 sel.dispatchEvent(new Event('input',{bubbles:true}));
+                                 sel.dispatchEvent(new Event('change',{bubbles:true}));}
+
+  function getNextButton() {return document.querySelector('#nameSearchResult_next');}
+
+  function nextIsDisabled(btn) {if (!btn) return true;
+                                return btn.classList.contains('disabled') || btn.getAttribute('aria-disabled') === 'true';}
+
+  function getActivePageText() {const cur = document.querySelector('#nameSearchResult_paginate a.paginate_button.current');
+                                return cur ? norm(cur.textContent) : '';}
+
+  /************************************************************
+   * Case link parsing
+   ************************************************************/
+  function normalizeUrl(u) {try {const url = new URL(u,location.href);
+                                 url.hash = '';
+                                 return url.toString();}
+                            catch {return String(u || '');}}
+
+  function parseCaseFromUrl(u) {try {const url = new URL(u,location.href);
+                                     const sp = url.searchParams;
+                                     const caseNumber = sp.get('caseNumber') || sp.get('inputVO.caseNumber') || sp.get('ci') || '';
+                                     const courtId = sp.get('courtId') || sp.get('inputVO.courtId') || sp.get('courtCode') || sp.get('l') || '';
+                                     const cn = String(caseNumber || '').trim();
+                                     const ct = String(courtId || '').trim();
+                                     if (!cn || !ct) return null;
+                                     const caseKey = `${cn.toUpperCase()}|${ct.toUpperCase()}`;
+                                     return {caseKey,caseNumber:cn,courtId:ct,url:normalizeUrl(url.toString())};}
+                              catch {return null;}}
+
+  function getMatchingCaseLinksOnResultsPage() {const allLinks = Array.from(document.links);
+                                               const hasCaseNumberParam = /caseNumber|inputVO\.caseNumber/i;
+                                               const hasDigitsOrDash = /[0-9]{3,}|-/;
+                                               const raw = allLinks.map((a) => a.href || '')
+                                                                   .filter((href) => hasCaseNumberParam.test(href) && hasDigitsOrDash.test(href));
+                                               const out = [];
+                                               const seen = new Set();
+                                               for (const h of raw) {const p = parseCaseFromUrl(h);
+                                                                     if (!p) continue;
+                                                                     if (seen.has(p.caseKey)) continue;
+                                                                     seen.add(p.caseKey);
+                                                                     out.push(p);}
+                                               return out;}
+
+  /************************************************************
+   * Network helper (background XHR/JSON)
+   ************************************************************/
+  function looksLikeHtml(txt) {return /^\s*</.test(String(txt || ''));}
+
+  function looksLikeJson(txt) {return /^\s*[{[]/.test(String(txt || ''));}
+
+  async function postFormJson(pathOrUrl,formObj = {},{qs = ''} = {}) {const url = new URL(pathOrUrl,location.origin);
+                                                                     if (qs) url.search = qs.startsWith('?') ? qs : `?${qs}`;
+                                                                     const body = new URLSearchParams();
+                                                                     for (const [k,v] of Object.entries(formObj || {})) {body.set(k,v === undefined || v === null ? '' : String(v));}
+                                                                     const resp = await fetch(url.toString(),{method: 'POST',
+                                                                                                            credentials: 'include',
+                                                                                                            headers: {Accept: 'application/json,text/javascript, */*; q=0.01',
+                                                                                                                      'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                                                                                                                      'X-Requested-With': 'XMLHttpRequest',},
+                                                                                                            body: body.toString(),});
+                                                                     const txt = await resp.text();
+                                                                     const ct = String(resp.headers.get('content-type') || '').toLowerCase();
+                                                                     if (!resp.ok) {bumpNetStat(url.pathname,'httpErr');
+                                                                                    dbg('http_error',{status: resp.status,path: url.pathname,preview: txt.slice(0,240)});
+                                                                                    const err = new Error(`HTTP ${resp.status} for ${url.pathname}`);
+                                                                                    err.status = resp.status;
+                                                                                    err.path = url.pathname;
+                                                                                    err.preview = txt.slice(0,240);
+                                                                                    throw err;}
+                                                                     if (looksLikeJson(txt)) {bumpNetStat(url.pathname,'json');
+                                                                                              try {return JSON.parse(txt);}
+                                                                                              catch {dbg('json_parse_error',{path: url.pathname,preview: txt.slice(0,240)});
+                                                                                                     const err = new Error(`JSON parse failed for ${url.pathname}`);
+                                                                                                     err.status = resp.status;
+                                                                                                     err.path = url.pathname;
+                                                                                                     throw err;}}
+                                                                     if (looksLikeHtml(txt) || ct.includes('text/html')) {const title = extractHtmlTitle(txt);
+                                                                                                                         const sig = htmlSignatures(txt);
+                                                                                                                         const respUrl = String(resp.url || '');
+                                                                                                                         const redirected = !!resp.redirected;
+                                                                                                                         bumpNetStat(url.pathname,'html');
+                                                                                                                         const maxStore = 250000;
+                                                                                                                         saveLastHtml({ts: new Date().toISOString(),
+                                                                                                                                       url: location.href,
+                                                                                                                                       path: url.pathname,
+                                                                                                                                       status: resp.status,
+                                                                                                                                       ct,
+                                                                                                                                       respUrl,
+                                                                                                                                       redirected,
+                                                                                                                                       title,
+                                                                                                                                       sig,
+                                                                                                                                       html: String(txt).slice(0,maxStore),});
+                                                                                                                         dbg('html_instead_of_json',{path: url.pathname,
+                                                                                                                                                    status: resp.status,
+                                                                                                                                                    ct,
+                                                                                                                                                    respUrl,
+                                                                                                                                                    redirected,
+                                                                                                                                                    title,
+                                                                                                                                                    sig,
+                                                                                                                                                    preview: txt.slice(0,240),});
+                                                                                                                         const err = new Error(`HTML instead of JSON for ${url.pathname}`);
+                                                                                                                         err.status = resp.status;
+                                                                                                                         err.path = url.pathname;
+                                                                                                                         err.retryable = true;
+                                                                                                                         err.htmlTitle = title;
+                                                                                                                         err.htmlSig = sig;
+                                                                                                                         err.respUrl = respUrl;
+                                                                                                                         err.redirected = redirected;
+                                                                                                                         err.preview = txt.slice(0,2000);
+                                                                                                                         throw err;}
+                                                                     dbg('non_json_response',{path: url.pathname,status: resp.status,preview: txt.slice(0,240)});
+                                                                     const err = new Error(`Non-JSON response for ${url.pathname}`);
+                                                                     err.status = resp.status;
+                                                                     err.path = url.pathname;
+                                                                     err.retryable = true;
+                                                                     throw err;}
+
+  function isRetryableError(err) {const s = Number(err?.status || 0);
+                                 if ([429,502,503,504].includes(s)) return true;
+                                 if (err?.retryable === true) return true;
+                                 const msg = String(err?.message || '');
+                                 if (/HTML instead of JSON|Non-JSON response|JSON parse failed/i.test(msg)) return true;
+                                 return false;}
+
+  async function postFormJsonRetry(pathOrUrl,formObj = {},opts = {},retryCfg = {}) {const retries = Number(retryCfg.retries ?? 3);
+                                                                                   const baseDelay = Number(retryCfg.baseDelay ?? 250);
+                                                                                   let lastErr = null;
+                                                                                   for (let attempt = 0;attempt <= retries;attempt++) {try {if (attempt > 0) {const jitter = Math.floor(Math.random() * 120);
+                                                                                                                                             const delay = Math.min(2500,baseDelay * Math.pow(2,attempt - 1) + jitter);
+                                                                                                                                             await sleep(delay);}
+                                                                                                                                    return await postFormJson(pathOrUrl,formObj,opts);}
+                                                                                                                               catch (e) {lastErr = e;
+                                                                                                                                          dbg('post_retry_fail',{attempt,msg: String(e?.message || e),status: e?.status || ''});
+                                                                                                                                          if (!isRetryableError(e) || attempt === retries) break;}}
+                                                                                   throw lastErr;}
+
+  async function postFormJsonRetry_tryCourtIds(pathOrUrl,formObj = {},opts = {},retryCfg = {}) {return await postFormJsonRetry(pathOrUrl,formObj,opts,retryCfg);}
+
+  /************************************************************
+   * YOB matching
+   ************************************************************/
+  function extractYearsFromYobText(yobText) {const t = String(yobText || '');
+                                            const years = [];
+                                            const yyyy = t.match(/\b(19\d{2}|20\d{2})\b/g) || [];
+                                            for (const y of yyyy) years.push(y);
+                                            const dates = t.match(/\b\d{2}\/\d{2}\/(19\d{2}|20\d{2})\b/g) || [];
+                                            for (const d of dates) {const m = d.match(/(19\d{2}|20\d{2})/);
+                                                                    if (m) years.push(m[1]);}
+                                            return Array.from(new Set(years));}
+
+  function yobMatchesExpected(expected4,scrapedText) {const exp = String(expected4 || '').trim();
+                                                     if (!/^\d{4}$/.test(exp)) return {ok:true,reason:'no_expected_yob'};
+                                                     const years = extractYearsFromYobText(scrapedText);
+                                                     if (!years.length) return {ok:true,reason:'unknown_keep'};
+                                                     const ok = years.includes(exp);
+                                                     return {ok,years};}
+
+  /************************************************************
+   * Docket parsing from docketTabModelList
+   ************************************************************/
+  function toTitleish(s) {return String(s || '').toLowerCase()
+                                         .replace(/\b([a-z])/g,(m) => m.toUpperCase())
+                                         .replace(/\bOf\b/g,'of')
+                                         .replace(/\bAnd\b/g,'and')
+                                         .replace(/\bThe\b/g,'the');}
+
+  function parseBondSummary(docketText) {const t = String(docketText || '');
+                                        const m = t.match(/Bond\s*Amount\s*:\s*([0-9,]+(?:\.[0-9]{2})?)([\s\S]*)/i);
+                                        if (!m) return '';
+                                        const amt = m[1];
+                                        let tail = (m[2] || '').trim();
+                                        const stop = tail.search(/\b(DEFENDANT|FAILED|F\/T\/A|FTA|ISSUED|SERVED|RETURNED|FOR\s+[A-Z]|DOCUMENT\s+ID)\b/i);
+                                        if (stop >= 0) tail = tail.slice(0,stop).trim();
+                                        tail = tail.split(/—| - |;|\n/)[0].trim();
+                                        tail = tail.replace(/\s+/g,' ').trim();
+                                        const prettyTail = tail ? toTitleish(tail) : '';
+                                        return `Bond Amount: ${amt}${prettyTail ? ` ${prettyTail}` : ''}`;}
+
+  function docketEntryText(e) {const desc = norm(e?.docketDesc || '');
+                               const txt = norm(e?.docketText || '');
+                               return norm([desc,txt].filter(Boolean).join(' — '));}
+
+  function findFirstWarrantOrSummons(docketList) {const isWarrant = (t) => /\bwarrant\b/i.test(t);
+                                                 const isSummons = (t) => /\bsummons?\b|\bsummon\b|\bsummoned\b/i.test(t);
+                                                 for (const e of docketList || []) {const desc = norm(e?.docketDesc || '');
+                                                                                   const txt = norm(e?.docketText || '');
+                                                                                   const hay = norm([desc,txt].filter(Boolean).join(' '));
+                                                                                   if (!hay) continue;
+                                                                                   if (isWarrant(hay) || isSummons(hay)) {const filingDate = norm(e?.filingDate || '');
+                                                                                                                         const event = desc || (isWarrant(hay) ? 'Warrant' : 'Summons');
+                                                                                                                         const bond = parseBondSummary(e?.docketText || '');
+                                                                                                                         let sched = '';
+                                                                                                                         const isRecalled = isWarrant(hay) && /(recalled|withdrawn)/i.test(hay);
+                                                                                                                         if (isRecalled) {const s = (e?.associatedDocketScheduledInfo || [])[0];
+                                                                                                                                          if (s?.associatedDate) {const t2 = norm(s?.associatedTime || '');
+                                                                                                                                                                  const nm = norm(s?.associatedName || '');
+                                                                                                                                                                  sched = [s.associatedDate,t2].filter(Boolean).join(' ') + (nm ? ` — ${nm}` : '');}
+                                                                                                                                          else {const d2 = (e?.associatedDocketInfoDetails || [])[0]?.associatedDate || '';
+                                                                                                                                                if (d2) sched = d2;}}
+                                                                                                                         return {kind:isWarrant(hay) ? 'warrant' : 'summons',filingDate,event,bond,scheduledFor:sched};}}
+                                                 return null;}
+
+  function countFtas(docketList) {let count = 0;
+                                 const dates = new Set();
+                                 for (const e of docketList || []) {const line = docketEntryText(e);
+                                                                   if (!line) continue;
+                                                                   if (/\bFTA\b/i.test(line) || /Failure\s+to\s+Appear/i.test(line)) {count += 1;
+                                                                                                                                    const d = norm(e?.filingDate || '');
+                                                                                                                                    if (d) dates.add(d);}}
+                                 return {count,dates:Array.from(dates)};}
+
+  function findLicenseHoldDate(docketList) {for (const e of docketList || []) {const line = docketEntryText(e);
+                                                                             if (!line) continue;
+                                                                             const hasHold = /\bhold\b/i.test(line);
+                                                                             const hasLicense = /\blicen[sc]e\b/i.test(line);
+                                                                             if (hasHold && hasLicense) return norm(e?.filingDate || '') || '';}
+                                            return '';}
+
+  function findInitialAppearanceDate(docketList) {for (const e of docketList || []) {const line = docketEntryText(e);
+                                                                                   if (!/Initial\s+Appearance/i.test(line)) continue;
+                                                                                   const s = (e?.associatedDocketScheduledInfo || [])[0];
+                                                                                   if (s?.associatedDate) return norm(s.associatedDate);
+                                                                                   const d2 = (e?.associatedDocketInfoDetails || [])[0]?.associatedDate || '';
+                                                                                   if (d2) return norm(d2);
+                                                                                   return norm(e?.filingDate || '') || '';}
+                                                  return '';}
+
+  function findFirstCurrentOrFutureScheduledLine(docketList) {const today0 = new Date();
+                                                             today0.setHours(0,0,0,0);
+                                                             const items = [];
+                                                             for (const e of docketList || []) {const arr = e?.associatedDocketScheduledInfo || [];
+                                                                                               for (const s of arr) {const d = norm(s?.associatedDate || '');
+                                                                                                                     if (!/^\d{2}\/\d{2}\/\d{4}$/.test(d)) continue;
+                                                                                                                     const [mm,dd,yyyy] = d.split('/').map((n) => Number(n));
+                                                                                                                     const dt = new Date(yyyy,mm - 1,dd);
+                                                                                                                     dt.setHours(0,0,0,0);
+                                                                                                                     const time = norm(s?.associatedTime || '');
+                                                                                                                     const name = norm(s?.associatedName || '');
+                                                                                                                     const loc = norm(s?.associatedText || '');
+                                                                                                                     items.push({dt,d,time,name,loc});}}
+                                                             items.sort((a,b) => a.dt.getTime() - b.dt.getTime());
+                                                             const next = items.find((x) => x.dt.getTime() >= today0.getTime());
+                                                             if (!next) return '- - -';
+                                                             return `${next.d}; ${next.time || '- - -'}; ${next.name || '- - -'} ; ${next.loc || '- - -'}`;}
+
+  /************************************************************
+   * Charges parsing (JSON)
+   ************************************************************/
+  function extractChargePartsFromChargesResponse(chargesResp,headerResp) {const arr = Array.isArray(chargesResp) ? chargesResp : Array.isArray(headerResp?.caseChargeList) ? headerResp.caseChargeList : [];
+                                                                          if (!arr || !arr.length) return {desc:'No Charges Found',type:'- - -',cls:'- - -'};
+                                                                          const first = arr[0] || {};
+                                                                          const desc = norm(first.chargeDescription || '') || 'No Charges Found';
+                                                                          let type = norm(first.chargeCodeLevelDescription || '');
+                                                                          if (!type) {const ct = norm(headerResp?.caseType || '');
+                                                                                     if (/ordinance/i.test(ct)) type = 'Ordinance';
+                                                                                     else if (/municipal/i.test(ct)) type = 'Municipal';
+                                                                                     else type = '- - -';}
+                                                                          const cls = '- - -';
+                                                                          return {desc,type,cls};}
+
+  /************************************************************
+   * Party parsing (JSON)
+   ************************************************************/
+  function extractDefendantAddressYob(partyResp) {const list = partyResp?.partyDetailsList || [];
+                                                 const def = list.find((x) => String(x?.descCode || '').toUpperCase() === 'DFT' || /defendant/i.test(String(x?.desc || '')));
+                                                 const address = norm(def?.formattedPartyAddress || '') || '- - -';
+                                                 const yob = norm(def?.formattedBirthDate || '') || '- - -';
+                                                 return {address,yob,yobRaw:yob};}
+
+  function extractAttorney(partyResp) {const list = partyResp?.partyDetailsList || [];
+                                      const def = list.find((x) => String(x?.descCode || '').toUpperCase() === 'DFT' || /defendant/i.test(String(x?.desc || '')));
+                                      const pools = [].concat(def?.attorneyList || []).concat(def?.coAttorneyList || []).concat(def?.otherAttorneyList || []);
+                                      for (const a of pools) {const nm = norm(a?.formattedPartyName || a?.attorneyName || a?.name || '');
+                                                             const role = norm(a?.desc || a?.role || a?.relationship || '');
+                                                             if (nm && role) return `${nm} - ${role}`;
+                                                             if (nm) return nm;}
+                                      const possible = list.filter((x) => String(x?.partyType || '').toLowerCase() === 'attorney');
+                                      for (const a of possible) {const nm = norm(a?.formattedPartyName || '');
+                                                                const desc = norm(a?.desc || '');
+                                                                if (!nm) continue;
+                                                                if (/public defender/i.test(desc)) return `${nm} - Public Defender`;
+                                                                if (/attorney\s+for\s+defendant/i.test(desc) || /defense/i.test(desc)) return `${nm} - Private Attorney`;}
+                                      return '- - -';}
+
+  /************************************************************
+   * Header parsing (JSON)
+   ************************************************************/
+  function headerToEntryBasics(headerResp) {const caseNumber = norm(headerResp?.caseNumber || '');
+                                           const courtId = norm(headerResp?.courtId || '');
+                                           const caseDesc = norm(headerResp?.caseDesc || '');
+                                           const caseTitle = caseNumber && caseDesc ? `${caseNumber} – ${caseDesc}` : caseDesc || caseNumber || '(- - -)';
+                                           const judge = norm(headerResp?.judgeDetails?.formattedName || '') || norm(headerResp?.dispositionJudgeDetails?.formattedName || '') || '- - -';
+                                           const location = norm(headerResp?.location || '') || '- - -';
+                                           const dateFiled = norm(headerResp?.dateFiled || headerResp?.fileDate || headerResp?.filingDate || '') || '- - -';
+                                           const disposition = norm(headerResp?.caseDispositionDetail?.dispositionDescription || '') || '- - -';
+                                           return {caseTitle,judge,location,dateFiled,disposition,header_meta:{locnCode: headerResp?.locnCode || '',
+                                                                                                              disposed: headerResp?.disposed,
+                                                                                                              pleaAndPayInd: headerResp?.pleaAndPayInd || '',
+                                                                                                              isTicket: headerResp?.isTicket === true ? 'true' : headerResp?.isTicket === false ? 'false' : '',},};}
+
+  /************************************************************
+   * Financial (JSON)
+   ************************************************************/
+  async function getCaseBalanceIfGuiltyViaApi(dispositionText,headerMeta,caseNumber,courtId) {if (!/guilty/i.test(dispositionText || '')) return '- - -';
+                                                                                             const resp = await postFormJsonRetry_tryCourtIds('/casenet/cases/getFinancialInfo.do',{caseNumber,courtId,isTicket: headerMeta?.isTicket || 'false',locnCode: headerMeta?.locnCode || '',disposed: String(headerMeta?.disposed ?? ''),pleaAndPayInd: headerMeta?.pleaAndPayInd || '',});
+                                                                                             const bal = norm(resp?.caseBalance || '');
+                                                                                             return bal || '- - -';}
+
+/************************************************************
+ * Track This Case automation
+ ************************************************************/
+function isCaseNoSearchPage() {return location.pathname.includes('/casenet/caseNoSearch.do') &&
+                                      !!document.querySelector('#caseNumber');}
+
+function isTrackLandingPage() {return location.pathname.includes('/casenet/trackThisCaseLanding.do');}
+
+function isTrackEntryPage() {return location.pathname.includes('/casenet/trackThisCaseEntry.do') &&
+                                    (!!document.querySelector('#email') || !!document.querySelector('input[name="email"]'));}
+
+function findFindButton() {return document.querySelector('#findButton') ||
+                                  Array.from(document.querySelectorAll('input[type="submit"],button[type="submit"],button')).find((el) => /find/i.test(el.value || el.textContent || '')) ||
+                                  null;}
+
+function findTrackLinkOnHeader() {return document.querySelector('a[href*="trackThisCaseLanding.do"]') ||
+                                        (document.querySelector('#trackThisCaseLinkImg')?.closest('a')) ||
+                                        null;}
+
+function findContinueLink() {return document.querySelector('a[href*="trackThisCaseEntry.do"]') ||
+                                   Array.from(document.querySelectorAll('a.btn, a')).find((a) => /continue/i.test(a.textContent || '')) ||
+                                   null;}
+
+function findFinalTrackButton() {return document.querySelector('button[onclick*="submitForm"][onclick*="track"]') ||
+                                        Array.from(document.querySelectorAll('button')).find((b) => /track this case/i.test(b.textContent || '')) ||
+                                        null;}
+
+async function trackTick() {const st = loadTrackState();
+                            if (!st?.active) return;
+                            if (st.done) return;
+                            if (isStop()) return;
+                            if (isRun()) return;
+                            const caseNumber = norm(st.caseNumber || '');
+                            if (!caseNumber) {st.error = 'missing_case_number';
+                                              saveTrackState({...st,active:false,done:true});
+                                              uiStatus('Track This Case: missing case number.');
+                                              dbg('track_abort_missing_case',{});
+                                              return;}
+                            if (st.navPendingUntil && Date.now() < Number(st.navPendingUntil)) return;
+
+                            if (isCaseNoSearchPage()) {const box = document.querySelector('#caseNumber');
+                                                      if (box && norm(box.value) !== caseNumber) {box.focus();
+                                                                                                box.value = caseNumber.toUpperCase();
+                                                                                                box.dispatchEvent(new Event('input',{bubbles:true}));
+                                                                                                box.dispatchEvent(new Event('change',{bubbles:true}));}
+                                                      const btn = findFindButton();
+                                                      if (btn) {uiStatus('Track This Case: finding case...');
+                                                                dbg('track_submit_case_search',{caseNumber});
+                                                                st.step = 'submitted_case_search';
+                                                                st.submittedAt = Date.now();
+                                                                saveTrackState({...st});
+                                                                btn.click();
+                                                                return;}
+                                                      uiStatus('Track This Case: Find button not found.');
+                                                      dbg('track_find_button_missing',{});
+                                                      saveTrackState({...st,error:'find_button_missing'});
+                                                      return;}
+
+                            const trackLink = findTrackLinkOnHeader();
+                            if (trackLink && !st.popupOpened) {uiStatus('Track This Case: opening in new window...');
+                                                           dbg('track_open_popup',{href:trackLink.href || ''});
+                                                           st.popupOpened = true;
+                                                           st.navPendingUntil = Date.now() + 1500;
+                                                           saveTrackState({...st});
+                                                           try {window.open(trackLink.href,'_blank','noopener,noreferrer');}
+                                                           catch {}
+                                                           return;}
+
+                            if (isTrackLandingPage()) {const c = findContinueLink();
+                                                       if (!c) {uiStatus('Track This Case: Continue link not found.');
+                                                                dbg('track_continue_missing',{});
+                                                                saveTrackState({...st,error:'continue_missing'});
+                                                                return;}
+                                                       uiStatus('Track This Case: continuing...');
+                                                       dbg('track_click_continue',{href:c.href || ''});
+                                                       st.navPendingUntil = Date.now() + 1200;
+                                                       saveTrackState({...st});
+                                                       c.click();
+                                                       return;}
+
+                            if (isTrackEntryPage()) {const email = TRACK_EMAIL;
+                                                     const e1 = document.querySelector('#email') || document.querySelector('input[name="email"]');
+                                                     const e2 = document.querySelector('#confirmEmail') || document.querySelector('input[name="confirmEmail"]');
+                                                     if (e1) {e1.focus();
+                                                              e1.value = email;
+                                                              e1.dispatchEvent(new Event('input',{bubbles:true}));
+                                                              e1.dispatchEvent(new Event('change',{bubbles:true}));}
+                                                     if (e2) {e2.focus();
+                                                              e2.value = email;
+                                                              e2.dispatchEvent(new Event('input',{bubbles:true}));
+                                                              e2.dispatchEvent(new Event('change',{bubbles:true}));}
+                                                     const cb = document.querySelector('#trackDocketRequestSelected1') ||
+                                                                document.querySelector('input[name="trackDocketRequestSelected"][value="trackDocketNotification"]') ||
+                                                                null;
+                                                     if (cb && !cb.checked) {cb.click();}
+                                                     const btn = findFinalTrackButton();
+                                                     if (!btn) {uiStatus('Track This Case: final Track button not found.');
+                                                                dbg('track_final_button_missing',{});
+                                                                saveTrackState({...st,error:'final_button_missing'});
+                                                                return;}
+                                                     uiStatus('Track This Case: submitting...');
+                                                     dbg('track_submit_final',{});
+                                                     st.done = true;
+                                                     st.active = false;
+                                                     saveTrackState({...st});
+                                                     btn.click();
+                                                     uiStatus('Track This Case complete - close this browser window.');
+                                                     return;}
+
+                            if (st.popupOpened) {uiStatus('Track This Case working in new tab');
+                                                 return;}
+
+                            uiStatus('Reading...');
+                            return;}
+
+  /************************************************************
+   * Build entry via API for one case
+   ************************************************************/
+  async function scrapeCaseViaApi({caseKey,caseNumber,courtId},expectedYob4 = '') {const entry = {caseKey,
+                                                                                                  caseTitle:'',
+                                                                                                  caseUrl:`https://www.courts.mo.gov/casenet/cases/newHeader.do?inputVO.caseNumber=${encodeURIComponent(caseNumber)}&inputVO.courtId=${encodeURIComponent(courtId)}`,
+                                                                                                  judge:'- - -',
+                                                                                                  dateFiled:'- - -',
+                                                                                                  location:'- - -',
+                                                                                                  caseBalance:'- - -',
+                                                                                                  disposition:'- - -',
+                                                                                                  address:'- - -',
+                                                                                                  yob:'- - -',
+                                                                                                  yobRaw:'',
+                                                                                                  attorney:'- - -',
+                                                                                                  warrantSummary:'- - -',
+                                                                                                  initialAppearanceDate:'',
+                                                                                                  licenseHoldDate:'',
+                                                                                                  nextDocketDate:'- - -',
+                                                                                                  ftaDates:['- - -'],
+                                                                                                  chargeDescription:'- - -',
+                                                                                                  chargeType:'- - -',
+                                                                                                  chargeClass:'- - -',};
+                                                                 if (String(courtId).toUpperCase() === 'CT20') {entry._skipReason = 'ct20_disabled';
+                                                                                                                return entry;}
+                                                                 let header;
+                                                                 try {header = await postFormJsonRetry_tryCourtIds('/casenet/cases/newHeaderData.do',{caseNumber,courtId,isTicket:'',locnCode:'',isCriminal:'',diposed:'',pleaAndPayInd:'',});}
+                                                                 catch (e) {if (isJndiDatasourceError(e)) {entry._skipReason = 'backend_jndi_error';
+                                                                                                          dbg('skip_backend_jndi',{caseKey,courtId,msg:String(e?.message || e)});
+                                                                                                          return entry;}
+                                                                            throw e;}
+                                                                 const basics = headerToEntryBasics(header);
+                                                                 entry.caseTitle = basics.caseTitle;
+                                                                 entry.judge = basics.judge;
+                                                                 entry.dateFiled = basics.dateFiled;
+                                                                 entry.location = basics.location;
+                                                                 entry.disposition = basics.disposition;
+                                                                 if (!hasRealTitle(entry.caseTitle)) {entry._skipReason = 'blank_title';
+                                                                                                      dbg('skip_blank_title',{caseKey: entry.caseKey,caseNumber,courtId});
+                                                                                                      return entry;}
+                                                                 const party = await postFormJsonRetry_tryCourtIds('/casenet/cases/party.do',{caseNumber,courtId,isTicket:'',});
+                                                                 const addrYob = extractDefendantAddressYob(party);
+                                                                 entry.address = addrYob.address;
+                                                                 entry.yob = addrYob.yob;
+                                                                 entry.yobRaw = addrYob.yobRaw || entry.yob;
+                                                                 const match = yobMatchesExpected(expectedYob4,entry.yobRaw);
+                                                                 if (!match.ok) {entry._skipReason = 'yob_mismatch';
+                                                                                 entry._expectedYob = expectedYob4;
+                                                                                 entry._foundYears = (match.years || []).join(', ');
+                                                                                 return entry;}
+                                                                 entry.attorney = extractAttorney(party);
+                                                                 const docket = await postFormJsonRetry_tryCourtIds('/casenet/cases/docketEntriesSearch.do',{caseNumber,courtId,isTicket:'',tabName:'Docket',},{qs:'displayOption=A&sortOption=D&hasChange=false'});
+                                                                 const docketList = docket?.docketTabModelList || [];
+                                                                 const hit = findFirstWarrantOrSummons(docketList);
+                                                                 const f = countFtas(docketList);
+                                                                 entry.ftaDates = f.count === 0 ? ['- - -'] : f.dates;
+                                                                 entry.nextDocketDate = findFirstCurrentOrFutureScheduledLine(docketList);
+                                                                 entry.licenseHoldDate = findLicenseHoldDate(docketList) || '';
+                                                                 if (!hit) {entry.warrantSummary = '- - -';
+                                                                            entry.initialAppearanceDate = findInitialAppearanceDate(docketList) || '';}
+                                                                 else if (hit.scheduledFor) {entry.warrantSummary = [hit.filingDate ? `Date: ${hit.filingDate}` : '',`Event: ${hit.event}`,`Scheduled For: ${hit.scheduledFor}`].filter(Boolean).join('\n');
+                                                                                             entry.initialAppearanceDate = '';}
+                                                                 else {entry.warrantSummary = [hit.filingDate ? `${hit.filingDate}` : '',`Event: ${hit.event}`,hit.bond ? hit.bond : ''].filter(Boolean).join('\n');
+                                                                       entry.initialAppearanceDate = '';}
+                                                                 let chargesResp = null;
+                                                                 try {chargesResp = await postFormJsonRetry_tryCourtIds('/casenet/cases/charges.do',{caseNumber,courtId,isTicket:'',tabName:'Charge',});}
+                                                                 catch (e) {dbg('charges_fetch_failed',{caseKey,msg:String(e?.message || e)});}
+                                                                 const chargeParts = extractChargePartsFromChargesResponse(chargesResp,header);
+                                                                 entry.chargeDescription = chargeParts.desc || 'No Charges Found';
+                                                                 entry.chargeType = chargeParts.type || '- - -';
+                                                                 entry.chargeClass = chargeParts.cls || '- - -';
+                                                                 entry.caseBalance = await getCaseBalanceIfGuiltyViaApi(entry.disposition,basics.header_meta,caseNumber,courtId);
+                                                                 return entry;}
+
+  /************************************************************
+   * Log formatting (reused from your DOM tool, adapted)
+   ************************************************************/
+  function formatEntry(e) {const lines = [e.caseTitle || '(- - -)','',
+                                         `Location: ${e.location || ''}`,
+                                         `Date Filed: ${e.dateFiled || ''}`,
+                                         `Disposition: ${e.disposition || ''}`,
+                                         `Case Balance: ${e.caseBalance || ''}`,'',
+                                         `Address: ${e.address || ''}`,
+                                         `Year of Birth: ${e.yob || ''}`,
+                                         `Attorney: ${e.attorney || ''}`,'',
+                                         `Most Recent Warrant/Summons: ${e.warrantSummary || ''}`,
+                                         `FTA Dates: ${(e.ftaDates || []).join(', ')}`,];
+                         if (e.initialAppearanceDate) lines.push(`Initial Appearance: ${e.initialAppearanceDate}`);
+                         if (e.licenseHoldDate) lines.push(`License Hold: ${e.licenseHoldDate}`);
+                         lines.push(`Upcoming Court Dates: ${e.nextDocketDate || ''}`,'',
+                                    `Charge Description: ${e.chargeDescription || ''}`,
+                                    `Charge Type: ${e.chargeType || ''}`,
+                                    `Charge Class: ${e.chargeClass || ''}`,
+                                    `Judge: ${e.judge || ''}`,'',
+                                    `CaseNet:\n${e.caseUrl || ''}\n`,'','','');
+                         return lines.join('\n');}
+
+  function classifyCaseTitle(titleRaw) {const t = (titleRaw || '').toUpperCase();
+                                       if (t.includes('CITY OF ST.LOUIS') || t.includes('CITY OF ST. LOUIS')) return 'REFER';
+                                       const urgentNeedles = ['FLORISSANT','ST V ','UNIVERSITY CITY','KIRKWOOD','MANCHESTER','WEBSTER GROVES'];
+                                       if (urgentNeedles.some((n) => t.includes(n))) return 'URGENT';
+                                       return 'LESS';}
+
+  function buildGroupedCopyText() {const log = loadLog();
+                                  const expected = norm(document.getElementById('moNsYob')?.value || '');
+                                  const filteredLog = log.filter((e) => {const m = yobMatchesExpected(expected,e?.yobRaw || e?.yob || '');
+                                                                         return m.ok;});
+                                  const urgent = [];
+                                  const refer = [];
+                                  const less = [];
+                                  for (const e of filteredLog) {const bucket = classifyCaseTitle(e.caseTitle);
+                                                               if (bucket === 'REFER') refer.push(e);
+                                                               else if (bucket === 'URGENT') urgent.push(e);
+                                                               else less.push(e);}
+                                  const countsHeader = [`Eligible: ${urgent.length}`,`Refer to City: ${refer.length}`,`Ineligible: ${less.length}`,''].join('\n');
+                                  function block(label,entries) {if (!entries.length) return `${label}\n(none)\n`;
+                                                                 return `${label}\n\n` + entries.map((e,idx) => `===== Case ${idx + 1} =====\n${formatEntry(e)}\n`).join('\n') + '\n';}
+                                  return [countsHeader,
+                                          block('<<<<<<<<<<<<<<<<<<<<<< ELIGIBLE >>>>>>>>>>>>>>>>>>>>>>',urgent),
+                                          block('<<<<<<<<<<<<<<<<<<<< REFER TO CITY >>>>>>>>>>>>>>>>>>>',refer),
+                                          block('<<<<<<<<<<<<<<<<<<<<< INELIGIBLE >>>>>>>>>>>>>>>>>>>>>',less),].join('\n');}
+
+  /************************************************************
+   * Concurrency runner
+   ************************************************************/
+  async function runPool(items,workerCount,workerFn) {let idx = 0;
+                                                     const results = [];
+                                                     const errors = [];
+                                                     async function worker(workerId) {while (true) {if (isStop()) return;
+                                                                                                    const my = idx++;
+                                                                                                    if (my >= items.length) return;
+                                                                                                    const item = items[my];
+                                                                                                    try {dbg('case_start',{workerId,caseKey: item.caseKey});
+                                                                                                         const out = await workerFn(item,my);
+                                                                                                         results.push(out);
+                                                                                                         dbg('case_done',{workerId,caseKey: item.caseKey});}
+                                                                                                    catch (e) {errors.push({caseKey: item?.caseKey,msg: String(e?.message || e)});
+                                                                                                               dbg('case_error',{workerId,
+                                                                                                                                caseKey: item?.caseKey,
+                                                                                                                                msg: String(e?.message || e),
+                                                                                                                                status: e?.status || '',
+                                                                                                                                path: e?.path || '',
+                                                                                                                                respUrl: e?.respUrl || '',
+                                                                                                                                redirected: e?.redirected === true ? true : false,
+                                                                                                                                htmlTitle: e?.htmlTitle || '',
+                                                                                                                                htmlSig: e?.htmlSig || null,});}}}
+                                                     const workers = [];
+                                                     for (let i = 0;i < Math.max(1,workerCount);i++) workers.push(worker(i));
+                                                     await Promise.all(workers);
+                                                     return {results,errors};}
+
+  /************************************************************
+ * UI
+ ************************************************************/
+GM_addStyle(`:root{ --mo-bg: #f5f7fb;          /* page chrome */
+                    --mo-surface: #ffffff;     /* cards/panels */
+                    --mo-surface-2: #eef2f7;   /* header/footer/status */
+                    --mo-border: #d7dee8;      /* lines/borders */
+                    --mo-text: #0f172a;        /* primary text (slate-900) */
+                    --mo-muted: #475569;       /* secondary text (slate-600) */
+                    --mo-primary: #2563eb;     /* Copy button */
+                    --mo-primary-dk: #1d4ed8;  /* hover/active */
+                    --mo-danger: #b42318;      /* Stop button */
+                    --mo-danger-dk: #912018;
+                    --mo-shadow: 0 10px 28px rgba(15, 23, 42, .18);}
+
+            #moJsonDock{position:fixed; right:12px; bottom:12px;
+                        width:520px; max-height:66vh;
+                        z-index:999999;
+                        font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+                        box-shadow:var(--mo-shadow);
+                        border-radius:14px;
+                        overflow:hidden;
+                        border:1px solid var(--mo-border);
+                        background:var(--mo-bg);
+                        box-sizing:border-box;
+                        display:flex;
+                        flex-direction:column;}
+
+            #moJsonHeader{background:var(--mo-surface-2);
+                          border-bottom:1px solid var(--mo-border);
+                          padding:10px;
+                          display:flex;
+                          align-items:center;
+                          justify-content:space-between;
+                          gap:8px;
+                          position:relative;
+                          padding-right:40px;
+                          flex:0 0 auto;}
+
+            #moJsonHeader .title{font-weight:900;
+                                 font-size:14px;
+                                 color:var(--mo-text);
+                                 user-select:none;
+                                 letter-spacing:.1px;}
+
+            #moJsonHeader .btnRow{display:flex;
+                                  gap:8px;
+                                  flex-wrap:wrap;
+                                  justify-content:flex-end;
+                                  min-width:0;}
+
+            #moJsonCloseX{position:absolute;
+                          top:8px;
+                          right:10px;
+                          width:22px;
+                          height:22px;
+                          line-height:20px;
+                          border:none;
+                          background:transparent;
+                          color:var(--mo-muted);
+                          font-size:18px;
+                          font-weight:900;
+                          cursor:pointer;
+                          border-radius:8px;
+                          display:flex;
+                          align-items:center;
+                          justify-content:center;
+                          transition:background 120ms ease,color 120ms ease;}
+            #moJsonCloseX:hover{background:rgba(37, 99, 235, .10); color:var(--mo-text);}
+
+            #moJsonStatus{padding:8px 10px;
+                          border-bottom:1px solid var(--mo-border);
+                          font-size:12px;
+                          color:var(--mo-muted);
+                          background:var(--mo-surface-2);
+                          white-space:pre-wrap;
+                          flex:0 0 auto;}
+
+            #moJsonContent{padding:10px;
+                           overflow:auto;
+                           background:var(--mo-bg);
+                           flex:1 1 auto;
+                           min-height:0; /* critical for overflow scrolling in flex layouts */
+                           max-height:none;}
+
+            #moJsonFooter{background:var(--mo-surface-2);
+                          border-top:1px solid var(--mo-border);
+                          padding:10px;
+                          flex:0 0 auto;}
+
+            #moJsonDock *{box-sizing:border-box;}
+
+            .moBlock{background:var(--mo-surface);
+                     border:1px solid var(--mo-border);
+                     border-radius:12px;
+                     padding:10px;
+                     margin-bottom:10px;}
+
+            .moBlock h3{margin:0 0 6px 0;
+                        font-size:12px;
+                        color:var(--mo-text);
+                        font-weight:950;
+                        letter-spacing:.2px;}
+
+            .moBtn{background:#fff;
+                   color:var(--mo-text);
+                   border:1.5px solid var(--mo-border);
+                   padding:6px 10px;
+                   border-radius:10px;
+                   cursor:pointer;
+                   font-size:12px;
+                   font-weight:900;
+                   user-select:none;
+                   transition:transform 80ms ease,filter 120ms ease,background 120ms ease,border-color 120ms ease;}
+
+            .moBtn:hover{filter:brightness(0.97);}
+            .moBtn:active{transform:translateY(1px); filter:brightness(0.93);}
+
+            #moJsonCopy{background:var(--mo-primary);
+                        border:1.5px solid var(--mo-border);
+                        color:#fff;}
+            #moJsonCopy:hover{background:var(--mo-primary-dk);}
+
+            #moJsonStop{background:var(--mo-danger);
+                        border:1.5px solid var(--mo-border);
+                        color:#fff;}
+            #moJsonStop:hover{background:var(--mo-danger-dk);}
+
+            .moNameRow{display:grid;
+                       grid-template-columns:minmax(0, 1.3fr) minmax(0, 0.5fr) minmax(0, 1.8fr);
+                       gap:8px;
+                       margin-top:8px;}
+
+            .moNameRowBottom{display:grid;
+                             grid-template-columns:1fr auto;
+                             gap:8px;
+                             margin-top:8px;
+                             align-items:end;}
+
+            .moSearchBtn{height:32px;
+                         padding:0 14px;
+                         font-size:12px;
+                         font-weight:950;
+                         background:#16a34a;
+                         border:1.5px solid var(--mo-border);
+                         color:#fff;}
+            .moSearchBtn:hover{filter:brightness(0.95);}
+            .moSearchBtn:active{filter:brightness(0.90);}
+
+            .moField{display:flex;
+                     flex-direction:column;
+                     gap:4px;}
+
+            .moField label{font-size:11px;
+                           font-weight:900;
+                           color:var(--mo-muted);}
+
+            .moField input{padding:7px 9px;
+                           border:1px solid var(--mo-border);
+                           border-radius:10px;
+                           font-size:12px;
+                           min-width:0;
+                           width:100%;
+                           box-sizing:border-box;
+                           max-width:100%;
+                           background:#fff;
+                           color:var(--mo-text);
+                           outline:none;
+                           transition:border-color 120ms ease,box-shadow 120ms ease;}
+
+            .moField input:focus{border-color:rgba(37, 99, 235, .65);
+                                 box-shadow:0 0 0 3px rgba(37, 99, 235, .18);}
+
+            .moBottomRow{display:flex;
+                         gap:8px;
+                         justify-content:flex-end;
+                         margin-top:0;
+                         flex-wrap:wrap;}
+
+            .moHidden{display:none;}
+`);
+
+function escapeHtml(s) {return String(s ?? '')
+                              .replaceAll('&','&amp;')
+                              .replaceAll('<','&lt;')
+                              .replaceAll('>','&gt;')
+                              .replaceAll('"','&quot;')
+                              .replaceAll("'","&#039;");}
+
+const dock = document.createElement('div');
+dock.id = 'moJsonDock';
+dock.innerHTML = `
+  <div id="moJsonHeader">
+    <div class="title">I Can't Believe It's Not CaseNet!</div>
+    <div class="btnRow">
+      <button class="moBtn" id="moJsonCopy">Copy</button>
+      <button class="moBtn" id="moJsonStop">Stop</button>
+    </div>
+    <button id="moJsonCloseX" title="Close">×</button>
+  </div>
+  <div id="moJsonStatus">Ready.</div>
+  <div id="moJsonContent"></div>
+  <div id="moJsonFooter">
+    <div class="moBottomRow">
+      <button class="moBtn" id="moJsonClear">Clear Log</button>
+    </div>
+  </div>
+`;
+(document.body || document.documentElement).appendChild(dock);
+
+const $status = dock.querySelector('#moJsonStatus');
+const $content = dock.querySelector('#moJsonContent');
+
+function uiStatus(msg) {$status.textContent = msg;
+                        setStatus(msg);}
+
+function addBlock(title,htmlInner) {const div = document.createElement('div');
+                                   div.className = 'moBlock';
+                                   div.innerHTML = `<h3>${escapeHtml(title)}</h3>${htmlInner}`;
+                                   $content.appendChild(div);}
+
+function render() {const log = loadLog();
+                   $content.innerHTML = '';
+                   const ns = loadNameState();
+                   const draft = loadDraft();
+                   const p = ns?.params || draft;
+                   addBlock('Name',`
+      <div class="moNameRow">
+        <div class="moField">
+          <input id="moNsFirst" type="text" placeholder="First" value="${escapeHtml(p?.first || '')}">
+        </div>
+        <div class="moField">
+          <input id="moNsMiddle" type="text" placeholder="M.I." value="${escapeHtml(p?.middle || '')}">
+        </div>
+        <div class="moField">
+          <input id="moNsLast" type="text" placeholder="Last" value="${escapeHtml(p?.last || '')}">
+        </div>
+      </div>
+
+      <div class="moNameRowBottom">
+        <div class="moField">
+          <label>Birth Year (four digits)</label>
+          <input id="moNsYob" type="text" placeholder="YYYY" maxlength="4" value="${escapeHtml(p?.yob || '')}">
+        </div>
+        <div style="display:flex; gap:8px; align-items:end;">
+          <button class="moBtn moSearchBtn" id="moJsonNameSearch">Search</button>
+          <button class="moBtn" id="moJsonClearEntries" style="height:32px;">Clear Entries</button>
+        </div>
+      </div>
+    `);
+                   addBlock('Track This Case',`
+  <div class="moNameRowBottom" style="grid-template-columns:1fr auto;">
+    <div class="moField">
+      <label>Case Number</label>
+      <input id="moTrackCaseNo" type="text" placeholder="e.g. 18SL-CR01234 or 180245562" value="${escapeHtml((loadTrackState()?.caseNumber) || (loadTrackDraft()?.caseNumber) || '')}">
+    </div>
+    <div style="display:flex; gap:8px; align-items:end;">
+      <button class="moBtn" id="moTrackSignup" style="height:32px;">Sign Up</button>
+    </div>
+  </div>
+`);
+                   addBlock('Status',`
+      <pre style="margin:0; font-size:13px; line-height:1.45; white-space:pre-wrap; word-break:break-word; color:#111;">
+Running?: ${isRun() ? 'Yes' : 'No'}
+Cases in Log: ${log.length}
+      </pre>
+    `);}
+
+  /************************************************************
+   * Main run
+   ************************************************************/
+  async function harvestAllResultCaseKeys() {const seen = new Set();
+                                            const out = [];
+                                            const table = document.querySelector('#nameSearchResult');
+                                            const tbody = table?.querySelector('tbody');
+                                            const snapshotTbody = () => norm(tbody?.textContent || '');
+                                            const waitForTbodyChange = async (beforeSnap,timeoutMs = 8000) => {const t0 = Date.now();
+                                                                                                               while (Date.now() - t0 < timeoutMs) {await sleep(150);
+                                                                                                                                                    const afterSnap = snapshotTbody();
+                                                                                                                                                    if (afterSnap && afterSnap !== beforeSnap) return true;}
+                                                                                                               return false;};
+                                            const lenSel = document.querySelector('select[name="nameSearchResult_length"]');
+                                            if (lenSel && lenSel.value !== '100') {const before = snapshotTbody();
+                                                                                   lenSel.value = '100';
+                                                                                   lenSel.dispatchEvent(new Event('input',{bubbles:true}));
+                                                                                   lenSel.dispatchEvent(new Event('change',{bubbles:true}));
+                                                                                   await waitForTbodyChange(before,8000);
+                                                                                   await sleep(150);}
+                                            const getNextBtn = () => document.querySelector('#nameSearchResult_next,a.paginate_button.next,li.next a');
+                                            const nextIsDisabledLocal = (btn) => {if (!btn) return true;
+                                                                                  const li = btn.closest('li');
+                                                                                  return btn.classList.contains('disabled') || btn.getAttribute('aria-disabled') === 'true' || (li && li.classList.contains('disabled'));};
+                                            const harvestThisPage = () => {const anchors = [...document.querySelectorAll('a[href*="caseNumber="],a[href*="inputVO.caseNumber="],a[href*="ci="],a[href*="courtCode="],a[href*="courtId="],a[href*="inputVO.courtId="],a[href*="l="]')];
+                                                                           for (const a of anchors) {const p = parseCaseFromUrl(a.href || '');
+                                                                                                    if (!p?.caseKey) continue;
+                                                                                                    if (seen.has(p.caseKey)) continue;
+                                                                                                    seen.add(p.caseKey);
+                                                                                                    out.push(p);}};
+                                            {const tbodyText = snapshotTbody();
+                                             const noData = /no data available/i.test(tbodyText);
+                                             dbg('results_page_probe',{noData,sample: tbodyText.slice(0,160)});}
+                                            for (let guard = 0;guard < 250;guard++) {harvestThisPage();
+                                                                                    const nextBtn = getNextBtn();
+                                                                                    if (nextIsDisabledLocal(nextBtn)) break;
+                                                                                    const beforeSnap = snapshotTbody();
+                                                                                    nextBtn.click();
+                                                                                    const changed = await waitForTbodyChange(beforeSnap,8000);
+                                                                                    if (!changed) {dbg('pagination_no_redraw',{guard});
+                                                                                                   break;}
+                                                                                    await sleep(150);}
+                                            return out;}
+
+  async function pullJsonFromResultsPage() {if (!isNameSearchResultsPage()) {uiStatus('Landed on non-results page.');
+                                                                           render();
+                                                                           return;}
+                                           setShowEntriesTo100();
+                                           const ns = loadNameState();
+                                           const yobExpected = norm(ns?.params?.yob || document.getElementById('moNsYob')?.value || '');
+                                           const conc = DEFAULT_CONCURRENCY;
+                                           clearLastHtml();
+                                           saveJson(KEY_NET_STATS,{byPath:{}});
+                                           uiStatus('Harvesting all results pages…');
+                                           render();
+                                           const cases = await harvestAllResultCaseKeys();
+                                           dbg('harvest_done',{count: cases.length});
+                                           if (!cases.length) {uiStatus('No case links found.');
+                                                               render();
+                                                               return;}
+                                           setStop(false);
+                                           setRun(true);
+                                           uiStatus('Reading...');
+                                           render();
+                                           try {dbg('run_start',{count: cases.length,conc,yobExpected});
+                                                const existing = loadLog();
+                                                const seen = new Set(existing.map((e) => e.caseKey));
+                                                const todo = cases.filter((c) => !seen.has(c.caseKey));
+                                                if (!todo.length) {uiStatus('Already ran these,clear log to run again');
+                                                                   return;}
+                                                uiStatus(`Queue: ${todo.length}. Reading...`);
+                                                render();
+                                                let yobMismatchCount = 0;
+                                                const {results,errors} = await runPool(todo,conc,async (item) => {if (isStop()) return null;
+                                                                                                                 await sleep(80);
+                                                                                                                 const out = await scrapeCaseViaApi(item,yobExpected);
+                                                                                                                 if (out && out._skipReason === 'yob_mismatch') {yobMismatchCount += 1;
+                                                                                                                                                                 return null;}
+                                                                                                                 if (out && out._skipReason === 'blank_title') return null;
+                                                                                                                 return out;});
+                                                const nextLog = loadLog();
+                                                for (const r of results) {if (!r || !r.caseKey) continue;
+                                                                         if (nextLog.some((x) => x.caseKey === r.caseKey)) continue;
+                                                                         nextLog.push(r);}
+                                                saveLog(nextLog);
+                                                const okCount = results.filter(Boolean).length;
+                                                const skipCount = results.filter((r) => r && r._skipReason === 'backend_jndi_error').length;
+                                                const errCount = (errors || []).length;
+                                                if (isStop()) {uiStatus('Stopped.');
+                                                               dbg('run_stopped',{okCount,skipCount,errCount});}
+                                                else {uiStatus(`${okCount} cases added. YOB mismatches: ${yobMismatchCount}. Errors: ${errors.length}.`);}
+                                                if (errCount) dbg('run_errors',{errors: errors.slice(0,12)});}
+                                           catch (err) {dbg('fatal_pull',{msg: String(err?.message || err),stack: String(err?.stack || ''),});
+                                                       uiStatus('*error*: ' + String(err?.message || err));}
+                                           finally {setRun(false);
+                                                    render();}}
+
+/************************************************************
+   * Buttons
+   ************************************************************/
+  dock.addEventListener('click',async (e) => {const id = e?.target?.id;
+                                             if (id === 'moJsonNameSearch') {const params = {first: norm(document.getElementById('moNsFirst')?.value || ''),
+                                                                                           middle: norm(document.getElementById('moNsMiddle')?.value || ''),
+                                                                                           last: norm(document.getElementById('moNsLast')?.value || ''),
+                                                                                           yob: norm(document.getElementById('moNsYob')?.value || ''),};
+                                                                            setStop(false);
+                                                                            setRun(false);
+                                                                            saveDraft({...params});
+                                                                            saveNameState({active:true,passIndex:0,passes:['criminal','traffic'],step:'go_search',params,});
+                                                                            uiStatus('Searching…');
+                                                                            dbg('namesearch_start',{params});
+                                                                            if (!isNameSearchPage()) {location.href = canonicalNameSearchUrl();}
+                                                                            else {try {await nameSearchTick();} catch {}}
+                                                                            render();
+                                                                            return;}
+                                             if (id === 'moJsonClearEntries') {clearDraft();
+                                                                              const ns = loadNameState();
+                                                                              if (ns?.active) {ns.params = {first:'',middle:'',last:'',yob:''};
+                                                                                               saveNameState(ns);}
+                                                                              render();
+                                                                              uiStatus('Entries Cleared');
+                                                                              dbg('entries_cleared',{});
+                                                                              return;}
+                                             if (id === 'moJsonStop') {setStop(true);
+                                                                      setRun(false);
+                                                                      uiStatus('Stopped.');
+                                                                      dbg('stop_clicked',{});
+                                                                      render();
+                                                                      return;}
+                                             if (id === 'moJsonCopy') {const out = buildGroupedCopyText();
+                                                                      GM_setClipboard(out || '','text');
+                                                                      uiStatus('Copied to Clipboard');
+                                                                      render();
+                                                                      return;}
+                                             if (id === 'moJsonClear') {saveLog([]);
+                                                                       saveDebug([]);
+                                                                       clearLastHtml();
+                                                                       saveJson(KEY_NET_STATS,{byPath:{}});
+                                                                       setStop(true);
+                                                                       setRun(false);
+                                                                       clearNameState();
+                                                                       uiStatus('Log Cleared');
+                                                                       dbg('log_cleared',{});
+                                                                       render();
+                                                                       return;}
+                                             if (id === 'moJsonCopyDebug') {const rows = loadDebug();
+                                                                           const out = rows.map((r) => JSON.stringify(r)).join('\n');
+                                                                           GM_setClipboard(out || '(no debug rows)','text');
+                                                                           uiStatus('Debug Copied');
+                                                                           render();
+                                                                           return;}
+                                             if (id === 'moJsonClearDebug') {saveDebug([]);
+                                                                            clearLastHtml();
+                                                                            uiStatus('Debug Cleared');
+                                                                            render();
+                                                                            return;}
+                                             if (id === 'moJsonCloseX') {dock.classList.add('moHidden');
+                                                                        return;}
+                                             if (id === 'moTrackSignup') {const caseNumber = norm(document.getElementById('moTrackCaseNo')?.value || '');
+                                                                          if (!caseNumber) {uiStatus('Enter a case number to track.');
+                                                                                            return;}
+                                                                          setStop(false);
+                                                                          setRun(false);
+                                                                          saveTrackDraft({caseNumber});
+                                                                          saveTrackState({active:true,caseNumber,step:'go_case_search',startedAt:Date.now(),popupOpened:false,done:false,error:''});
+                                                                          uiStatus('Track This Case: starting...');
+                                                                          dbg('track_start',{caseNumber});
+                                                                          location.href = new URL('/casenet/caseNoSearch.do',location.origin).toString();
+                                                                          render();
+                                                                          return;}
+                                             if (id === 'moJsonOpenLastHtml') {openLastHtmlInNewTab();
+                                                                              return;}});
+
+  dock.addEventListener('input',(e) => {const id = e?.target?.id || '';
+                                     if (['moNsFirst','moNsMiddle','moNsLast','moNsYob'].includes(id)) {const cur = loadDraft();
+                                                                                                       const now = readUiParams();
+                                                                                                       saveDraft({...cur,...now});
+                                                                                                       return;}
+                                     if (id === 'moTrackCaseNo') {saveTrackDraft({caseNumber:norm(e.target.value || '')});
+                                                                  return;}});
+
+
+  async function nameSearchTick() {const st = loadNameState();
+                                 if (!st?.active) return;
+                                 if (st.navPendingUntil && Date.now() < Number(st.navPendingUntil)) return;
+                                 if (isRun()) return;
+                                 if (isStop()) return;
+                                 const passKey = (st.passes || [])[st.passIndex || 0];
+                                 if (!passKey) {dbg('namesearch_done',{});
+                                                clearNameState();
+                                                uiStatus('Done.');
+                                                render();
+                                                return;}
+                                 if (isNameSearchPage()) {if (st.step === 'submitted_waiting_results') {const age = Date.now() - Number(st.submittedAt || 0);
+                                                                                                        if (age < 6000) return;
+                                                                                                        dbg('namesearch_resubmit',{passKey,ageMs:age});
+                                                                                                        st.step = 'go_search';
+                                                                                                        saveNameState(st);}
+                                                          uiStatus(`Searching ${st.passIndex + 1}/2 (${passKey})…`);
+                                                          dbg('namesearch_submit',{passKey});
+                                                          fillNameSearchForm(st.params || {},passKey);
+                                                          const ok = submitNameSearchForm();
+                                                          if (!ok) {uiStatus('Search failed, refresh page and retry');
+                                                                    dbg('namesearch_submit_failed',{passKey});
+                                                                    return;}
+                                                          st.step = 'submitted_waiting_results';
+                                                          st.submittedAt = Date.now();
+                                                          saveNameState(st);
+                                                          return;}
+                                 if (isNameSearchResultsPage()) {setShowEntriesTo100();
+                                                                const dockYob = document.getElementById('moNsYob');
+                                                                if (dockYob) dockYob.value = st.params?.yob || '';
+                                                                uiStatus(`Ready (${passKey})…`);
+                                                                dbg('namesearch_pull_begin',{passKey});
+                                                                try {await pullJsonFromResultsPage();}
+                                                                catch (e) {dbg('namesearch_pull_fatal',{passKey,msg:String(e?.message || e)});
+                                                                           setRun(false);}
+                                                                dbg('namesearch_pull_done',{passKey});
+                                                                st.passIndex = (st.passIndex || 0) + 1;
+                                                                st.step = 'go_search';
+                                                                st.navPendingUntil = Date.now() + 5000;
+                                                                saveNameState(st);
+                                                                location.href = canonicalNameSearchUrl();
+                                                                return;}
+                                 location.href = canonicalNameSearchUrl();}
+
+/************************************************************
+ * INIT
+ ************************************************************/
+uiStatus(getStatus() || 'Ready');
+render();
+
+setInterval(() => {try {nameSearchTick();}
+                   catch (e) {/* ignore */}
+                   try {trackTick();}
+                   catch (e) {}},900);})();
+
+
+
+
