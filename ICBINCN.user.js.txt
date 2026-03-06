@@ -185,9 +185,9 @@
 
   function clearTrackState() {saveTrackState(null);}
 
-  function loadTrackDraft() {return loadJson(KEY_TRACK_DRAFT,{caseNumber:''});}
+  function loadTrackDraft() {return loadJson(KEY_TRACK_DRAFT,{caseNumbersText:'',caseNumber:''});}
 
-  function saveTrackDraft(d) {saveJson(KEY_TRACK_DRAFT,d || {caseNumber:''});}
+  function saveTrackDraft(d) {saveJson(KEY_TRACK_DRAFT,d || {caseNumbersText:'',caseNumber:''});}
 
   function clearNameState() {saveNameState(null);}
 
@@ -581,12 +581,28 @@ function findFinalTrackButton() {return document.querySelector('button[onclick*=
                                         Array.from(document.querySelectorAll('button')).find((b) => /track this case/i.test(b.textContent || '')) ||
                                         null;}
 
+
+function parseTrackCaseBatch(rawText) {const text = String(rawText || '').replace(/\\n/g,'\n');
+                                 const out = [];
+                                 const seen = new Set();
+                                 for (const part of text.split(/[\r\n,;]+/)) {const v = norm(part).toUpperCase();
+                                                                               if (!v) continue;
+                                                                               if (seen.has(v)) continue;
+                                                                               seen.add(v);
+                                                                               out.push(v);}
+                                 return out;}
+
+function getTrackCaseNumber(st) {const idx = Number(st?.caseIndex || 0);
+                                 const queued = Array.isArray(st?.caseNumbers) ? st.caseNumbers : [];
+                                 const fromQueue = queued[idx] || '';
+                                 return norm(st?.caseNumber || fromQueue);}
+
 async function trackTick() {const st = loadTrackState();
                             if (!st?.active) return;
                             if (st.done) return;
                             if (isStop()) return;
                             if (isRun()) return;
-                            const caseNumber = norm(st.caseNumber || '');
+                            const caseNumber = getTrackCaseNumber(st);
                             if (!caseNumber) {st.error = 'missing_case_number';
                                               saveTrackState({...st,active:false,done:true});
                                               uiStatus('Track This Case: missing case number.');
@@ -655,12 +671,27 @@ async function trackTick() {const st = loadTrackState();
                                                                 saveTrackState({...st,error:'final_button_missing'});
                                                                 return;}
                                                      uiStatus('Track This Case: submitting...');
-                                                     dbg('track_submit_final',{});
+                                                     dbg('track_submit_final',{caseNumber});
+                                                     const queue = Array.isArray(st.caseNumbers) ? st.caseNumbers : [];
+                                                     const currentIndex = Number(st.caseIndex || 0);
+                                                     const hasMore = queue.length > 0 && currentIndex < queue.length - 1;
+                                                     if (hasMore) {const nextIndex = currentIndex + 1;
+                                                                   const nextCase = queue[nextIndex] || '';
+                                                                   st.caseIndex = nextIndex;
+                                                                   st.caseNumber = nextCase;
+                                                                   st.popupOpened = false;
+                                                                   st.navPendingUntil = Date.now() + 1200;
+                                                                   saveTrackState({...st});
+                                                                   btn.click();
+                                                                   uiStatus(`Track This Case: submitted ${currentIndex + 1}/${queue.length}; next ${nextCase}`);
+                                                                   dbg('track_case_complete',{caseNumber,completed: currentIndex + 1,total: queue.length,nextCase});
+                                                                   setTimeout(() => {location.href = new URL('/casenet/caseNoSearch.do',location.origin).toString();},900);
+                                                                   return;}
                                                      st.done = true;
                                                      st.active = false;
                                                      saveTrackState({...st});
                                                      btn.click();
-                                                     uiStatus('Track This Case complete - close this browser window.');
+                                                     uiStatus(`Track This Case complete (${Math.max(queue.length,1)} case${Math.max(queue.length,1) === 1 ? '' : 's'}) - close this browser window.`);
                                                      return;}
 
                             if (st.popupOpened) {uiStatus('Track This Case working in new tab');
@@ -1129,11 +1160,11 @@ function render() {const log = loadLog();
                    addBlock('Track This Case',`
   <div class="moNameRowBottom" style="grid-template-columns:1fr auto;">
     <div class="moField">
-      <label>Case Number</label>
-      <input id="moTrackCaseNo" type="text" placeholder="e.g. 18SL-CR01234 or 180245562" value="${escapeHtml((loadTrackState()?.caseNumber) || (loadTrackDraft()?.caseNumber) || '')}">
+      <label>Case Numbers (one per line)</label>
+      <textarea id="moTrackCaseNo" rows="5" placeholder="e.g. 18SL-CR01234\n180245562\n161441687-B">${escapeHtml((loadTrackDraft()?.caseNumbersText) || (loadTrackState()?.caseNumbers || []).join('\n') || (loadTrackState()?.caseNumber) || (loadTrackDraft()?.caseNumber) || '')}</textarea>
     </div>
     <div style="display:flex; gap:8px; align-items:end;">
-      <button class="moBtn" id="moTrackSignup" style="height:32px;">Sign Up</button>
+      <button class="moBtn" id="moTrackSignup" style="height:32px;">Sign Up Batch</button>
     </div>
   </div>
 `);
@@ -1307,15 +1338,16 @@ Cases in Log: ${log.length}
                                                                             return;}
                                              if (id === 'moJsonCloseX') {dock.classList.add('moHidden');
                                                                         return;}
-                                             if (id === 'moTrackSignup') {const caseNumber = norm(document.getElementById('moTrackCaseNo')?.value || '');
-                                                                          if (!caseNumber) {uiStatus('Enter a case number to track.');
-                                                                                            return;}
+                                             if (id === 'moTrackSignup') {const raw = String(document.getElementById('moTrackCaseNo')?.value || '');
+                                                                          const caseNumbers = parseTrackCaseBatch(raw);
+                                                                          if (!caseNumbers.length) {uiStatus('Enter at least one case number to track.');
+                                                                                                   return;}
                                                                           setStop(false);
                                                                           setRun(false);
-                                                                          saveTrackDraft({caseNumber});
-                                                                          saveTrackState({active:true,caseNumber,step:'go_case_search',startedAt:Date.now(),popupOpened:false,done:false,error:''});
-                                                                          uiStatus('Track This Case: starting...');
-                                                                          dbg('track_start',{caseNumber});
+                                                                          saveTrackDraft({caseNumbersText:raw,caseNumber:caseNumbers[0]});
+                                                                          saveTrackState({active:true,caseNumbers,caseIndex:0,caseNumber:caseNumbers[0],step:'go_case_search',startedAt:Date.now(),popupOpened:false,done:false,error:''});
+                                                                          uiStatus(`Track This Case: starting batch (${caseNumbers.length} case${caseNumbers.length === 1 ? '' : 's'})...`);
+                                                                          dbg('track_start_batch',{count:caseNumbers.length,firstCase:caseNumbers[0]});
                                                                           location.href = new URL('/casenet/caseNoSearch.do',location.origin).toString();
                                                                           render();
                                                                           return;}
@@ -1327,7 +1359,9 @@ Cases in Log: ${log.length}
                                                                                                        const now = readUiParams();
                                                                                                        saveDraft({...cur,...now});
                                                                                                        return;}
-                                     if (id === 'moTrackCaseNo') {saveTrackDraft({caseNumber:norm(e.target.value || '')});
+                                     if (id === 'moTrackCaseNo') {const raw = String(e.target.value || '');
+                                                                  const parsed = parseTrackCaseBatch(raw);
+                                                                  saveTrackDraft({caseNumbersText:raw,caseNumber:parsed[0] || ''});
                                                                   return;}});
 
 
