@@ -791,6 +791,61 @@ async function trackTick() {const st = loadTrackState();
                                           block('<<<<<<<<<<<<<<<<<<<< REFER TO CITY >>>>>>>>>>>>>>>>>>>',refer),
                                           block('<<<<<<<<<<<<<<<<<<<<< INELIGIBLE >>>>>>>>>>>>>>>>>>>>>',less),].join('\n');}
 
+  function getCaseNumberForSummary(e) {const fromTitle = norm(String(e?.caseTitle || '').split('–')[0]);
+                                      if (fromTitle && /^\d/.test(fromTitle)) return fromTitle;
+                                      const fromKey = norm(e?.caseKey || '');
+                                      if (fromKey) return fromKey;
+                                      return '- - -';}
+
+  function getWarrantLabelForSummary(e) {const ws = norm(String(e?.warrantSummary || '')).toLowerCase();
+                                        if (!ws || ws === '- - -') return 'nonwarrant';
+                                        if (ws.includes('warrant')) return 'warrant';
+                                        return 'nonwarrant';}
+
+  function parseUpcomingCourtDate(e) {const raw = norm(e?.nextDocketDate || '');
+                                     if (!raw || raw === '- - -') return '';
+                                     const parts = raw.split(';').map((x) => norm(x));
+                                     if (!parts.length || !parts[0]) return '';
+                                     const dt = `${parts[0]}${parts[1] ? `; ${parts[1]}` : ''}`;
+                                     const caseNo = getCaseNumberForSummary(e);
+                                     return `${dt} (for ${caseNo})`;}
+
+  function buildSummaryCopyText() {const log = loadLog();
+                                  const expected = norm(document.getElementById('moNsYob')?.value || '');
+                                  const filteredLog = log.filter((e) => {const m = yobMatchesExpected(expected,e?.yobRaw || e?.yob || '');
+                                                                         return m.ok && !e?._skipReason;});
+                                  const byJurisdiction = new Map();
+                                  for (const e of filteredLog) {const jurisdiction = norm(e?.location || '') || '- - -';
+                                                               if (!byJurisdiction.has(jurisdiction)) byJurisdiction.set(jurisdiction,[]);
+                                                               byJurisdiction.get(jurisdiction).push(e);}
+
+                                  const sections = [];
+                                  for (const [jurisdiction,entries] of byJurisdiction.entries()) {sections.push(`${jurisdiction}`);
+                                                                                                   for (const e of entries) {const caseNo = getCaseNumberForSummary(e);
+                                                                                                                             const charge = norm(e?.chargeDescription || '') || 'No Charges Found';
+                                                                                                                             const date = norm(e?.dateFiled || '');
+                                                                                                                             const warrantLabel = getWarrantLabelForSummary(e);
+                                                                                                                             const datePart = date ? ` [${date}]` : '';
+                                                                                                                             sections.push(`${caseNo}: ${charge}${datePart} - ${warrantLabel}`);}
+                                                                                                   sections.push('');
+                                                                                                   sections.push('');}
+
+                                  const upcomingByJurisdiction = new Map();
+                                  for (const e of filteredLog) {const next = parseUpcomingCourtDate(e);
+                                                               if (!next) continue;
+                                                               const jurisdiction = norm(e?.location || '') || '- - -';
+                                                               if (!upcomingByJurisdiction.has(jurisdiction)) upcomingByJurisdiction.set(jurisdiction,[]);
+                                                               upcomingByJurisdiction.get(jurisdiction).push(next);}
+
+                                  if (upcomingByJurisdiction.size) {sections.push('');
+                                                                   sections.push('Here are the upcoming court dates we were able to find:');
+                                                                   sections.push('');
+                                                                   for (const [jurisdiction,dates] of upcomingByJurisdiction.entries()) {sections.push(jurisdiction);
+                                                                                                                              for (const d of dates) sections.push(d);
+                                                                                                                              sections.push('');}}
+
+                                  return sections.join('\n').trim();}
+
   /************************************************************
    * Concurrency runner
    ************************************************************/
@@ -1016,6 +1071,7 @@ dock.innerHTML = `
     <div class="title">I Can't Believe It's Not CaseNet!</div>
     <div class="btnRow">
       <button class="moBtn" id="moJsonCopy">Copy</button>
+      <button class="moBtn" id="moJsonSummary">Summary</button>
       <button class="moBtn" id="moJsonStop">Stop</button>
     </div>
     <button id="moJsonCloseX" title="Close">×</button>
@@ -1222,6 +1278,11 @@ Cases in Log: ${log.length}
                                                                       uiStatus('Copied to Clipboard');
                                                                       render();
                                                                       return;}
+                                             if (id === 'moJsonSummary') {const out = buildSummaryCopyText();
+                                                                         GM_setClipboard(out || '','text');
+                                                                         uiStatus('Summary copied to clipboard');
+                                                                         render();
+                                                                         return;}
                                              if (id === 'moJsonClear') {saveLog([]);
                                                                        saveDebug([]);
                                                                        clearLastHtml();
@@ -1324,7 +1385,6 @@ setInterval(() => {try {nameSearchTick();}
                    catch (e) {/* ignore */}
                    try {trackTick();}
                    catch (e) {}},900);})();
-
 
 
 
