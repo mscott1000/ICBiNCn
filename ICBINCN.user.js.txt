@@ -998,9 +998,12 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
 
   function getMunicipalityHeaderForSummary(jurisdiction,judgeName = '') {const key = municipalityKey(jurisdiction);
                                                                         if (!key) return '';
-                                                                        const exact = MUNICIPALITY_CONTACTS.get(key) || [];
-                                                                        const withMunicipal = !/ MUNICIPAL$/.test(key) ? (MUNICIPALITY_CONTACTS.get(`${key} MUNICIPAL`) || []) : [];
-                                                                        const pool = exact.length ? exact : withMunicipal;
+                                                                        const candidateKeys = [key];
+                                                                        if (!/ MUNICIPAL$/.test(key)) candidateKeys.push(`${key} MUNICIPAL`);
+                                                                        if (/ MUNICIPAL$/.test(key)) candidateKeys.push(key.replace(/ MUNICIPAL$/,''));
+                                                                        const pool = [];
+                                                                        for (const candidateKey of candidateKeys) {const matches = MUNICIPALITY_CONTACTS.get(candidateKey) || [];
+                                                                                                                for (const match of matches) {if (!pool.includes(match)) pool.push(match);}}
                                                                         if (!pool.length) return '';
                                                                         if (pool.length === 1) return pool[0].display;
                                                                         const judgeKey = normalizeJudgeName(judgeName);
