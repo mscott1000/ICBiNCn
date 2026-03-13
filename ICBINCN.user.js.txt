@@ -1026,7 +1026,9 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
                                       if (fromKey) return fromKey;
                                       return '- - -';}
 
-  function getWarrantLabelForSummary(e) {const ws = norm(String(e?.warrantSummary || '')).toLowerCase();
+  function getWarrantLabelForSummary(e) {const upcoming = norm(String(e?.nextDocketDate || '')).toLowerCase();
+                                        if (upcoming && upcoming !== '- - -') return 'upcoming';
+                                        const ws = norm(String(e?.warrantSummary || '')).toLowerCase();
                                         if (!ws || ws === '- - -') return 'nonwarrant';
                                         if (ws.includes('warrant')) return 'warrant';
                                         return 'nonwarrant';}
