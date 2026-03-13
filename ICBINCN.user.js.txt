@@ -973,6 +973,8 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
 
   function municipalityKey(v) {return norm(v).toUpperCase().replace(/\s+/g,' ').trim();}
 
+  function municipalityLooseKey(v) {return municipalityKey(v).replace(/\([^)]*\)/g,' ').replace(/[.,]/g,' ').replace(/\s+/g,' ').trim();}
+
   function normalizeJudgeName(v) {return municipalityKey(v).replace(/^JUDGE\s+/,'');}
 
   function parseMunicipalityLine(line) {const trimmed = String(line || '').trim();
@@ -986,6 +988,7 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
                                       return {raw: trimmed,
                                               display: lineWithoutTag,
                                               key,
+                                              looseKey: municipalityLooseKey(base),
                                               judgeKey: judgeTag ? normalizeJudgeName(judgeTag) : ''};}
 
   const MUNICIPALITY_CONTACTS = (() => {const map = new Map();
@@ -998,17 +1001,23 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
 
   function getMunicipalityHeaderForSummary(jurisdiction,judgeName = '') {const key = municipalityKey(jurisdiction);
                                                                         if (!key) return '';
+                                                                        const looseKey = municipalityLooseKey(jurisdiction);
                                                                         const candidateKeys = [key];
                                                                         if (!/ MUNICIPAL$/.test(key)) candidateKeys.push(`${key} MUNICIPAL`);
                                                                         if (/ MUNICIPAL$/.test(key)) candidateKeys.push(key.replace(/ MUNICIPAL$/,''));
                                                                         const pool = [];
                                                                         for (const candidateKey of candidateKeys) {const matches = MUNICIPALITY_CONTACTS.get(candidateKey) || [];
                                                                                                                 for (const match of matches) {if (!pool.includes(match)) pool.push(match);}}
+                                                                        if (!pool.length && looseKey) {for (const entries of MUNICIPALITY_CONTACTS.values()) {for (const entry of entries) {const entryLoose = entry.looseKey || municipalityLooseKey(entry.key);
+                                                                                                                                                                 if (!entryLoose) continue;
+                                                                                                                                                                 if (entryLoose === looseKey || entryLoose.startsWith(`${looseKey} `) || looseKey.startsWith(`${entryLoose} `)) {if (!pool.includes(entry)) pool.push(entry);}}}}
                                                                         if (!pool.length) return '';
                                                                         if (pool.length === 1) return pool[0].display;
                                                                         const judgeKey = normalizeJudgeName(judgeName);
                                                                         if (judgeKey) {const matched = pool.find((x) => x.judgeKey && (x.judgeKey === judgeKey || judgeKey.includes(x.judgeKey) || x.judgeKey.includes(judgeKey)));
                                                                                        if (matched) return matched.display;}
+                                                                        if (looseKey) {const operatingMatch = pool.find((x) => (x.looseKey || '').startsWith(`${looseKey} `) && /\bOPERATES IN\b/i.test(x.display));
+                                                                                      if (operatingMatch) return operatingMatch.display;}
                                                                         return pool[0].display;}
 
   function getCaseNumberForSummary(e) {const fromTitle = norm(String(e?.caseTitle || '').split('–')[0]);
