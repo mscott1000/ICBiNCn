@@ -845,6 +845,136 @@ async function trackTick() {const st = loadTrackState();
                                           block('<<<<<<<<<<<<<<<<<<<< REFER TO CITY >>>>>>>>>>>>>>>>>>>',refer),
                                           block('<<<<<<<<<<<<<<<<<<<<< INELIGIBLE >>>>>>>>>>>>>>>>>>>>>',less),].join('\n');}
 
+
+  const MUNICIPALITY_CONTACTS_RAW = `ARNOLD MUNICIPAL - (636) 296-0595
+BALLWIN MUNICIPAL - (636) 227-9468
+BELLA VILLA MUNICIPAL - (314) 638-8840
+BELLEFONTAINE NEIGHBORS MUNICIPAL - (314) 867-0076
+BEL-RIDGE MUNICIPAL - (314) 429-2878 EXT. 200
+BERKELEY MUNICIPAL - (314) 524-3313
+BELLERIVE ACRES MUNICIPAL - (314) 385-3300
+BEL-NOR MUNICIPAL - (314) 381-2834 EXT 3
+BEVERLY HILLS (OPERATES IN ST. ANN MUNICIPAL) - (314) 428-6811 EXT 5
+BRENTWOOD MUNICIPAL - (314) 963-8623
+BEVERLY HILLS MUNICIPAL - (314) 382-6544
+BLACK JACK MUNICIPAL - (314) 355-0401
+BOONVILLE MUNICIPAL - 660-882-2332
+BRECKENRIDGE HILLS MUNICIPAL - (314) 427-1412
+BRIDGETON MUNICIPAL - (314) 739-1145
+CALVERTON PARK MUNICIPAL - (314) 801-8475
+CAPE GIRARDEAU MUNICIPAL - (573) 339-6323
+CHAMP MUNICIPAL - (314) 291-6036
+CHARLACK MUNICIPAL - (314) 427-4715
+CHESTERFIELD MUNICIPAL - (636) 537-4000
+CLARKSON VALLEY MUNICIPAL - (636) 537-4718
+CLAYTON MUNICIPAL - (314) 290-8441
+COOL VALLEY (OPERATES IN NORMANDY MUNICIPAL) - (314) 385-3300 EXT. 3029
+COUNTRY CLUB HILLS (OPERATES IN NORMANDY MUNICIPAL) - (314) 385-3300 EXT. 3029
+COUNTRY LIFE ACRES (OPERATES IN TOWN AND COUNTRY MUNICIPAL) - (314) 432-1420
+CRESTWOOD MUNICIPAL - (314) 729-4776
+CREVE COEUR MUNICIPAL - (314) 432-8844
+CRYSTAL LAKE PARK (OPERATES IN FRONTENAC MUNICIPAL) - (314) 994-3204
+DELLWOOD MUNICIPAL - (314) 521-4339
+DES PERES MUNICIPAL - (314) 835-6117
+EDMUNDSON MUNICIPAL - (314) 428-6811 EXT 5
+ELLISVILLE MUNICIPAL - (636) 227-3729
+EUREKA MUNICIPAL - (636) 549-1828
+FENTON MUNICIPAL - (636) 343-1007
+FERGUSON MUNICIPAL - (314) 524-5264
+FESTUS MUNICIPAL - (636) 797-5303
+FLORISSANT MUNICIPAL - (314) 921-3322
+FLORDELL HILLS (OPERATES IN PAGEDALE MUNICIPAL) - (314) 726-1200 EXT. 2
+FRONTENAC MUNICIPAL - (314) 994-3204
+GLENDALE MUNICIPAL - (314) 909-3003
+GLEN ECHO PARK - (314) 615-2661 (HOUSED BY STL TRAFFIC COURT)
+GRANTWOOD VILLAGE MUNICIPAL - (314) 842-4409 OPTION 3
+GREENDALE MUNICIPAL - (314) 385-3300
+GREEN PARK (OPERATES IN ST. LOUIS COUNTY MUNICIPAL) - FRESH START FRIDAY
+HANLEY HILLS (OPERATES IN ST. ANN CONSOLIDATED MUNICIPAL) - (314) 428-6811 EXT 5
+HAZELWOOD MUNICIPAL - (314) 839-2212 EXT 0
+HILLSBORO MUNICIPAL - (636) 797-5303
+HILLSDALE (OPERATES IN NORMANDY MUNICIPAL) - (314) 385-3300 EXT. 3029
+HUNTLEIGH MUNICIPAL - (314) 446-4248
+JACKSON COUNTY MUNICIPAL - 740-286-2718
+JEFFERSON COUNTY MUNICIPAL - TICKET FROM SHERIFF'S DEPT: (636) 797-6265; TICKET FROM ANY OTHER OFFICER: 636-797-5303
+JENNINGS MUNICIPAL - (314) 385-4670
+KANSAS CITY MUNICIPAL - (816) 513-2700
+KINLOCH (OPERATES IN ST. LOUIS COUNTY MUNICIPAL) - FRESH START FRIDAY
+KIRKWOOD MUNICIPAL - (314) 822-5840
+LADUE MUNICIPAL - (314) 993-3919
+LAKESHIRE MUNICIPAL - (314) 631-6222
+LEE'S SUMMIT MUNICIPAL - 816-969-1160
+MACON MUNICIPAL - 660-385-4631
+MANCHESTER MUNICIPAL - (636) 207-2832
+MAPLEWOOD MUNICIPAL - (314) 646-3636
+MARLBOROUGH (OPERATES IN ST. LOUIS COUNTY MUNICIPAL) - FRESH START FRIDAY
+MARYLAND HEIGHTS MUNICIPAL - (314) 291-6036
+MOLINE ACRES (OPERATES IN BERKELEY MUNICIPAL) - (314) 524-3313
+NEOSHO MUNICIPAL - (417) 451-8007
+NORMANDY MUNICIPAL - (314) 385-3300 EXT. 3029
+NORTHWOODS (OPERATES IN ST. ANN CONSOLIDATED MUNICIPAL) - (314) 428-6811 EXT 5
+NORWOOD COURT (OPERATES IN ST. LOUIS COUNTY MUNICIPAL) - FRESH START FRIDAY
+O'FALLON MUNICIPAL - (636) 240-8766
+OAKLAND (OPERATES IN GLENDALE MUNICIPAL) - (314) 909-3003
+OLIVETTE MUNICIPAL - (314) 991-6047
+OSAGE BEACH MUNICIPAL - (573) 302-2000
+OSAGE COUNTY MUNICIPAL - (573) 897-3114
+OVERLAND (OPERATES IN ST. ANN MUNICIPAL) - (314) 428-6811 EXT 5
+PACIFIC MUNICIPAL - (636) 257-4553
+PAGEDALE MUNICIPAL - (314) 726-1200 EXT. 2
+PASADENA HILLS (OPERATES IN ST. LOUIS COUNTY MUNICIPAL) - FRESH START FRIDAY
+PASADENA PARK (OPERATES IN NORMANDY MUNICIPAL) - (314) 385-3300 EXT. 3029
+PINE LAWN (OPERATES IN ST. LOUIS COUNTY MUNICIPAL) - FRESH START FRIDAY
+RICHMOND HEIGHTS MUNICIPAL - (314) 645-1982 EXT. 3
+RIVERVIEW MUNICIPAL - (314) 868-0700
+ROCK HILL MUNICIPAL - (314) 962-6265
+ROGERSVILLE MUNICIPAL - 417-753-2884 X 321
+SHREWSBURY MUNICIPAL - (314) 647-8634 EXT. 5
+ST. ANN MUNICIPAL - (314) 428-6811 EXT 5
+ST. CHARLES CITY MUNICIPAL - (636) 949-3378
+ST. CHARLES COUNTY MUNICIPAL - (314) 949-1833
+ST. JOHN MUNICIPAL - (314) 427-8700 EXT. 6
+ST. LOUIS COUNTY MUNICIPAL - FRESH START FRIDAY
+ST. GENEVIEVE MUNICIPAL - (573)883-2705
+ST. GEORGE (OPERATES IN ST. LOUIS COUNTY MUNICIPAL) - FRESH START FRIDAY
+ST. PETERS MUNICIPAL - (314) 279-8280
+TOWN AND COUNTRY MUNICIPAL - (314) 432-1420
+TROY MUNICIPAL - (636) 528-6179
+TWIN OAKS (OPERATES IN ST. LOUIS COUNTY MUNICIPAL) - FRESH START FRIDAY
+UNIVERSITY CITY MUNICIPAL - (314) 505-8578
+UPLANDS PARK (OPERATES IN VELDA VILLAGE HILLS MUNICIPAL) - (314) 261-7221
+VALLEY PARK MUNICIPAL - (636) 225-5696
+VELDA CITY (OPERATES IN PAGEDALE MUNICIPAL) - (314) 726-1200 EXT. 2
+VELDA VILLAGE HILLS MUNICIPAL - (314) 261-7221
+VINITA PARK MUNICIPAL (OPERATES IN ST. ANN) - (314) 428-6811 EXT 5
+WARSON WOODS (OPERATES IN GLENDALE MUNICIPAL) - (314) 909-3003
+WEBSTER GROVES MUNICIPAL - (314) 963-5416
+WELLSTON (OPERATES IN ST. ANN CONSOLIDATED MUNICIPAL) - (314) 428-6811 EXT 5
+WENTZVILLE MUNICIPAL - (636) 639-2193
+WESTWOOD (OPERATES IN FRONTENAC MUNICIPAL) - (314) 994-3204
+WILBUR PARK MUNICIPAL - (314) 800-6593
+WILDWOOD MUNICIPAL - (636) 458-8277
+WINCHESTER (OPERATES IN BALLWIN MUNICIPAL) - (636) 227-9468
+WOODSON TERRACE MUNICIPAL - (314) 427-2600
+WRIGHT CITY MUNICIPAL - (636) 745-1025
+SUNSET HILLS MUNICIPAL - (314) 849-3402
+SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
+
+  function municipalityKey(v) {return norm(v).toUpperCase().replace(/\s+/g,' ').trim();}
+
+  const MUNICIPALITY_CONTACTS = (() => {const map = new Map();
+                                        const lines = MUNICIPALITY_CONTACTS_RAW.split('\n').map((l) => l.trim()).filter(Boolean);
+                                        for (const line of lines) {const base = line.split(' - ')[0].trim();
+                                                                   const key = municipalityKey(base);
+                                                                   if (key && !map.has(key)) map.set(key,line);}
+                                        return map;})();
+
+  function getMunicipalityHeaderForSummary(jurisdiction) {const key = municipalityKey(jurisdiction);
+                                                         if (!key) return '';
+                                                         if (MUNICIPALITY_CONTACTS.has(key)) return MUNICIPALITY_CONTACTS.get(key);
+                                                         if (!/ MUNICIPAL$/.test(key) && MUNICIPALITY_CONTACTS.has(`${key} MUNICIPAL`)) return MUNICIPALITY_CONTACTS.get(`${key} MUNICIPAL`);
+                                                         return '';}
+
   function getCaseNumberForSummary(e) {const fromTitle = norm(String(e?.caseTitle || '').split('–')[0]);
                                       if (fromTitle && /^\d/.test(fromTitle)) return fromTitle;
                                       const fromKey = norm(e?.caseKey || '');
@@ -874,13 +1004,11 @@ async function trackTick() {const st = loadTrackState();
                                                                byJurisdiction.get(jurisdiction).push(e);}
 
                                   const sections = [];
-                                  for (const [jurisdiction,entries] of byJurisdiction.entries()) {sections.push(`${jurisdiction}`);
+                                  for (const [jurisdiction,entries] of byJurisdiction.entries()) {sections.push(getMunicipalityHeaderForSummary(jurisdiction) || jurisdiction.toUpperCase());
                                                                                                    for (const e of entries) {const caseNo = getCaseNumberForSummary(e);
                                                                                                                              const charge = norm(e?.chargeDescription || '') || 'No Charges Found';
-                                                                                                                             const date = norm(e?.dateFiled || '');
                                                                                                                              const warrantLabel = getWarrantLabelForSummary(e);
-                                                                                                                             const datePart = date ? ` [${date}]` : '';
-                                                                                                                             sections.push(`${caseNo}: ${charge}${datePart} - ${warrantLabel}`);}
+                                                                                                                             sections.push(`${caseNo}: ${charge} - ${warrantLabel}`);}
                                                                                                    sections.push('');
                                                                                                    sections.push('');}
 
