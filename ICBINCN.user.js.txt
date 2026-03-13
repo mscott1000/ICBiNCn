@@ -198,6 +198,8 @@
 
   function saveTrackDraft(d) {saveJson(KEY_TRACK_DRAFT,d || {caseNumbersText:'',caseNumber:''});}
 
+  function clearTrackDraft() {saveTrackDraft({caseNumbersText:'',caseNumber:''});}
+
   function clearNameState() {saveNameState(null);}
 
   function isNameSearchPage() {const hasLast = !!document.querySelector('#lastName') ||
@@ -1185,6 +1187,7 @@ function render() {const log = loadLog();
       <textarea id="moTrackCaseNo" rows="5" placeholder="e.g. 18SL-CR01234\n180245562\n161441687-B">${escapeHtml((loadTrackDraft()?.caseNumbersText) || (loadTrackState()?.caseNumbers || []).join('\n') || (loadTrackState()?.caseNumber) || (loadTrackDraft()?.caseNumber) || '')}</textarea>
     </div>
     <div style="display:flex; gap:8px; align-items:end;">
+      <button class="moBtn" id="moTrackClearEntries" style="height:32px;">Clear Cases</button>
       <button class="moBtn" id="moTrackSignup" style="height:32px;">Sign Up Batch</button>
     </div>
   </div>
@@ -1359,6 +1362,13 @@ Cases in Log: ${log.length}
                                                                             return;}
                                              if (id === 'moJsonCloseX') {dock.classList.add('moHidden');
                                                                         return;}
+                                             if (id === 'moTrackClearEntries') {clearTrackDraft();
+                                                                              const ts = loadTrackState();
+                                                                              if (!ts?.active) clearTrackState();
+                                                                              render();
+                                                                              uiStatus('Track cases cleared');
+                                                                              dbg('track_entries_cleared',{});
+                                                                              return;}
                                              if (id === 'moTrackSignup') {const raw = String(document.getElementById('moTrackCaseNo')?.value || '');
                                                                           const caseNumbers = parseTrackCaseBatch(raw);
                                                                           if (!caseNumbers.length) {uiStatus('Enter at least one case number to track.');
@@ -1440,5 +1450,4 @@ setInterval(() => {try {nameSearchTick();}
                    catch (e) {/* ignore */}
                    try {trackTick();}
                    catch (e) {}},900);})();
-
 
