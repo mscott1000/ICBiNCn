@@ -24,6 +24,36 @@
                                const txt = norm(e?.docketText || '');
                                return norm([desc,txt].filter(Boolean).join(' — '));}
 
+  function normalizePhraseForMatch(text) {return norm(String(text || '')).toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();}
+
+  function getDocketEntryTimestamp(e) {const filingDate = norm(e?.filingDate || '');
+                                      let time = '';
+                                      const sched = (e?.associatedDocketScheduledInfo || [])[0];
+                                      if (sched?.associatedTime) time = norm(sched.associatedTime);
+                                      const asDate = filingDate && /^\d{2}\/\d{2}\/\d{4}$/.test(filingDate) ? filingDate.split('/').map(Number) : null;
+                                      if (!asDate) return Number.NEGATIVE_INFINITY;
+                                      const [mm,dd,yyyy] = asDate;
+                                      let hh = 0;
+                                      let min = 0;
+                                      const tm = time.match(/(\d{1,2}):(\d{2})\s*([AP]M)?/i);
+                                      if (tm) {hh = Number(tm[1]) % 12;
+                                               min = Number(tm[2]);
+                                               const ap = String(tm[3] || '').toUpperCase();
+                                               if (ap === 'PM') hh += 12;}
+                                      return new Date(yyyy,mm - 1,dd,hh,min,0,0).getTime();}
+
+  function isPaidInFullText(text) {return /\bpaid\s+in\s+full\b/i.test(String(text || ''));}
+
+  function classifyLicenseHoldEvent(text) {const t = normalizePhraseForMatch(text);
+                                          if (!t) return '';
+                                          const hasHold = /\bhold\b/.test(t) || /\bheld\b/.test(t);
+                                          const hasLicense = /\blicen[sc]e\b/.test(t);
+                                          if (!hasHold || !hasLicense) return '';
+                                          if (/\breleased\b/.test(t) || /\blifted\b/.test(t) || /\bremoved\b/.test(t)) return 'released';
+                                          if (/\bplaced\b/.test(t)) return 'placed';
+                                          if (/\bplace\b/.test(t)) return 'placed';
+                                          return 'placed';}
+
   function findFirstWarrantOrSummons(docketList) {const isWarrant = (t) => /\bwarrant\b/i.test(t);
                                                  const isSummons = (t) => /\bsummons?\b|\bsummon\b|\bsummoned\b/i.test(t);
                                                  for (const e of docketList || []) {const desc = norm(e?.docketDesc || '');
@@ -59,6 +89,20 @@
                                                                              const hasLicense = /\blicen[sc]e\b/i.test(line);
                                                                              if (hasHold && hasLicense) return norm(e?.filingDate || '') || '';}
                                             return '';}
+
+  function analyzeDocketStatus(docketList) {let paidInFull = false;
+                                           let holdPlacedTs = Number.NEGATIVE_INFINITY;
+                                           let holdReleasedTs = Number.NEGATIVE_INFINITY;
+                                           for (const e of docketList || []) {const line = docketEntryText(e);
+                                                                             if (!line) continue;
+                                                                             if (isPaidInFullText(line)) paidInFull = true;
+                                                                             const holdState = classifyLicenseHoldEvent(line);
+                                                                             if (!holdState) continue;
+                                                                             const ts = getDocketEntryTimestamp(e);
+                                                                             if (holdState === 'placed' && ts >= holdPlacedTs) holdPlacedTs = ts;
+                                                                             if (holdState === 'released' && ts >= holdReleasedTs) holdReleasedTs = ts;}
+                                           const hasActiveHold = holdPlacedTs > Number.NEGATIVE_INFINITY && holdPlacedTs > holdReleasedTs && !paidInFull;
+                                           return {paidInFull,hasActiveHold};}
 
   function findInitialAppearanceDate(docketList) {for (const e of docketList || []) {const line = docketEntryText(e);
                                                                                    if (!/Initial\s+Appearance/i.test(line)) continue;
