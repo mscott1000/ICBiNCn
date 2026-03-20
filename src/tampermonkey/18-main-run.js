@@ -77,10 +77,14 @@
                                                                                                                  const out = await scrapeCaseViaApi(item,yobExpected);
                                                                                                                  if (out && out._skipReason === 'yob_mismatch') {yobMismatchCount += 1;
                                                                                                                                                                  return null;}
+                                                                                                                 if (out && out._skipReason === 'paid_in_full') return out;
                                                                                                                  if (out && out._skipReason === 'blank_title') return null;
                                                                                                                  return out;});
                                                 const nextLog = loadLog();
                                                 for (const r of results) {if (!r || !r.caseKey) continue;
+                                                                         if (r._skipReason === 'paid_in_full') {const idx = nextLog.findIndex((x) => x.caseKey === r.caseKey);
+                                                                                                               if (idx >= 0) nextLog.splice(idx,1);
+                                                                                                               continue;}
                                                                          if (nextLog.some((x) => x.caseKey === r.caseKey)) continue;
                                                                          nextLog.push(r);}
                                                 saveLog(nextLog);

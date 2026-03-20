@@ -15,6 +15,7 @@
                                                                                                   yobRaw:'',
                                                                                                   attorney:'- - -',
                                                                                                   warrantSummary:'- - -',
+                                                                                                  summaryStatus:'',
                                                                                                   initialAppearanceDate:'',
                                                                                                   licenseHoldDate:'',
                                                                                                   nextDocketDate:'- - -',
@@ -54,6 +55,9 @@
                                                                  const docketList = docket?.docketTabModelList || [];
                                                                  const hit = findFirstWarrantOrSummons(docketList);
                                                                  const f = countFtas(docketList);
+                                                                 const docketStatus = analyzeDocketStatus(docketList);
+                                                                 if (docketStatus.paidInFull) {entry._skipReason = 'paid_in_full';
+                                                                                               return entry;}
                                                                  entry.ftaDates = f.count === 0 ? ['- - -'] : f.dates;
                                                                  entry.nextDocketDate = findFirstCurrentOrFutureScheduledLine(docketList);
                                                                  entry.licenseHoldDate = findLicenseHoldDate(docketList) || '';
@@ -63,6 +67,8 @@
                                                                                              entry.initialAppearanceDate = '';}
                                                                  else {entry.warrantSummary = [hit.filingDate ? `${hit.filingDate}` : '',`Event: ${hit.event}`,hit.bond ? hit.bond : ''].filter(Boolean).join('\n');
                                                                        entry.initialAppearanceDate = '';}
+                                                                 const baseStatus = !hit ? 'nonwarrant' : (hit.kind === 'warrant' ? 'warrant' : 'nonwarrant');
+                                                                 entry.summaryStatus = docketStatus.hasActiveHold ? `${baseStatus} and HOLD placed on license` : baseStatus;
                                                                  let chargesResp = null;
                                                                  try {chargesResp = await postFormJsonRetry_tryCourtIds('/casenet/cases/charges.do',{caseNumber,courtId,isTicket:'',tabName:'Charge',});}
                                                                  catch (e) {dbg('charges_fetch_failed',{caseKey,msg:String(e?.message || e)});}
