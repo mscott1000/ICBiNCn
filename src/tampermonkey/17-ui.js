@@ -251,14 +251,18 @@ function render() {const log = loadLog();
       </div>
     `);
                    addBlock('Track This Case',`
-  <div class="moNameRowBottom" style="grid-template-columns:1fr auto;">
+  <div class="moNameRow" style="grid-template-columns:minmax(0, 1.1fr) minmax(0, 1.4fr) auto; align-items:end;">
     <div class="moField">
-      <label>Case Numbers (one per line)</label>
-      <textarea id="moTrackCaseNo" rows="5" placeholder="e.g. 18SL-CR01234\n180245562\n161441687-B">${escapeHtml((loadTrackDraft()?.caseNumbersText) || (loadTrackState()?.caseNumbers || []).join('\n') || (loadTrackState()?.caseNumber) || (loadTrackDraft()?.caseNumber) || '')}</textarea>
+      <label>Case Number</label>
+      <input id="moTrackCaseNo" type="text" placeholder="e.g. 18SL-CR01234" value="${escapeHtml((loadTrackState()?.caseNumber) || (loadTrackDraft()?.caseNumber) || '')}">
+    </div>
+    <div class="moField">
+      <label>Email Address</label>
+      <input id="moTrackEmail" type="email" placeholder="name@example.com" value="${escapeHtml((loadTrackState()?.email) || (loadTrackDraft()?.email) || '')}">
     </div>
     <div style="display:flex; flex-direction:column; gap:8px; align-items:stretch; justify-content:flex-end;">
-      <button class="moBtn" id="moTrackClearEntries" style="height:32px;">Clear Cases</button>
-      <button class="moBtn" id="moTrackSignup" style="height:32px;">Sign Up Batch</button>
+      <button class="moBtn" id="moTrackClearEntries" style="height:32px;">Clear TTC Entries</button>
+      <button class="moBtn" id="moTrackSignup" style="height:32px;">Sign Up Case</button>
     </div>
   </div>
 `);
