@@ -12,11 +12,11 @@
 
   function clearTrackState() {saveTrackState(null);}
 
-  function loadTrackDraft() {return loadJson(KEY_TRACK_DRAFT,{caseNumbersText:'',caseNumber:''});}
+  function loadTrackDraft() {return loadJson(KEY_TRACK_DRAFT,{caseNumber:'',email:''});}
 
-  function saveTrackDraft(d) {saveJson(KEY_TRACK_DRAFT,d || {caseNumbersText:'',caseNumber:''});}
+  function saveTrackDraft(d) {saveJson(KEY_TRACK_DRAFT,d || {caseNumber:'',email:''});}
 
-  function clearTrackDraft() {saveTrackDraft({caseNumbersText:'',caseNumber:''});}
+  function clearTrackDraft() {saveTrackDraft({caseNumber:'',email:''});}
 
   function clearNameState() {saveNameState(null);}
 

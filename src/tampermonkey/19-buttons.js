@@ -70,19 +70,21 @@
                                                                               setStop(true);
                                                                               setRun(false);
                                                                               render();
-                                                                              uiStatus('Track cases cleared');
+                                                                              uiStatus('Track This Case entries cleared');
                                                                               dbg('track_entries_cleared',{});
                                                                               return;}
-                                             if (id === 'moTrackSignup') {const raw = String(document.getElementById('moTrackCaseNo')?.value || '');
-                                                                          const caseNumbers = parseTrackCaseBatch(raw);
-                                                                          if (!caseNumbers.length) {uiStatus('Enter at least one case number to track.');
-                                                                                                   return;}
+                                             if (id === 'moTrackSignup') {const caseNumber = norm(document.getElementById('moTrackCaseNo')?.value || '').toUpperCase();
+                                                                          const email = norm(document.getElementById('moTrackEmail')?.value || '');
+                                                                          if (!caseNumber) {uiStatus('Enter a case number to track.');
+                                                                                            return;}
+                                                                          if (!email) {uiStatus('Enter an email address for Track This Case.');
+                                                                                      return;}
                                                                           setStop(false);
                                                                           setRun(false);
-                                                                         saveTrackDraft({caseNumbersText:raw,caseNumber:caseNumbers[0]});
-                                                                          saveTrackState({active:true,caseNumbers,caseIndex:0,caseNumber:caseNumbers[0],step:'go_case_search',startedAt:Date.now(),popupOpened:false,awaitingPopupClaim:false,ownerTabId:TAB_ID,done:false,error:''});
-                                                                          uiStatus(`Track This Case: starting batch (${caseNumbers.length} case${caseNumbers.length === 1 ? '' : 's'})...`);
-                                                                          dbg('track_start_batch',{count:caseNumbers.length,firstCase:caseNumbers[0]});
+                                                                          saveTrackDraft({caseNumber,email});
+                                                                          saveTrackState({active:true,caseNumber,email,step:'go_case_search',startedAt:Date.now(),popupOpened:false,awaitingPopupClaim:false,ownerTabId:TAB_ID,done:false,error:''});
+                                                                          uiStatus(`Track This Case: starting sign-up for ${caseNumber}...`);
+                                                                          dbg('track_start_single',{caseNumber,email});
                                                                           location.href = new URL('/casenet/caseNoSearch.do',location.origin).toString();
                                                                           render();
                                                                           return;}
@@ -94,10 +96,11 @@
                                                                                                        const now = readUiParams();
                                                                                                        saveDraft({...cur,...now});
                                                                                                        return;}
-                                     if (id === 'moTrackCaseNo') {const raw = String(e.target.value || '');
-                                                                  const parsed = parseTrackCaseBatch(raw);
-                                                                  saveTrackDraft({caseNumbersText:raw,caseNumber:parsed[0] || ''});
-                                                                  return;}});
+                                     if (id === 'moTrackCaseNo' || id === 'moTrackEmail') {const draft = loadTrackDraft();
+                                                                                         saveTrackDraft({...draft,
+                                                                                                         caseNumber: norm(document.getElementById('moTrackCaseNo')?.value || '').toUpperCase(),
+                                                                                                         email: norm(document.getElementById('moTrackEmail')?.value || '')});
+                                                                                         return;}});
 
 
   async function nameSearchTick() {const st = loadNameState();

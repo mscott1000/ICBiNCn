@@ -27,20 +27,9 @@ function findFinalTrackButton() {return document.querySelector('button[onclick*=
                                         null;}
 
 
-function parseTrackCaseBatch(rawText) {const text = String(rawText || '').replace(/\\n/g,'\n');
-                                 const out = [];
-                                 const seen = new Set();
-                                 for (const part of text.split(/[\r\n,;]+/)) {const v = norm(part).toUpperCase();
-                                                                               if (!v) continue;
-                                                                               if (seen.has(v)) continue;
-                                                                               seen.add(v);
-                                                                               out.push(v);}
-                                 return out;}
+function getTrackCaseNumber(st) {return norm(st?.caseNumber).toUpperCase();}
 
-function getTrackCaseNumber(st) {const idx = Number(st?.caseIndex || 0);
-                                 const queued = Array.isArray(st?.caseNumbers) ? st.caseNumbers : [];
-                                 const fromQueue = queued[idx] || '';
-                                 return norm(st?.caseNumber || fromQueue);}
+function getTrackEmail(st) {return norm(st?.email);}
 
 async function trackTick() {const st = loadTrackState();
                             if (!st?.active) return;
@@ -105,7 +94,12 @@ async function trackTick() {const st = loadTrackState();
                                                        c.click();
                                                        return;}
 
-                            if (isTrackEntryPage()) {const email = TRACK_EMAIL;
+                            if (isTrackEntryPage()) {const email = getTrackEmail(st);
+                                                     if (!email) {st.error = 'missing_email';
+                                                                  saveTrackState({...st,active:false,done:true});
+                                                                  uiStatus('Track This Case: missing email address.');
+                                                                  dbg('track_abort_missing_email',{});
+                                                                  return;}
                                                      const e1 = document.querySelector('#email') || document.querySelector('input[name="email"]');
                                                      const e2 = document.querySelector('#confirmEmail') || document.querySelector('input[name="confirmEmail"]');
                                                      if (e1) {e1.focus();
@@ -126,29 +120,13 @@ async function trackTick() {const st = loadTrackState();
                                                                 saveTrackState({...st,error:'final_button_missing'});
                                                                 return;}
                                                      uiStatus('Track This Case: submitting...');
-                                                     dbg('track_submit_final',{caseNumber});
-                                                     const queue = Array.isArray(st.caseNumbers) ? st.caseNumbers : [];
-                                                     const currentIndex = Number(st.caseIndex || 0);
-                                                     const hasMore = queue.length > 0 && currentIndex < queue.length - 1;
-                                                     if (hasMore) {const nextIndex = currentIndex + 1;
-                                                                   const nextCase = queue[nextIndex] || '';
-                                                                           st.caseIndex = nextIndex;
-                                                                           st.caseNumber = nextCase;
-                                                                           st.popupOpened = false;
-                                                                           st.awaitingPopupClaim = false;
-                                                                           st.navPendingUntil = Date.now() + 1200;
-                                                                           saveTrackState({...st});
-                                                                   btn.click();
-                                                                   uiStatus(`Track This Case: submitted ${currentIndex + 1}/${queue.length}; next ${nextCase}`);
-                                                                   dbg('track_case_complete',{caseNumber,completed: currentIndex + 1,total: queue.length,nextCase});
-                                                                   setTimeout(() => {location.href = new URL('/casenet/caseNoSearch.do',location.origin).toString();},900);
-                                                                   return;}
+                                                     dbg('track_submit_final',{caseNumber,email});
                                                      st.done = true;
                                                      st.active = false;
                                                      st.awaitingPopupClaim = false;
                                                      saveTrackState({...st});
                                                      btn.click();
-                                                     uiStatus(`Track This Case complete (${Math.max(queue.length,1)} case${Math.max(queue.length,1) === 1 ? '' : 's'}) - close this browser window.`);
+                                                     uiStatus(`Track This Case complete for ${caseNumber} - close this browser window.`);
                                                      return;}
 
                             if (st.popupOpened) {uiStatus('Track This Case working in new tab');

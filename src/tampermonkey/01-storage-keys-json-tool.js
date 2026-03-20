@@ -13,7 +13,6 @@
   const KEY_UI_DRAFT = 'mo_casenet_json_ui_draft_v1';
   const KEY_TRACK_STATE = 'mo_casenet_track_state_v1';
   const KEY_TRACK_DRAFT = 'mo_casenet_track_draft_v1';
-  const TRACK_EMAIL = 'tapinstl@gmail.com';
 
   const DEFAULT_CONCURRENCY = 7;
 
