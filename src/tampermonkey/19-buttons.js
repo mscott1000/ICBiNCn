@@ -1,0 +1,145 @@
+
+/************************************************************
+   * Buttons
+   ************************************************************/
+  dock.addEventListener('click',async (e) => {const id = e?.target?.id;
+                                             if (id === 'moJsonNameSearch') {const params = {first: norm(document.getElementById('moNsFirst')?.value || ''),
+                                                                                           middle: norm(document.getElementById('moNsMiddle')?.value || ''),
+                                                                                           last: norm(document.getElementById('moNsLast')?.value || ''),
+                                                                                           yob: norm(document.getElementById('moNsYob')?.value || ''),};
+                                                                            setStop(false);
+                                                                            setRun(false);
+                                                                            saveDraft({...params});
+                                                                            saveNameState({active:true,passIndex:0,passes:['criminal','traffic'],step:'go_search',params,});
+                                                                            uiStatus('Searching…');
+                                                                            dbg('namesearch_start',{params});
+                                                                            if (!isNameSearchPage()) {location.href = canonicalNameSearchUrl();}
+                                                                            else {try {await nameSearchTick();} catch {}}
+                                                                            render();
+                                                                            return;}
+                                             if (id === 'moJsonClearEntries') {clearDraft();
+                                                                              const ns = loadNameState();
+                                                                              if (ns?.active) {ns.params = {first:'',middle:'',last:'',yob:''};
+                                                                                               saveNameState(ns);}
+                                                                              render();
+                                                                              uiStatus('Entries Cleared');
+                                                                              dbg('entries_cleared',{});
+                                                                              return;}
+                                             if (id === 'moJsonStop') {setStop(true);
+                                                                      setRun(false);
+                                                                      uiStatus('Stopped.');
+                                                                      dbg('stop_clicked',{});
+                                                                      render();
+                                                                      return;}
+                                             if (id === 'moJsonCopy') {const out = buildGroupedCopyText();
+                                                                      GM_setClipboard(out || '','text');
+                                                                      uiStatus('Copied to Clipboard');
+                                                                      render();
+                                                                      return;}
+                                             if (id === 'moJsonSummary') {const out = buildSummaryCopyText();
+                                                                         GM_setClipboard(out || '','text');
+                                                                         uiStatus('Summary copied to clipboard');
+                                                                         render();
+                                                                         return;}
+                                             if (id === 'moJsonClear') {saveLog([]);
+                                                                       saveDebug([]);
+                                                                       clearLastHtml();
+                                                                       saveJson(KEY_NET_STATS,{byPath:{}});
+                                                                       setStop(true);
+                                                                       setRun(false);
+                                                                       clearNameState();
+                                                                       uiStatus('Log Cleared');
+                                                                       dbg('log_cleared',{});
+                                                                       render();
+                                                                       return;}
+                                             if (id === 'moJsonCopyDebug') {const rows = loadDebug();
+                                                                           const out = rows.map((r) => JSON.stringify(r)).join('\n');
+                                                                           GM_setClipboard(out || '(no debug rows)','text');
+                                                                           uiStatus('Debug Copied');
+                                                                           render();
+                                                                           return;}
+                                             if (id === 'moJsonClearDebug') {saveDebug([]);
+                                                                            clearLastHtml();
+                                                                            uiStatus('Debug Cleared');
+                                                                            render();
+                                                                            return;}
+                                             if (id === 'moJsonCloseX') {dock.classList.add('moHidden');
+                                                                        return;}
+                                             if (id === 'moTrackClearEntries') {clearTrackDraft();
+                                                                              clearTrackState();
+                                                                              setStop(true);
+                                                                              setRun(false);
+                                                                              render();
+                                                                              uiStatus('Track cases cleared');
+                                                                              dbg('track_entries_cleared',{});
+                                                                              return;}
+                                             if (id === 'moTrackSignup') {const raw = String(document.getElementById('moTrackCaseNo')?.value || '');
+                                                                          const caseNumbers = parseTrackCaseBatch(raw);
+                                                                          if (!caseNumbers.length) {uiStatus('Enter at least one case number to track.');
+                                                                                                   return;}
+                                                                          setStop(false);
+                                                                          setRun(false);
+                                                                         saveTrackDraft({caseNumbersText:raw,caseNumber:caseNumbers[0]});
+                                                                          saveTrackState({active:true,caseNumbers,caseIndex:0,caseNumber:caseNumbers[0],step:'go_case_search',startedAt:Date.now(),popupOpened:false,awaitingPopupClaim:false,ownerTabId:TAB_ID,done:false,error:''});
+                                                                          uiStatus(`Track This Case: starting batch (${caseNumbers.length} case${caseNumbers.length === 1 ? '' : 's'})...`);
+                                                                          dbg('track_start_batch',{count:caseNumbers.length,firstCase:caseNumbers[0]});
+                                                                          location.href = new URL('/casenet/caseNoSearch.do',location.origin).toString();
+                                                                          render();
+                                                                          return;}
+                                             if (id === 'moJsonOpenLastHtml') {openLastHtmlInNewTab();
+                                                                              return;}});
+
+  dock.addEventListener('input',(e) => {const id = e?.target?.id || '';
+                                     if (['moNsFirst','moNsMiddle','moNsLast','moNsYob'].includes(id)) {const cur = loadDraft();
+                                                                                                       const now = readUiParams();
+                                                                                                       saveDraft({...cur,...now});
+                                                                                                       return;}
+                                     if (id === 'moTrackCaseNo') {const raw = String(e.target.value || '');
+                                                                  const parsed = parseTrackCaseBatch(raw);
+                                                                  saveTrackDraft({caseNumbersText:raw,caseNumber:parsed[0] || ''});
+                                                                  return;}});
+
+
+  async function nameSearchTick() {const st = loadNameState();
+                                 if (!st?.active) return;
+                                 if (st.navPendingUntil && Date.now() < Number(st.navPendingUntil)) return;
+                                 if (isRun()) return;
+                                 if (isStop()) return;
+                                 const passKey = (st.passes || [])[st.passIndex || 0];
+                                 if (!passKey) {dbg('namesearch_done',{});
+                                                clearNameState();
+                                                uiStatus('Done.');
+                                                render();
+                                                return;}
+                                 if (isNameSearchPage()) {if (st.step === 'submitted_waiting_results') {const age = Date.now() - Number(st.submittedAt || 0);
+                                                                                                        if (age < 6000) return;
+                                                                                                        dbg('namesearch_resubmit',{passKey,ageMs:age});
+                                                                                                        st.step = 'go_search';
+                                                                                                        saveNameState(st);}
+                                                          uiStatus(`Searching ${st.passIndex + 1}/2 (${passKey})…`);
+                                                          dbg('namesearch_submit',{passKey});
+                                                          fillNameSearchForm(st.params || {},passKey);
+                                                          const ok = submitNameSearchForm();
+                                                          if (!ok) {uiStatus('Search failed, refresh page and retry');
+                                                                    dbg('namesearch_submit_failed',{passKey});
+                                                                    return;}
+                                                          st.step = 'submitted_waiting_results';
+                                                          st.submittedAt = Date.now();
+                                                          saveNameState(st);
+                                                          return;}
+                                 if (isNameSearchResultsPage()) {setShowEntriesTo100();
+                                                                const dockYob = document.getElementById('moNsYob');
+                                                                if (dockYob) dockYob.value = st.params?.yob || '';
+                                                                uiStatus(`Ready (${passKey})…`);
+                                                                dbg('namesearch_pull_begin',{passKey});
+                                                                try {await pullJsonFromResultsPage();}
+                                                                catch (e) {dbg('namesearch_pull_fatal',{passKey,msg:String(e?.message || e)});
+                                                                           setRun(false);}
+                                                                dbg('namesearch_pull_done',{passKey});
+                                                                st.passIndex = (st.passIndex || 0) + 1;
+                                                                st.step = 'go_search';
+                                                                st.navPendingUntil = Date.now() + 5000;
+                                                                saveNameState(st);
+                                                                location.href = canonicalNameSearchUrl();
+                                                                return;}
+                                 location.href = canonicalNameSearchUrl();}
