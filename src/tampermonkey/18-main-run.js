@@ -43,6 +43,25 @@
                                                                                     await sleep(150);}
                                             return out;}
 
+
+  async function waitForCaseLinksToRender(timeoutMs = 30000) {const t0 = Date.now();
+                                                             let lastSnap = '';
+                                                             let lastChangeAt = Date.now();
+                                                             while (Date.now() - t0 < timeoutMs) {
+                                                               const links = document.querySelectorAll('a[href*="caseNumber="],a[href*="inputVO.caseNumber="],a[href*="ci="]');
+                                                               if (links.length) return true;
+                                                               const tbody = document.querySelector('#nameSearchResult tbody');
+                                                               const snap = norm(tbody?.textContent || '');
+                                                               if (snap !== lastSnap) {lastSnap = snap;
+                                                                                      lastChangeAt = Date.now();}
+                                                               const processingEl = document.querySelector('#nameSearchResult_processing');
+                                                               const isProcessing = !!(processingEl && getComputedStyle(processingEl).display !== 'none' && processingEl.getAttribute('aria-hidden') !== 'true');
+                                                               const hasRows = !!tbody?.querySelector('tr');
+                                                               if (hasRows && !isProcessing && Date.now() - lastChangeAt > 2500) break;
+                                                               await sleep(250);
+                                                             }
+                                                             return false;}
+
   async function pullJsonFromResultsPage() {if (!isNameSearchResultsPage()) {uiStatus('Landed on non-results page.');
                                                                            render();
                                                                            return;}
@@ -62,10 +81,11 @@
                                            uiStatus('Harvesting all results pages…');
                                            render();
                                            let cases = await harvestAllResultCaseKeys();
-                                           for (let retry = 0;retry < 2 && !cases.length;retry++) {dbg('harvest_empty_retry',{retry: retry + 1});
+                                           for (let retry = 0;retry < 4 && !cases.length;retry++) {dbg('harvest_empty_retry',{retry: retry + 1});
                                                                                                     uiStatus('Waiting for case links to render…');
                                                                                                     render();
                                                                                                     await waitForResultsReady();
+                                                                                                    await waitForCaseLinksToRender(30000);
                                                                                                     await sleep(350);
                                                                                                     setShowEntriesTo100();
                                                                                                     cases = await harvestAllResultCaseKeys();}
