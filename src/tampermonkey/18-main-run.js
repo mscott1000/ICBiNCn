@@ -80,6 +80,7 @@
                                            saveJson(KEY_NET_STATS,{byPath:{}});
                                            uiStatus('Harvesting all results pages…');
                                            render();
+                                           await sleep(5000);
                                            let cases = await harvestAllResultCaseKeys();
                                            for (let retry = 0;retry < 4 && !cases.length;retry++) {dbg('harvest_empty_retry',{retry: retry + 1});
                                                                                                     uiStatus('Waiting for case links to render…');
