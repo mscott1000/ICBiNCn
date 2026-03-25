@@ -1466,6 +1466,13 @@ Cases in Log: ${log.length}
   async function pullJsonFromResultsPage() {if (!isNameSearchResultsPage()) {uiStatus('Landed on non-results page.');
                                                                            render();
                                                                            return;}
+                                           const ready = await waitForResultsReady();
+                                           if (ready?.noMatches) {uiStatus('No matches found for this search.');
+                                                                  render();
+                                                                  return;}
+                                           if (!ready?.ready) {uiStatus('Results are still loading. Try again in a moment.');
+                                                               render();
+                                                               return;}
                                            setShowEntriesTo100();
                                            const ns = loadNameState();
                                            const yobExpected = norm(ns?.params?.yob || document.getElementById('moNsYob')?.value || '');
@@ -1474,7 +1481,14 @@ Cases in Log: ${log.length}
                                            saveJson(KEY_NET_STATS,{byPath:{}});
                                            uiStatus('Harvesting all results pages…');
                                            render();
-                                           const cases = await harvestAllResultCaseKeys();
+                                           let cases = await harvestAllResultCaseKeys();
+                                           for (let retry = 0;retry < 2 && !cases.length;retry++) {dbg('harvest_empty_retry',{retry: retry + 1});
+                                                                                                    uiStatus('Waiting for case links to render…');
+                                                                                                    render();
+                                                                                                    await waitForResultsReady();
+                                                                                                    await sleep(350);
+                                                                                                    setShowEntriesTo100();
+                                                                                                    cases = await harvestAllResultCaseKeys();}
                                            dbg('harvest_done',{count: cases.length});
                                            if (!cases.length) {uiStatus('No case links found.');
                                                                render();
