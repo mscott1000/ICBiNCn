@@ -62,6 +62,87 @@
                                                              }
                                                              return false;}
 
+  function parseCaseNumbersBatch(caseNumbersText) {const raw = String(caseNumbersText || '');
+                                                  const parts = raw.split(/[\n,\t; ]+/g).map((x) => norm(x).toUpperCase()).filter(Boolean);
+                                                  return uniq(parts);}
+
+  function extractCaseLinksFromHtml(htmlText) {const out = [];
+                                               const seen = new Set();
+                                               const doc = new DOMParser().parseFromString(String(htmlText || ''),'text/html');
+                                               const links = [...doc.querySelectorAll('a[href*="caseNumber="],a[href*="inputVO.caseNumber="],a[href*="ci="]')];
+                                               for (const a of links) {const parsed = parseCaseFromUrl(a.href || '');
+                                                                      if (!parsed?.caseKey) continue;
+                                                                      if (seen.has(parsed.caseKey)) continue;
+                                                                      seen.add(parsed.caseKey);
+                                                                      out.push(parsed);}
+                                               return out;}
+
+  async function findCaseCandidatesByCaseNumber(caseNumber) {const url = new URL('/casenet/caseNoSearch.do',location.origin);
+                                                            const body = new URLSearchParams();
+                                                            body.set('caseNumber',caseNumber);
+                                                            body.set('inputVO.caseNumber',caseNumber);
+                                                            body.set('newSearch','Y');
+                                                            const resp = await fetch(url.toString(),{method:'POST',
+                                                                                                     credentials:'include',
+                                                                                                     headers:{'Content-Type':'application/x-www-form-urlencoded; charset=UTF-8'},
+                                                                                                     body: body.toString()});
+                                                            const txt = await resp.text();
+                                                            if (!resp.ok) throw new Error(`HTTP ${resp.status} for caseNoSearch`);
+                                                            return extractCaseLinksFromHtml(txt);}
+
+  async function runBatchByCaseNumbers(caseNumbersText) {const caseNumbers = parseCaseNumbersBatch(caseNumbersText);
+                                                        if (!caseNumbers.length) {uiStatus('Enter at least one case number.');
+                                                                                  return;}
+                                                        setStop(false);
+                                                        setRun(true);
+                                                        try {clearLastHtml();
+                                                             saveJson(KEY_NET_STATS,{byPath:{}});
+                                                             uiStatus(`Resolving ${caseNumbers.length} case number(s)...`);
+                                                             render();
+                                                             const existing = loadLog();
+                                                             const seenCaseKeys = new Set(existing.map((e) => e.caseKey));
+                                                             const resolved = [];
+                                                             const unresolved = [];
+                                                             for (const caseNumber of caseNumbers) {if (isStop()) break;
+                                                                                                     try {const candidates = await findCaseCandidatesByCaseNumber(caseNumber);
+                                                                                                          if (!candidates.length) {unresolved.push(caseNumber);
+                                                                                                                                  dbg('case_batch_resolve_none',{caseNumber});
+                                                                                                                                  continue;}
+                                                                                                          const choice = candidates.find((c) => !seenCaseKeys.has(c.caseKey)) || candidates[0];
+                                                                                                          if (!choice?.caseKey) {unresolved.push(caseNumber);
+                                                                                                                                 dbg('case_batch_resolve_bad_choice',{caseNumber,count:candidates.length});
+                                                                                                                                 continue;}
+                                                                                                          resolved.push(choice);}
+                                                                                                     catch (e) {unresolved.push(caseNumber);
+                                                                                                                dbg('case_batch_resolve_error',{caseNumber,msg:String(e?.message || e)});}}
+                                                             if (isStop()) {uiStatus('Stopped.');
+                                                                            return;}
+                                                             if (!resolved.length) {uiStatus(`No case links found. Unresolved: ${unresolved.length}.`);
+                                                                                   return;}
+                                                             uiStatus(`Resolved ${resolved.length}. Reading docket entries...`);
+                                                             render();
+                                                             const {results,errors} = await runPool(resolved,DEFAULT_CONCURRENCY,async (item) => {if (isStop()) return null;
+                                                                                                                                                 await sleep(80);
+                                                                                                                                                 const out = await scrapeCaseViaApi(item,'');
+                                                                                                                                                 if (out && (out._skipReason === 'blank_title' || out._skipReason === 'paid_in_full')) return null;
+                                                                                                                                                 return out;});
+                                                             const nextLog = loadLog();
+                                                             for (const r of results) {if (!r || !r.caseKey) continue;
+                                                                                      if (nextLog.some((x) => x.caseKey === r.caseKey)) continue;
+                                                                                      nextLog.push(r);}
+                                                             saveLog(nextLog);
+                                                             const okCount = results.filter(Boolean).length;
+                                                             const errCount = (errors || []).length;
+                                                             const unresolvedMsg = unresolved.length ? ` Unresolved case numbers: ${unresolved.length}.` : '';
+                                                             if (isStop()) uiStatus('Stopped.');
+                                                             else uiStatus(`${okCount} cases added from case-number batch.${unresolvedMsg} Errors: ${errCount}.`);
+                                                             if (unresolved.length) dbg('case_batch_unresolved',{count:unresolved.length,items:unresolved.slice(0,40)});
+                                                             if (errCount) dbg('case_batch_run_errors',{errors: errors.slice(0,12)});}
+                                                        catch (e) {dbg('case_batch_fatal',{msg:String(e?.message || e),stack:String(e?.stack || '')});
+                                                                   uiStatus('*error*: ' + String(e?.message || e));}
+                                                        finally {setRun(false);
+                                                                 render();}}
+
   async function pullJsonFromResultsPage() {if (!isNameSearchResultsPage()) {uiStatus('Landed on non-results page.');
                                                                            render();
                                                                            return;}
