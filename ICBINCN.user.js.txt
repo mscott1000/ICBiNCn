@@ -1524,7 +1524,10 @@ Cases in Log: ${log.length}
                                                              return false;}
 
   function parseCaseNumbersBatch(caseNumbersText) {const raw = String(caseNumbersText || '');
-                                                  const parts = raw.split(/[\n,\t; ]+/g).map((x) => norm(x).toUpperCase()).filter(Boolean);
+                                                  const parts = raw.split(/[\n,\t; ]+/g)
+                                                                   .map((x) => norm(x).toUpperCase())
+                                                                   .map((x) => x.replace(/^[^A-Z0-9]+|[^A-Z0-9]+$/g,''))
+                                                                   .filter(Boolean);
                                                   return uniq(parts);}
 
   function extractCaseLinksFromHtml(htmlText) {const out = [];
