@@ -94,6 +94,10 @@
 
   function clearLastHtml() {saveLastHtml(null);}
 
+  function loadCaseBatchDraft() {return loadJson(KEY_CASE_BATCH_DRAFT,{caseNumbersText:''});}
+
+  function saveCaseBatchDraft(d) {saveJson(KEY_CASE_BATCH_DRAFT,d || {caseNumbersText:''});}
+
   function readUiParams() {return {first:  norm(document.getElementById('moNsFirst')?.value || ''),
                                   middle: norm(document.getElementById('moNsMiddle')?.value || ''),
                                   last:   norm(document.getElementById('moNsLast')?.value || ''),
