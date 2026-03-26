@@ -88,6 +88,17 @@
                                                                           location.href = new URL('/casenet/caseNoSearch.do',location.origin).toString();
                                                                           render();
                                                                           return;}
+                                             if (id === 'moCaseBatchClear') {saveCaseBatchDraft({caseNumbersText:''});
+                                                                           const box = document.getElementById('moCaseBatchNums');
+                                                                           if (box) box.value = '';
+                                                                           uiStatus('Case number batch entries cleared');
+                                                                           render();
+                                                                           return;}
+                                             if (id === 'moCaseBatchRun') {const caseNumbersText = String(document.getElementById('moCaseBatchNums')?.value || '');
+                                                                         saveCaseBatchDraft({caseNumbersText});
+                                                                         await runBatchByCaseNumbers(caseNumbersText);
+                                                                         render();
+                                                                         return;}
                                              if (id === 'moJsonOpenLastHtml') {openLastHtmlInNewTab();
                                                                               return;}});
 
@@ -100,7 +111,9 @@
                                                                                          saveTrackDraft({...draft,
                                                                                                          caseNumber: norm(document.getElementById('moTrackCaseNo')?.value || '').toUpperCase(),
                                                                                                          email: norm(document.getElementById('moTrackEmail')?.value || '')});
-                                                                                         return;}});
+                                                                                         return;}
+                                     if (id === 'moCaseBatchNums') {saveCaseBatchDraft({caseNumbersText: String(document.getElementById('moCaseBatchNums')?.value || '')});
+                                                                     return;}});
 
 
   async function nameSearchTick() {const st = loadNameState();

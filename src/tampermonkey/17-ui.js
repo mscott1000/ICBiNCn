@@ -172,6 +172,23 @@ GM_addStyle(`:root{ --mo-bg: #f5f7fb;          /* page chrome */
             .moField input:focus{border-color:rgba(37, 99, 235, .65);
                                  box-shadow:0 0 0 3px rgba(37, 99, 235, .18);}
 
+            .moField textarea{padding:7px 9px;
+                              border:1px solid var(--mo-border);
+                              border-radius:10px;
+                              font-size:12px;
+                              min-width:0;
+                              width:100%;
+                              box-sizing:border-box;
+                              max-width:100%;
+                              background:#fff;
+                              color:var(--mo-text);
+                              outline:none;
+                              transition:border-color 120ms ease,box-shadow 120ms ease;
+                              resize:vertical;
+                              min-height:76px;}
+            .moField textarea:focus{border-color:rgba(37, 99, 235, .65);
+                                    box-shadow:0 0 0 3px rgba(37, 99, 235, .18);}
+
             .moBottomRow{display:flex;
                          gap:8px;
                          justify-content:flex-end;
@@ -264,6 +281,17 @@ function render() {const log = loadLog();
       <button class="moBtn" id="moTrackClearEntries" style="height:32px;">Clear TTC Entries</button>
       <button class="moBtn" id="moTrackSignup" style="height:32px;">Sign Up Case</button>
     </div>
+  </div>
+`);
+                   const caseBatchDraft = loadCaseBatchDraft();
+                   addBlock('Case Number Batch (Upcoming Dates)',`
+  <div class="moField">
+    <label>Case Numbers (comma, space, or newline separated)</label>
+    <textarea id="moCaseBatchNums" placeholder="e.g. 18SL-CR01234\n18SL-TR06789">${escapeHtml(caseBatchDraft?.caseNumbersText || '')}</textarea>
+  </div>
+  <div style="display:flex; gap:8px; justify-content:flex-end; margin-top:8px;">
+    <button class="moBtn" id="moCaseBatchClear">Clear Entries</button>
+    <button class="moBtn moSearchBtn" id="moCaseBatchRun">Run Batch</button>
   </div>
 `);
                    addBlock('Status',`

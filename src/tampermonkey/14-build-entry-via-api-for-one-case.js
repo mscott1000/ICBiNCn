@@ -2,9 +2,11 @@
   /************************************************************
    * Build entry via API for one case
    ************************************************************/
-  async function scrapeCaseViaApi({caseKey,caseNumber,courtId},expectedYob4 = '') {const entry = {caseKey,
+  async function scrapeCaseViaApi({caseKey,caseNumber,courtId},expectedYob4 = '') {let workingCaseNumber = norm(caseNumber || '');
+                                                                 let workingCourtId = norm(courtId || '');
+                                                                 const entry = {caseKey: norm(caseKey || '') || `${workingCaseNumber.toUpperCase()}|${workingCourtId.toUpperCase()}`,
                                                                                                   caseTitle:'',
-                                                                                                  caseUrl:`https://www.courts.mo.gov/casenet/cases/newHeader.do?inputVO.caseNumber=${encodeURIComponent(caseNumber)}&inputVO.courtId=${encodeURIComponent(courtId)}`,
+                                                                                                  caseUrl:`https://www.courts.mo.gov/casenet/cases/newHeader.do?inputVO.caseNumber=${encodeURIComponent(workingCaseNumber)}&inputVO.courtId=${encodeURIComponent(workingCourtId)}`,
                                                                                                   judge:'- - -',
                                                                                                   dateFiled:'- - -',
                                                                                                   location:'- - -',
@@ -23,14 +25,21 @@
                                                                                                   chargeDescription:'- - -',
                                                                                                   chargeType:'- - -',
                                                                                                   chargeClass:'- - -',};
-                                                                 if (String(courtId).toUpperCase() === 'CT20') {entry._skipReason = 'ct20_disabled';
+                                                                 if (String(workingCourtId).toUpperCase() === 'CT20') {entry._skipReason = 'ct20_disabled';
                                                                                                                 return entry;}
                                                                  let header;
-                                                                 try {header = await postFormJsonRetry_tryCourtIds('/casenet/cases/newHeaderData.do',{caseNumber,courtId,isTicket:'',locnCode:'',isCriminal:'',diposed:'',pleaAndPayInd:'',});}
+                                                                 try {header = await postFormJsonRetry_tryCourtIds('/casenet/cases/newHeaderData.do',{caseNumber: workingCaseNumber,courtId: workingCourtId,isTicket:'',locnCode:'',isCriminal:'',diposed:'',pleaAndPayInd:'',});}
                                                                  catch (e) {if (isJndiDatasourceError(e)) {entry._skipReason = 'backend_jndi_error';
-                                                                                                          dbg('skip_backend_jndi',{caseKey,courtId,msg:String(e?.message || e)});
+                                                                                                          dbg('skip_backend_jndi',{caseKey: entry.caseKey,courtId: workingCourtId,msg:String(e?.message || e)});
                                                                                                           return entry;}
                                                                             throw e;}
+                                                                 workingCaseNumber = norm(header?.caseNumber || workingCaseNumber);
+                                                                 workingCourtId = norm(header?.courtId || workingCourtId);
+                                                                 if (!workingCaseNumber || !workingCourtId) {entry._skipReason = 'missing_case_identifiers';
+                                                                                                             dbg('skip_missing_case_identifiers',{caseKey: entry.caseKey,caseNumber: workingCaseNumber,courtId: workingCourtId});
+                                                                                                             return entry;}
+                                                                 entry.caseKey = `${workingCaseNumber.toUpperCase()}|${workingCourtId.toUpperCase()}`;
+                                                                 entry.caseUrl = `https://www.courts.mo.gov/casenet/cases/newHeader.do?inputVO.caseNumber=${encodeURIComponent(workingCaseNumber)}&inputVO.courtId=${encodeURIComponent(workingCourtId)}`;
                                                                  const basics = headerToEntryBasics(header);
                                                                  entry.caseTitle = basics.caseTitle;
                                                                  entry.judge = basics.judge;
@@ -38,9 +47,9 @@
                                                                  entry.location = basics.location;
                                                                  entry.disposition = basics.disposition;
                                                                  if (!hasRealTitle(entry.caseTitle)) {entry._skipReason = 'blank_title';
-                                                                                                      dbg('skip_blank_title',{caseKey: entry.caseKey,caseNumber,courtId});
+                                                                                                      dbg('skip_blank_title',{caseKey: entry.caseKey,caseNumber: workingCaseNumber,courtId: workingCourtId});
                                                                                                       return entry;}
-                                                                 const party = await postFormJsonRetry_tryCourtIds('/casenet/cases/party.do',{caseNumber,courtId,isTicket:'',});
+                                                                 const party = await postFormJsonRetry_tryCourtIds('/casenet/cases/party.do',{caseNumber: workingCaseNumber,courtId: workingCourtId,isTicket:'',});
                                                                  const addrYob = extractDefendantAddressYob(party);
                                                                  entry.address = addrYob.address;
                                                                  entry.yob = addrYob.yob;
@@ -51,7 +60,7 @@
                                                                                  entry._foundYears = (match.years || []).join(', ');
                                                                                  return entry;}
                                                                  entry.attorney = extractAttorney(party);
-                                                                 const docket = await postFormJsonRetry_tryCourtIds('/casenet/cases/docketEntriesSearch.do',{caseNumber,courtId,isTicket:'',tabName:'Docket',},{qs:'displayOption=A&sortOption=D&hasChange=false'});
+                                                                 const docket = await postFormJsonRetry_tryCourtIds('/casenet/cases/docketEntriesSearch.do',{caseNumber: workingCaseNumber,courtId: workingCourtId,isTicket:'',tabName:'Docket',},{qs:'displayOption=A&sortOption=D&hasChange=false'});
                                                                  const docketList = docket?.docketTabModelList || [];
                                                                  const hit = findFirstWarrantOrSummons(docketList);
                                                                  const f = countFtas(docketList);
@@ -70,11 +79,11 @@
                                                                  const baseStatus = !hit ? 'nonwarrant' : (hit.kind === 'warrant' ? 'warrant' : 'nonwarrant');
                                                                  entry.summaryStatus = docketStatus.hasActiveHold ? `${baseStatus} and HOLD placed on license` : baseStatus;
                                                                  let chargesResp = null;
-                                                                 try {chargesResp = await postFormJsonRetry_tryCourtIds('/casenet/cases/charges.do',{caseNumber,courtId,isTicket:'',tabName:'Charge',});}
-                                                                 catch (e) {dbg('charges_fetch_failed',{caseKey,msg:String(e?.message || e)});}
+                                                                 try {chargesResp = await postFormJsonRetry_tryCourtIds('/casenet/cases/charges.do',{caseNumber: workingCaseNumber,courtId: workingCourtId,isTicket:'',tabName:'Charge',});}
+                                                                 catch (e) {dbg('charges_fetch_failed',{caseKey: entry.caseKey,msg:String(e?.message || e)});}
                                                                  const chargeParts = extractChargePartsFromChargesResponse(chargesResp,header);
                                                                  entry.chargeDescription = chargeParts.desc || 'No Charges Found';
                                                                  entry.chargeType = chargeParts.type || '- - -';
                                                                  entry.chargeClass = chargeParts.cls || '- - -';
-                                                                 entry.caseBalance = await getCaseBalanceIfGuiltyViaApi(entry.disposition,basics.header_meta,caseNumber,courtId);
+                                                                 entry.caseBalance = await getCaseBalanceIfGuiltyViaApi(entry.disposition,basics.header_meta,workingCaseNumber,workingCourtId);
                                                                  return entry;}

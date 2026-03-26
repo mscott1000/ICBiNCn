@@ -62,6 +62,52 @@
                                                              }
                                                              return false;}
 
+  function parseCaseNumbersBatch(caseNumbersText) {const raw = String(caseNumbersText || '');
+                                                  const parts = raw.split(/[\n,\t; ]+/g).map((x) => norm(x).toUpperCase()).filter(Boolean);
+                                                  return uniq(parts);}
+
+  async function runBatchByCaseNumbers(caseNumbersText) {const caseNumbers = parseCaseNumbersBatch(caseNumbersText);
+                                                        if (!caseNumbers.length) {uiStatus('Enter at least one case number.');
+                                                                                  return;}
+                                                        setStop(false);
+                                                        setRun(true);
+                                                        try {clearLastHtml();
+                                                             saveJson(KEY_NET_STATS,{byPath:{}});
+                                                             uiStatus(`Reading ${caseNumbers.length} case number(s)...`);
+                                                             render();
+                                                             const existing = loadLog();
+                                                             const seenCaseNumbers = new Set(existing.map((e) => norm(String(e?.caseKey || '').split('|')[0]).toUpperCase()).filter(Boolean));
+                                                             const todo = caseNumbers.map((caseNumber) => ({caseKey: `${caseNumber}|`,caseNumber,courtId:''}))
+                                                                                     .filter((item) => !seenCaseNumbers.has(item.caseNumber));
+                                                             if (!todo.length) {uiStatus('Already ran these, clear log to run again.');
+                                                                               return;}
+                                                             uiStatus(`Queue: ${todo.length}. Reading docket entries...`);
+                                                             render();
+                                                             const unresolved = [];
+                                                             const {results,errors} = await runPool(todo,DEFAULT_CONCURRENCY,async (item) => {if (isStop()) return null;
+                                                                                                                                                 await sleep(80);
+                                                                                                                                                 const out = await scrapeCaseViaApi(item,'');
+                                                                                                                                                 if (out && (out._skipReason === 'blank_title' || out._skipReason === 'missing_case_identifiers')) {unresolved.push(item.caseNumber);
+                                                                                                                                                                                                                               return null;}
+                                                                                                                                                 if (out && out._skipReason === 'paid_in_full') return null;
+                                                                                                                                                 return out;});
+                                                             const nextLog = loadLog();
+                                                             for (const r of results) {if (!r || !r.caseKey) continue;
+                                                                                      if (nextLog.some((x) => x.caseKey === r.caseKey)) continue;
+                                                                                      nextLog.push(r);}
+                                                             saveLog(nextLog);
+                                                             const okCount = results.filter(Boolean).length;
+                                                             const errCount = (errors || []).length;
+                                                             const unresolvedMsg = unresolved.length ? ` Unresolved case numbers: ${unresolved.length}.` : '';
+                                                             if (isStop()) uiStatus('Stopped.');
+                                                             else uiStatus(`${okCount} cases added from case-number batch.${unresolvedMsg} Errors: ${errCount}.`);
+                                                             if (unresolved.length) dbg('case_batch_unresolved',{count:unresolved.length,items:unresolved.slice(0,40)});
+                                                             if (errCount) dbg('case_batch_run_errors',{errors: errors.slice(0,12)});}
+                                                        catch (e) {dbg('case_batch_fatal',{msg:String(e?.message || e),stack:String(e?.stack || '')});
+                                                                   uiStatus('*error*: ' + String(e?.message || e));}
+                                                        finally {setRun(false);
+                                                                 render();}}
+
   async function pullJsonFromResultsPage() {if (!isNameSearchResultsPage()) {uiStatus('Landed on non-results page.');
                                                                            render();
                                                                            return;}
