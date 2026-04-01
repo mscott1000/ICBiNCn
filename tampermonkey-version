@@ -481,7 +481,8 @@
                                           if (/\bplace\b/.test(t)) return 'placed';
                                           return 'placed';}
 
-  function findFirstWarrantOrSummons(docketList) {const isWarrant = (t) => /\bwarrant\b/i.test(t);
+  function findFirstWarrantOrSummons(docketList) {const isWarrantServed = (t) => /\bwarrant\s+served\b/i.test(t);
+                                                 const isWarrant = (t) => /\bwarrant\b/i.test(t) && !isWarrantServed(t);
                                                  const isSummons = (t) => /\bsummons?\b|\bsummon\b|\bsummoned\b/i.test(t);
                                                  for (const e of docketList || []) {const desc = norm(e?.docketDesc || '');
                                                                                    const txt = norm(e?.docketText || '');
@@ -835,6 +836,11 @@ async function trackTick() {const st = loadTrackState();
                                                                  entry.chargeType = chargeParts.type || '- - -';
                                                                  entry.chargeClass = chargeParts.cls || '- - -';
                                                                  entry.caseBalance = await getCaseBalanceIfGuiltyViaApi(entry.disposition,basics.header_meta,caseNumber,courtId);
+                                                                 const isGuiltyDisposed = /guilty/i.test(String(entry.disposition || ''));
+                                                                 const hasZeroBalance = /^\$?0(?:\.0+)?$/.test(String(entry.caseBalance || '').replace(/,/g,'').trim());
+                                                                 const isNonwarrantStatus = /^nonwarrant\b/i.test(String(entry.summaryStatus || '').trim());
+                                                                 if (isGuiltyDisposed && hasZeroBalance && isNonwarrantStatus) {entry._skipReason = 'guilty_zero_balance_nonwarrant';
+                                                                                                                           return entry;}
                                                                  return entry;}
 
   /************************************************************
@@ -1071,6 +1077,15 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
                                                                                       if (operatingMatch) return operatingMatch.display;}
                                                                         return pool[0].display;}
 
+
+  const FRESH_START_FRIDAY_TEXT = ['- - - - -',
+                                   '"Fresh Start Fridays" is a virtual court program, allowing those with active warrants in St. Louis County Municipal Court to ask for the warrant to be recalled and for a new court date to be set without fear of arrest. This program is limited to ordinance violation cases (typically traffic-related or other nonviolent offenses).',
+                                   'Those with active warrants can log into the virtual docket to speak with a judge at 10am on any Friday, except for those that fall on a county, state or federal holiday. This link will take you to the virtual courtroom:',
+                                   'https://mocourts.webex.com/meet/courtney.whiteside ',
+                                   '',
+                                   'Questions can be directed to the St. Louis County Municipal Court at 314-615-8760.',
+                                   '- - - - -'].join('\n');
+
   function getCaseNumberForSummary(e) {const fromTitle = norm(String(e?.caseTitle || '').split('–')[0]);
                                       if (fromTitle && /^\d/.test(fromTitle)) return fromTitle;
                                       const fromKey = norm(e?.caseKey || '');
@@ -1083,6 +1098,7 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
                                         if (upcoming && upcoming !== '- - -') return 'upcoming';
                                         const ws = norm(String(e?.warrantSummary || '')).toLowerCase();
                                         if (!ws || ws === '- - -') return 'nonwarrant';
+                                        if (ws.includes('warrant served')) return 'nonwarrant';
                                         if (ws.includes('warrant')) return 'warrant';
                                         return 'nonwarrant';}
 
@@ -1105,11 +1121,13 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
 
                                   const sections = [];
                                   for (const [jurisdiction,entries] of byJurisdiction.entries()) {const jurisdictionJudge = entries.find((x) => norm(x?.judge || '') && norm(x?.judge || '') !== '- - -')?.judge || '';
-                                                                                                   sections.push(getMunicipalityHeaderForSummary(jurisdiction,jurisdictionJudge) || jurisdiction.toUpperCase());
+                                                                                                   const header = getMunicipalityHeaderForSummary(jurisdiction,jurisdictionJudge) || jurisdiction.toUpperCase();
+                                                                                                   sections.push(header);
                                                                                                    for (const e of entries) {const caseNo = getCaseNumberForSummary(e);
                                                                                                                              const charge = norm(e?.chargeDescription || '') || 'No Charges Found';
                                                                                                                              const warrantLabel = getWarrantLabelForSummary(e);
                                                                                                                              sections.push(`${caseNo}: ${charge} - ${warrantLabel}`);}
+                                                                                                   if (header.includes('FRESH START FRIDAY')) sections.push(FRESH_START_FRIDAY_TEXT);
                                                                                                    sections.push('');
                                                                                                    sections.push('');}
 
@@ -1619,7 +1637,7 @@ Cases in Log: ${log.length}
                                                              const {results,errors} = await runPool(resolved,DEFAULT_CONCURRENCY,async (item) => {if (isStop()) return null;
                                                                                                                                                  await sleep(80);
                                                                                                                                                  const out = await scrapeCaseViaApi(item,'');
-                                                                                                                                                 if (out && (out._skipReason === 'blank_title' || out._skipReason === 'paid_in_full')) return null;
+                                                                                                                                                 if (out && (out._skipReason === 'blank_title' || out._skipReason === 'paid_in_full' || out._skipReason === 'guilty_zero_balance_nonwarrant')) return null;
                                                                                                                                                  return out;});
                                                              const nextLog = loadLog();
                                                              for (const r of results) {if (!r || !r.caseKey) continue;
@@ -1693,9 +1711,9 @@ Cases in Log: ${log.length}
                                                                                                                  return out;});
                                                 const nextLog = loadLog();
                                                 for (const r of results) {if (!r || !r.caseKey) continue;
-                                                                         if (r._skipReason === 'paid_in_full') {const idx = nextLog.findIndex((x) => x.caseKey === r.caseKey);
-                                                                                                               if (idx >= 0) nextLog.splice(idx,1);
-                                                                                                               continue;}
+                                                                         if (r._skipReason === 'paid_in_full' || r._skipReason === 'guilty_zero_balance_nonwarrant') {const idx = nextLog.findIndex((x) => x.caseKey === r.caseKey);
+                                                                                                                                                                                  if (idx >= 0) nextLog.splice(idx,1);
+                                                                                                                                                                                  continue;}
                                                                          if (nextLog.some((x) => x.caseKey === r.caseKey)) continue;
                                                                          nextLog.push(r);}
                                                 saveLog(nextLog);

@@ -77,4 +77,9 @@
                                                                  entry.chargeType = chargeParts.type || '- - -';
                                                                  entry.chargeClass = chargeParts.cls || '- - -';
                                                                  entry.caseBalance = await getCaseBalanceIfGuiltyViaApi(entry.disposition,basics.header_meta,caseNumber,courtId);
+                                                                 const isGuiltyDisposed = /guilty/i.test(String(entry.disposition || ''));
+                                                                 const hasZeroBalance = /^\$?0(?:\.0+)?$/.test(String(entry.caseBalance || '').replace(/,/g,'').trim());
+                                                                 const isNonwarrantStatus = /^nonwarrant\b/i.test(String(entry.summaryStatus || '').trim());
+                                                                 if (isGuiltyDisposed && hasZeroBalance && isNonwarrantStatus) {entry._skipReason = 'guilty_zero_balance_nonwarrant';
+                                                                                                                           return entry;}
                                                                  return entry;}

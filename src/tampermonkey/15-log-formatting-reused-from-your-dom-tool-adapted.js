@@ -233,6 +233,15 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
                                                                                       if (operatingMatch) return operatingMatch.display;}
                                                                         return pool[0].display;}
 
+
+  const FRESH_START_FRIDAY_TEXT = ['- - - - -',
+                                   '"Fresh Start Fridays" is a virtual court program, allowing those with active warrants in St. Louis County Municipal Court to ask for the warrant to be recalled and for a new court date to be set without fear of arrest. This program is limited to ordinance violation cases (typically traffic-related or other nonviolent offenses).',
+                                   'Those with active warrants can log into the virtual docket to speak with a judge at 10am on any Friday, except for those that fall on a county, state or federal holiday. This link will take you to the virtual courtroom:',
+                                   'https://mocourts.webex.com/meet/courtney.whiteside ',
+                                   '',
+                                   'Questions can be directed to the St. Louis County Municipal Court at 314-615-8760.',
+                                   '- - - - -'].join('\n');
+
   function getCaseNumberForSummary(e) {const fromTitle = norm(String(e?.caseTitle || '').split('–')[0]);
                                       if (fromTitle && /^\d/.test(fromTitle)) return fromTitle;
                                       const fromKey = norm(e?.caseKey || '');
@@ -245,6 +254,7 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
                                         if (upcoming && upcoming !== '- - -') return 'upcoming';
                                         const ws = norm(String(e?.warrantSummary || '')).toLowerCase();
                                         if (!ws || ws === '- - -') return 'nonwarrant';
+                                        if (ws.includes('warrant served')) return 'nonwarrant';
                                         if (ws.includes('warrant')) return 'warrant';
                                         return 'nonwarrant';}
 
@@ -267,11 +277,13 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
 
                                   const sections = [];
                                   for (const [jurisdiction,entries] of byJurisdiction.entries()) {const jurisdictionJudge = entries.find((x) => norm(x?.judge || '') && norm(x?.judge || '') !== '- - -')?.judge || '';
-                                                                                                   sections.push(getMunicipalityHeaderForSummary(jurisdiction,jurisdictionJudge) || jurisdiction.toUpperCase());
+                                                                                                   const header = getMunicipalityHeaderForSummary(jurisdiction,jurisdictionJudge) || jurisdiction.toUpperCase();
+                                                                                                   sections.push(header);
                                                                                                    for (const e of entries) {const caseNo = getCaseNumberForSummary(e);
                                                                                                                              const charge = norm(e?.chargeDescription || '') || 'No Charges Found';
                                                                                                                              const warrantLabel = getWarrantLabelForSummary(e);
                                                                                                                              sections.push(`${caseNo}: ${charge} - ${warrantLabel}`);}
+                                                                                                   if (header.includes('FRESH START FRIDAY')) sections.push(FRESH_START_FRIDAY_TEXT);
                                                                                                    sections.push('');
                                                                                                    sections.push('');}
 
