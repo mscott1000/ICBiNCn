@@ -63,7 +63,7 @@
                                                                             uiStatus('Debug Cleared');
                                                                             render();
                                                                             return;}
-                                             if (id === 'moJsonCloseX') {dock.classList.add('moHidden');
+                                             if (id === 'moJsonCloseX') {minimizeDock();
                                                                         return;}
                                              if (id === 'moTrackClearEntries') {clearTrackDraft();
                                                                               clearTrackState();
