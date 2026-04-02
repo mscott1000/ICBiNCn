@@ -1470,13 +1470,7 @@ function render() {const log = loadLog();
     <button class="moBtn" id="moCaseBatchClear">Clear Entries</button>
     <button class="moBtn moSearchBtn" id="moCaseBatchRun">Run Batch</button>
   </div>
-`);
-                   addBlock('Status',`
-      <pre style="margin:0; font-size:13px; line-height:1.45; white-space:pre-wrap; word-break:break-word; color:#111;">
-Running?: ${isRun() ? 'Yes' : 'No'}
-Cases in Log: ${log.length}
-      </pre>
-    `);}
+`);}
 
   /************************************************************
    * Main run
