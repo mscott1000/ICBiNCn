@@ -96,6 +96,31 @@
                                                                       if (seen.has(parsed.caseKey)) continue;
                                                                       seen.add(parsed.caseKey);
                                                                       out.push(parsed);}
+                                               if (out.length) return out;
+                                               const pushCase = (caseNumber,courtId,source = '') => {const cn = norm(caseNumber || '').toUpperCase();
+                                                                                                     const ct = norm(courtId || '').toUpperCase();
+                                                                                                     if (!cn || !ct) return;
+                                                                                                     const caseKey = `${cn}|${ct}`;
+                                                                                                     if (seen.has(caseKey)) return;
+                                                                                                     seen.add(caseKey);
+                                                                                                     out.push({caseKey,caseNumber:cn,courtId:ct,url: source || ''});};
+                                               const blobs = [];
+                                               for (const el of doc.querySelectorAll('a,button,input,tr,td,script')) {const bits = [el.getAttribute?.('href') || '',
+                                                                                                                           el.getAttribute?.('onclick') || '',
+                                                                                                                           el.getAttribute?.('data-href') || '',
+                                                                                                                           el.getAttribute?.('data-url') || '',
+                                                                                                                           el.textContent || ''];
+                                                                                                                  const s = bits.join(' ');
+                                                                                                                  if (norm(s)) blobs.push(s);}
+                                               for (const s of blobs) {const queryRegex = /(?:caseNumber|inputVO\.caseNumber|ci)\s*[=:]\s*['"]?([A-Z0-9-]+)/ig;
+                                                                       let m;
+                                                                       while ((m = queryRegex.exec(s)) !== null) {const cn = m[1] || '';
+                                                                                                                   const tail = s.slice(m.index,m.index + 220);
+                                                                                                                   const courtMatch = tail.match(/(?:courtId|inputVO\.courtId|courtCode|l)\s*[=:]\s*['"]?([A-Z0-9]+)/i);
+                                                                                                                   if (courtMatch?.[1]) pushCase(cn,courtMatch[1]);}
+                                                                       const fnRegex = /['"]([0-9]{2}[A-Z]{1,3}-[A-Z]{2}\d{3,})['"]\s*,\s*['"]([A-Z0-9]{1,8})['"]/ig;
+                                                                       let fm;
+                                                                       while ((fm = fnRegex.exec(s)) !== null) pushCase(fm[1],fm[2]);}
                                                return out;}
 
   async function findCaseCandidatesByCaseNumber(caseNumber) {const url = new URL('/casenet/caseNoSearch.do',location.origin);
@@ -109,7 +134,9 @@
                                                                                                      body: body.toString()});
                                                             const txt = await resp.text();
                                                             if (!resp.ok) throw new Error(`HTTP ${resp.status} for caseNoSearch`);
-                                                            return extractCaseLinksFromHtml(txt);}
+                                                            const candidates = extractCaseLinksFromHtml(txt);
+                                                            if (!candidates.length) {dbg('case_batch_resolve_no_links_in_html',{caseNumber,htmlPreview: String(txt || '').slice(0,500)});}
+                                                            return candidates;}
 
   async function runBatchByCaseNumbers(caseNumbersText) {const requested = parseCaseNumbersBatch(caseNumbersText);
                                                         if (!requested.length) {uiStatus('Enter at least one case number.');
