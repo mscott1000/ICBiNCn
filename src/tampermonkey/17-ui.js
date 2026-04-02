@@ -4,7 +4,7 @@
  ************************************************************/
 GM_addStyle(`:root{ --mo-bg: #f5f7fb;          /* page chrome */
                     --mo-surface: #ffffff;     /* cards/panels */
-                    --mo-surface-2: #eef2f7;   /* header/footer/status */
+                    --mo-surface-2: #eef2f7;   /* header/footer */
                     --mo-border: #d7dee8;      /* lines/borders */
                     --mo-text: #0f172a;        /* primary text (slate-900) */
                     --mo-muted: #475569;       /* secondary text (slate-600) */
@@ -68,14 +68,6 @@ GM_addStyle(`:root{ --mo-bg: #f5f7fb;          /* page chrome */
                           justify-content:center;
                           transition:background 120ms ease,color 120ms ease;}
             #moJsonCloseX:hover{background:rgba(37, 99, 235, .10); color:var(--mo-text);}
-
-            #moJsonStatus{padding:8px 10px;
-                          border-bottom:1px solid var(--mo-border);
-                          font-size:12px;
-                          color:var(--mo-muted);
-                          background:var(--mo-surface-2);
-                          white-space:pre-wrap;
-                          flex:0 0 auto;}
 
             #moJsonContent{padding:10px;
                            overflow:auto;
@@ -217,7 +209,6 @@ dock.innerHTML = `
     </div>
     <button id="moJsonCloseX" title="Close">×</button>
   </div>
-  <div id="moJsonStatus">Ready.</div>
   <div id="moJsonContent"></div>
   <div id="moJsonFooter">
     <div class="moBottomRow">
@@ -227,19 +218,16 @@ dock.innerHTML = `
 `;
 (document.body || document.documentElement).appendChild(dock);
 
-const $status = dock.querySelector('#moJsonStatus');
 const $content = dock.querySelector('#moJsonContent');
 
-function uiStatus(msg) {$status.textContent = msg;
-                        setStatus(msg);}
+function uiStatus(msg) {setStatus(msg);}
 
 function addBlock(title,htmlInner) {const div = document.createElement('div');
                                    div.className = 'moBlock';
                                    div.innerHTML = `<h3>${escapeHtml(title)}</h3>${htmlInner}`;
                                    $content.appendChild(div);}
 
-function render() {const log = loadLog();
-                   $content.innerHTML = '';
+function render() {$content.innerHTML = '';
                    const ns = loadNameState();
                    const draft = loadDraft();
                    const p = ns?.params || draft;
@@ -293,10 +281,4 @@ function render() {const log = loadLog();
     <button class="moBtn" id="moCaseBatchClear">Clear Entries</button>
     <button class="moBtn moSearchBtn" id="moCaseBatchRun">Run Batch</button>
   </div>
-`);
-                   addBlock('Status',`
-      <pre style="margin:0; font-size:13px; line-height:1.45; white-space:pre-wrap; word-break:break-word; color:#111;">
-Running?: ${isRun() ? 'Yes' : 'No'}
-Cases in Log: ${log.length}
-      </pre>
-    `);}
+`);}
