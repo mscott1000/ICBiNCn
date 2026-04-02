@@ -217,7 +217,7 @@ dock.innerHTML = `
     </div>
     <button id="moJsonCloseX" title="Close">×</button>
   </div>
-  <div id="moJsonStatus">Ready.</div>
+  <div id="moJsonStatus">${escapeHtml(getStatus() || 'Ready.')}</div>
   <div id="moJsonContent"></div>
   <div id="moJsonFooter">
     <div class="moBottomRow">
@@ -227,10 +227,10 @@ dock.innerHTML = `
 `;
 (document.body || document.documentElement).appendChild(dock);
 
-const $status = dock.querySelector('#moJsonStatus');
 const $content = dock.querySelector('#moJsonContent');
+const $status = dock.querySelector('#moJsonStatus');
 
-function uiStatus(msg) {$status.textContent = msg;
+function uiStatus(msg) {if ($status) $status.textContent = String(msg || '');
                         setStatus(msg);}
 
 function addBlock(title,htmlInner) {const div = document.createElement('div');
@@ -238,8 +238,7 @@ function addBlock(title,htmlInner) {const div = document.createElement('div');
                                    div.innerHTML = `<h3>${escapeHtml(title)}</h3>${htmlInner}`;
                                    $content.appendChild(div);}
 
-function render() {const log = loadLog();
-                   $content.innerHTML = '';
+function render() {$content.innerHTML = '';
                    const ns = loadNameState();
                    const draft = loadDraft();
                    const p = ns?.params || draft;
@@ -293,10 +292,4 @@ function render() {const log = loadLog();
     <button class="moBtn" id="moCaseBatchClear">Clear Entries</button>
     <button class="moBtn moSearchBtn" id="moCaseBatchRun">Run Batch</button>
   </div>
-`);
-                   addBlock('Status',`
-      <pre style="margin:0; font-size:13px; line-height:1.45; white-space:pre-wrap; word-break:break-word; color:#111;">
-Running?: ${isRun() ? 'Yes' : 'No'}
-Cases in Log: ${log.length}
-      </pre>
-    `);}
+`);}
