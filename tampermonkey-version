@@ -1209,8 +1209,8 @@ GM_addStyle(`:root{ --mo-bg: #f5f7fb;          /* page chrome */
             #moJsonDock.moHidden{display:none;}
 
             #moJsonLauncher{position:fixed;
-                            right:12px;
-                            bottom:12px;
+                            right:8px;
+                            bottom:28px;
                             z-index:999999;
                             font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
                             background:var(--mo-primary);
