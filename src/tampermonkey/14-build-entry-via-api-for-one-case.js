@@ -37,6 +37,9 @@
                                                                  entry.dateFiled = basics.dateFiled;
                                                                  entry.location = basics.location;
                                                                  entry.disposition = basics.disposition;
+                                                                 if (/casefile\s*tranf/i.test(String(entry.disposition || ''))) {entry._skipReason = 'transferred_case';
+                                                                                                                                  dbg('skip_transferred_case',{caseKey: entry.caseKey,caseNumber,courtId,disposition: entry.disposition});
+                                                                                                                                  return entry;}
                                                                  if (!hasRealTitle(entry.caseTitle)) {entry._skipReason = 'blank_title';
                                                                                                       dbg('skip_blank_title',{caseKey: entry.caseKey,caseNumber,courtId});
                                                                                                       return entry;}

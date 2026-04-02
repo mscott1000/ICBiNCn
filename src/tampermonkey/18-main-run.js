@@ -158,7 +158,7 @@
                                                              const {results,errors} = await runPool(resolved,DEFAULT_CONCURRENCY,async (item) => {if (isStop()) return null;
                                                                                                                                                  await sleep(80);
                                                                                                                                                  const out = await scrapeCaseViaApi(item,'');
-                                                                                                                                                 if (out && (out._skipReason === 'blank_title' || out._skipReason === 'paid_in_full' || out._skipReason === 'guilty_zero_balance_nonwarrant')) return null;
+                                                                                                                                                 if (out && (out._skipReason === 'blank_title' || out._skipReason === 'paid_in_full' || out._skipReason === 'guilty_zero_balance_nonwarrant' || out._skipReason === 'transferred_case')) return null;
                                                                                                                                                  return out;});
                                                              const nextLog = loadLog();
                                                              for (const r of results) {if (!r || !r.caseKey) continue;
@@ -228,7 +228,7 @@
                                                                                                                  if (out && out._skipReason === 'yob_mismatch') {yobMismatchCount += 1;
                                                                                                                                                                  return null;}
                                                                                                                  if (out && out._skipReason === 'paid_in_full') return out;
-                                                                                                                 if (out && out._skipReason === 'blank_title') return null;
+                                                                                                                 if (out && (out._skipReason === 'blank_title' || out._skipReason === 'transferred_case')) return null;
                                                                                                                  return out;});
                                                 const nextLog = loadLog();
                                                 for (const r of results) {if (!r || !r.caseKey) continue;

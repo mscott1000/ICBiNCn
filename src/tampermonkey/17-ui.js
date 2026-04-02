@@ -26,6 +26,25 @@ GM_addStyle(`:root{ --mo-bg: #f5f7fb;          /* page chrome */
                         box-sizing:border-box;
                         display:flex;
                         flex-direction:column;}
+            #moJsonDock.moHidden{display:none;}
+
+            #moJsonLauncher{position:fixed;
+                            right:12px;
+                            bottom:12px;
+                            z-index:999999;
+                            font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+                            background:var(--mo-primary);
+                            color:#fff;
+                            border:1px solid var(--mo-border);
+                            border-radius:12px;
+                            box-shadow:var(--mo-shadow);
+                            font-weight:900;
+                            font-size:12px;
+                            padding:10px 14px;
+                            cursor:pointer;
+                            user-select:none;}
+            #moJsonLauncher:hover{background:var(--mo-primary-dk);}
+            #moJsonLauncher.moHidden{display:none;}
 
             #moJsonHeader{background:var(--mo-surface-2);
                           border-bottom:1px solid var(--mo-border);
@@ -225,10 +244,22 @@ dock.innerHTML = `
     </div>
   </div>
 `;
+const launcher = document.createElement('button');
+launcher.id = 'moJsonLauncher';
+launcher.type = 'button';
+launcher.textContent = 'ICBiNCn';
+
 (document.body || document.documentElement).appendChild(dock);
+(document.body || document.documentElement).appendChild(launcher);
 
 const $status = dock.querySelector('#moJsonStatus');
 const $content = dock.querySelector('#moJsonContent');
+
+function minimizeDock() {dock.classList.add('moHidden');
+                         launcher.classList.remove('moHidden');}
+
+function expandDock() {dock.classList.remove('moHidden');
+                       launcher.classList.add('moHidden');}
 
 function uiStatus(msg) {$status.textContent = msg;
                         setStatus(msg);}
@@ -237,6 +268,9 @@ function addBlock(title,htmlInner) {const div = document.createElement('div');
                                    div.className = 'moBlock';
                                    div.innerHTML = `<h3>${escapeHtml(title)}</h3>${htmlInner}`;
                                    $content.appendChild(div);}
+
+launcher.addEventListener('click',() => {expandDock();});
+minimizeDock();
 
 function render() {const log = loadLog();
                    $content.innerHTML = '';
