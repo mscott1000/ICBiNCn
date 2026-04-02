@@ -4,7 +4,7 @@
  ************************************************************/
 GM_addStyle(`:root{ --mo-bg: #f5f7fb;          /* page chrome */
                     --mo-surface: #ffffff;     /* cards/panels */
-                    --mo-surface-2: #eef2f7;   /* header/footer/status */
+                    --mo-surface-2: #eef2f7;   /* header/footer */
                     --mo-border: #d7dee8;      /* lines/borders */
                     --mo-text: #0f172a;        /* primary text (slate-900) */
                     --mo-muted: #475569;       /* secondary text (slate-600) */
@@ -68,14 +68,6 @@ GM_addStyle(`:root{ --mo-bg: #f5f7fb;          /* page chrome */
                           justify-content:center;
                           transition:background 120ms ease,color 120ms ease;}
             #moJsonCloseX:hover{background:rgba(37, 99, 235, .10); color:var(--mo-text);}
-
-            #moJsonStatus{padding:8px 10px;
-                          border-bottom:1px solid var(--mo-border);
-                          font-size:12px;
-                          color:var(--mo-muted);
-                          background:var(--mo-surface-2);
-                          white-space:pre-wrap;
-                          flex:0 0 auto;}
 
             #moJsonContent{padding:10px;
                            overflow:auto;
@@ -217,7 +209,6 @@ dock.innerHTML = `
     </div>
     <button id="moJsonCloseX" title="Close">×</button>
   </div>
-  <div id="moJsonStatus">${escapeHtml(getStatus() || 'Ready.')}</div>
   <div id="moJsonContent"></div>
   <div id="moJsonFooter">
     <div class="moBottomRow">
@@ -230,8 +221,7 @@ dock.innerHTML = `
 const $content = dock.querySelector('#moJsonContent');
 const $status = dock.querySelector('#moJsonStatus');
 
-function uiStatus(msg) {if ($status) $status.textContent = String(msg || '');
-                        setStatus(msg);}
+function uiStatus(msg) {setStatus(msg);}
 
 function addBlock(title,htmlInner) {const div = document.createElement('div');
                                    div.className = 'moBlock';

@@ -2,6 +2,9 @@
 // @name         ICBINCN 3.13
 // @namespace    http://tampermonkey.net/
 // @version      2026-03-13
+// @name         ICBINCN 4.2
+// @namespace    http://tampermonkey.net/
+// @version      2026-04-02
 // @description  Background Case.net scraper using JSON/XHR endpoints. Navs to search results pages, pulls case data via POST requests, then writes to a persistent log for copying. Now with Track This Case.
 // @author       Mason Scott
 // @match        https://www.courts.mo.gov/casenet/*
@@ -1181,7 +1184,7 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
  ************************************************************/
 GM_addStyle(`:root{ --mo-bg: #f5f7fb;          /* page chrome */
                     --mo-surface: #ffffff;     /* cards/panels */
-                    --mo-surface-2: #eef2f7;   /* header/footer/status */
+                    --mo-surface-2: #eef2f7;   /* header/footer */
                     --mo-border: #d7dee8;      /* lines/borders */
                     --mo-text: #0f172a;        /* primary text (slate-900) */
                     --mo-muted: #475569;       /* secondary text (slate-600) */
@@ -1245,14 +1248,6 @@ GM_addStyle(`:root{ --mo-bg: #f5f7fb;          /* page chrome */
                           justify-content:center;
                           transition:background 120ms ease,color 120ms ease;}
             #moJsonCloseX:hover{background:rgba(37, 99, 235, .10); color:var(--mo-text);}
-
-            #moJsonStatus{padding:8px 10px;
-                          border-bottom:1px solid var(--mo-border);
-                          font-size:12px;
-                          color:var(--mo-muted);
-                          background:var(--mo-surface-2);
-                          white-space:pre-wrap;
-                          flex:0 0 auto;}
 
             #moJsonContent{padding:10px;
                            overflow:auto;
@@ -1409,6 +1404,7 @@ const $status = dock.querySelector('#moJsonStatus');
 
 function uiStatus(msg) {if ($status) $status.textContent = String(msg || '');
                         setStatus(msg);}
+function uiStatus(msg) {setStatus(msg);}
 
 function addBlock(title,htmlInner) {const div = document.createElement('div');
                                    div.className = 'moBlock';
