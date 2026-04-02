@@ -270,7 +270,7 @@ function addBlock(title,htmlInner) {const div = document.createElement('div');
                                    $content.appendChild(div);}
 
 launcher.addEventListener('click',() => {expandDock();});
-minimizeDock();
+expandDock();
 
 function render() {const log = loadLog();
                    $content.innerHTML = '';
