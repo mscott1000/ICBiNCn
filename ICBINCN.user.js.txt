@@ -1386,6 +1386,7 @@ dock.innerHTML = `
     </div>
     <button id="moJsonCloseX" title="Close">×</button>
   </div>
+  <div id="moJsonStatus">${escapeHtml(getStatus() || 'Ready.')}</div>
   <div id="moJsonContent"></div>
   <div id="moJsonFooter">
     <div class="moBottomRow">
@@ -1396,7 +1397,10 @@ dock.innerHTML = `
 (document.body || document.documentElement).appendChild(dock);
 
 const $content = dock.querySelector('#moJsonContent');
+const $status = dock.querySelector('#moJsonStatus');
 
+function uiStatus(msg) {if ($status) $status.textContent = String(msg || '');
+                        setStatus(msg);}
 function uiStatus(msg) {setStatus(msg);}
 
 function addBlock(title,htmlInner) {const div = document.createElement('div');

@@ -219,6 +219,7 @@ dock.innerHTML = `
 (document.body || document.documentElement).appendChild(dock);
 
 const $content = dock.querySelector('#moJsonContent');
+const $status = dock.querySelector('#moJsonStatus');
 
 function uiStatus(msg) {setStatus(msg);}
 
