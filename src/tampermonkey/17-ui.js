@@ -274,6 +274,8 @@ expandDock();
 
 function render() {const log = loadLog();
                    $content.innerHTML = '';
+                   const copyBtn = dock.querySelector('#moJsonCopy');
+                   if (copyBtn) copyBtn.textContent = `Copy (${log.length})`;
                    const ns = loadNameState();
                    const draft = loadDraft();
                    const p = ns?.params || draft;
