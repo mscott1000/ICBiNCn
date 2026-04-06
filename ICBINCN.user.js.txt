@@ -1352,7 +1352,7 @@ GM_addStyle(`:root{ --mo-bg: #f5f7fb;          /* page chrome */
                        margin-top:8px;}
 
             .moNameRowBottom{display:grid;
-                             grid-template-columns:1fr auto;
+                             grid-template-columns:minmax(0, 0.3fr) minmax(0, 1.7fr);
                              gap:8px;
                              margin-top:8px;
                              align-items:end;}
@@ -1371,7 +1371,7 @@ GM_addStyle(`:root{ --mo-bg: #f5f7fb;          /* page chrome */
                      flex-direction:column;
                      gap:4px;}
 
-            .moField label{font-size:11px;
+            .moField label{font-size:12px;
                            font-weight:900;
                            color:var(--mo-muted);}
 
@@ -1432,7 +1432,6 @@ dock.innerHTML = `
     <div class="btnRow">
       <button class="moBtn" id="moJsonCopy">Copy</button>
       <button class="moBtn" id="moJsonSummary">Summary</button>
-      <button class="moBtn" id="moJsonStop">Stop</button>
     </div>
     <button id="moJsonCloseX" title="Close">×</button>
   </div>
@@ -1440,6 +1439,7 @@ dock.innerHTML = `
   <div id="moJsonContent"></div>
   <div id="moJsonFooter">
     <div class="moBottomRow">
+      <button class="moBtn" id="moJsonStop">Stop All</button>
       <button class="moBtn" id="moJsonClear">Clear Log</button>
     </div>
   </div>
@@ -1466,7 +1466,7 @@ function uiStatus(msg) {$status.textContent = msg;
 
 function addBlock(title,htmlInner) {const div = document.createElement('div');
                                    div.className = 'moBlock';
-                                   div.innerHTML = `<h3>${escapeHtml(title)}</h3>${htmlInner}`;
+                                   div.innerHTML = `${title ? `<h3>${escapeHtml(title)}</h3>` : ''}${htmlInner}`;
                                    $content.appendChild(div);}
 
 launcher.addEventListener('click',() => {expandDock();});
@@ -1497,14 +1497,14 @@ function render() {const log = loadLog();
           <label>Birth Year (four digits)</label>
           <input id="moNsYob" type="text" placeholder="YYYY" maxlength="4" value="${escapeHtml(p?.yob || '')}">
         </div>
-        <div style="display:flex; gap:8px; align-items:end;">
-          <button class="moBtn moSearchBtn" id="moJsonNameSearch">Search</button>
-          <button class="moBtn" id="moJsonClearEntries" style="height:32px;">Clear Entries</button>
+        <div style="display:flex; gap:8px; align-items:end; width:100%;">
+          <button class="moBtn moSearchBtn" id="moJsonNameSearch" style="flex:1;">Search</button>
+          <button class="moBtn" id="moJsonClearEntries" style="height:32px; flex:1;">Clear Entries</button>
         </div>
       </div>
     `);
-                   addBlock('Track This Case',`
-  <div class="moNameRow" style="grid-template-columns:minmax(0, 1.1fr) minmax(0, 1.4fr) auto; align-items:end;">
+                   addBlock('',`
+  <div class="moNameRow" style="grid-template-columns:minmax(0, 1fr) minmax(0, 1.2fr); align-items:end;">
     <div class="moField">
       <label>Case Number</label>
       <input id="moTrackCaseNo" type="text" placeholder="e.g. 18SL-CR01234" value="${escapeHtml((loadTrackState()?.caseNumber) || (loadTrackDraft()?.caseNumber) || '')}">
@@ -1513,10 +1513,10 @@ function render() {const log = loadLog();
       <label>Email Address</label>
       <input id="moTrackEmail" type="email" placeholder="name@example.com" value="${escapeHtml((loadTrackState()?.email) || (loadTrackDraft()?.email) || '')}">
     </div>
-    <div style="display:flex; flex-direction:column; gap:8px; align-items:stretch; justify-content:flex-end;">
-      <button class="moBtn" id="moTrackClearEntries" style="height:32px;">Clear TTC Entries</button>
-      <button class="moBtn" id="moTrackSignup" style="height:32px;">Sign Up Case</button>
-    </div>
+  </div>
+  <div class="moNameRowBottom" style="grid-template-columns:minmax(0, 1fr) minmax(0, 1fr);">
+    <button class="moBtn" id="moTrackSignup" style="height:32px;">Send Verification for Track This Case</button>
+    <button class="moBtn" id="moTrackClearEntries" style="height:32px;">Clear Entries</button>
   </div>
 `);
 }
