@@ -1511,17 +1511,7 @@ function render() {const log = loadLog();
     </div>
   </div>
 `);
-                   const caseBatchDraft = loadCaseBatchDraft();
-                   addBlock('Case Number Batch (Upcoming Dates)',`
-  <div class="moField">
-    <label>Case Numbers (newline preferred; optional court ID per line)</label>
-    <textarea id="moCaseBatchNums" placeholder="e.g. 18SL-CR01234|21\n18SL-TR06789">${escapeHtml(caseBatchDraft?.caseNumbersText || '')}</textarea>
-  </div>
-  <div style="display:flex; gap:8px; justify-content:flex-end; margin-top:8px;">
-    <button class="moBtn" id="moCaseBatchClear">Clear Entries</button>
-    <button class="moBtn moSearchBtn" id="moCaseBatchRun">Run Batch</button>
-  </div>
-`);}
+}
 
   /************************************************************
    * Main run
@@ -1863,17 +1853,6 @@ function render() {const log = loadLog();
                                                                           location.href = new URL('/casenet/caseNoSearch.do',location.origin).toString();
                                                                           render();
                                                                           return;}
-                                             if (id === 'moCaseBatchClear') {saveCaseBatchDraft({caseNumbersText:''});
-                                                                           const box = document.getElementById('moCaseBatchNums');
-                                                                           if (box) box.value = '';
-                                                                           uiStatus('Case number batch entries cleared');
-                                                                           render();
-                                                                           return;}
-                                             if (id === 'moCaseBatchRun') {const caseNumbersText = String(document.getElementById('moCaseBatchNums')?.value || '');
-                                                                         saveCaseBatchDraft({caseNumbersText});
-                                                                         await runBatchByCaseNumbers(caseNumbersText);
-                                                                         render();
-                                                                         return;}
                                              if (id === 'moJsonOpenLastHtml') {openLastHtmlInNewTab();
                                                                               return;}});
 
@@ -1887,8 +1866,7 @@ function render() {const log = loadLog();
                                                                                                          caseNumber: norm(document.getElementById('moTrackCaseNo')?.value || '').toUpperCase(),
                                                                                                          email: norm(document.getElementById('moTrackEmail')?.value || '')});
                                                                                          return;}
-                                     if (id === 'moCaseBatchNums') {saveCaseBatchDraft({caseNumbersText: String(document.getElementById('moCaseBatchNums')?.value || '')});
-                                                                     return;}});
+                                     });
 
 
   async function nameSearchTick() {const st = loadNameState();

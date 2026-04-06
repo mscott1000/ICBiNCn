@@ -319,14 +319,4 @@ function render() {const log = loadLog();
     </div>
   </div>
 `);
-                   const caseBatchDraft = loadCaseBatchDraft();
-                   addBlock('Case Number Batch (Upcoming Dates)',`
-  <div class="moField">
-    <label>Case Numbers (newline preferred; optional court ID per line)</label>
-    <textarea id="moCaseBatchNums" placeholder="e.g. 18SL-CR01234|21\n18SL-TR06789">${escapeHtml(caseBatchDraft?.caseNumbersText || '')}</textarea>
-  </div>
-  <div style="display:flex; gap:8px; justify-content:flex-end; margin-top:8px;">
-    <button class="moBtn" id="moCaseBatchClear">Clear Entries</button>
-    <button class="moBtn moSearchBtn" id="moCaseBatchRun">Run Batch</button>
-  </div>
-`);}
+}
