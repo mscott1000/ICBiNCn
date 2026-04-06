@@ -1113,6 +1113,13 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
                                      const caseNo = getCaseNumberForSummary(e);
                                      return `${dt} (for ${caseNo})`;}
 
+  function getSummaryStatusPriority(e) {const label = getWarrantLabelForSummary(e);
+                                       const normalized = norm(String(label || '')).toLowerCase();
+                                       if (normalized.includes('hold')) return 0;
+                                       if (/^warrant\b/.test(normalized)) return 1;
+                                       if (/^nonwarrant\b/.test(normalized)) return 2;
+                                       return 3;}
+
   function buildSummaryCopyText() {const log = loadLog();
                                   const expected = norm(document.getElementById('moNsYob')?.value || '');
                                   const filteredLog = log.filter((e) => {const m = yobMatchesExpected(expected,e?.yobRaw || e?.yob || '');
@@ -1125,8 +1132,13 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
                                   const sections = [];
                                   for (const [jurisdiction,entries] of byJurisdiction.entries()) {const jurisdictionJudge = entries.find((x) => norm(x?.judge || '') && norm(x?.judge || '') !== '- - -')?.judge || '';
                                                                                                    const header = getMunicipalityHeaderForSummary(jurisdiction,jurisdictionJudge) || jurisdiction.toUpperCase();
+                                                                                                   const sortedEntries = entries.map((entry,idx) => ({entry,idx}))
+                                                                                                                              .sort((a,b) => {const priorityDiff = getSummaryStatusPriority(a.entry) - getSummaryStatusPriority(b.entry);
+                                                                                                                                              if (priorityDiff) return priorityDiff;
+                                                                                                                                              return a.idx - b.idx;})
+                                                                                                                              .map(({entry}) => entry);
                                                                                                    sections.push(header);
-                                                                                                   for (const e of entries) {const caseNo = getCaseNumberForSummary(e);
+                                                                                                   for (const e of sortedEntries) {const caseNo = getCaseNumberForSummary(e);
                                                                                                                              const charge = norm(e?.chargeDescription || '') || 'No Charges Found';
                                                                                                                              const warrantLabel = getWarrantLabelForSummary(e);
                                                                                                                              sections.push(`${caseNo}: ${charge} - ${warrantLabel}`);}
