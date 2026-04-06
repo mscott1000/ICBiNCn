@@ -185,7 +185,15 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
                                                                                                    return tok;});
                                     return tokens.join(' ');}
 
-  function normalizeJudgeName(v) {return municipalityKey(v).replace(/^JUDGE\s+/,'');}
+  function normalizeJudgeName(v) {const base = municipalityKey(v).replace(/^JUDGE\s+/,'');
+                                  if (!base) return '';
+                                  const tokens = base.replace(/[^A-Z,\s]/g,' ')
+                                                     .replace(/,/g,' ')
+                                                     .split(/\s+/)
+                                                     .filter(Boolean)
+                                                     .filter((tok) => tok.length > 1 && !/^(JR|SR|II|III|IV|V)$/.test(tok));
+                                  if (!tokens.length) return '';
+                                  return [...new Set(tokens)].sort().join(' ');}
 
   function parseMunicipalityLine(line) {const trimmed = String(line || '').trim();
                                       if (!trimmed) return null;
@@ -227,7 +235,7 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
                                                                         if (!pool.length) return '';
                                                                         if (pool.length === 1) return pool[0].display;
                                                                         const judgeKey = normalizeJudgeName(judgeName);
-                                                                        if (judgeKey) {const matched = pool.find((x) => x.judgeKey && (x.judgeKey === judgeKey || judgeKey.includes(x.judgeKey) || x.judgeKey.includes(judgeKey)));
+                                                                        if (judgeKey) {const matched = pool.find((x) => x.judgeKey && x.judgeKey === judgeKey);
                                                                                        if (matched) return matched.display;}
                                                                         if (looseKey) {const operatingMatch = pool.find((x) => (x.looseKey || '').startsWith(`${looseKey} `) && /\bOPERATES IN\b/i.test(x.display));
                                                                                       if (operatingMatch) return operatingMatch.display;}
