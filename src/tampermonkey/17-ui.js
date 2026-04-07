@@ -268,6 +268,20 @@ GM_addStyle(`:root{ --mo-bg: #f5f7fb;          /* page chrome */
                             line-height:1.45;
                             white-space:pre-wrap;
                             margin:0;}
+            #moJsonHelpImages{display:grid;
+                              grid-template-columns:1fr;
+                              gap:10px;
+                              margin-top:12px;}
+            .moHelpImageWrap{margin:0;}
+            .moHelpImage{display:block;
+                         width:100%;
+                         height:auto;
+                         border:1px solid #d9be6a;
+                         border-radius:8px;
+                         background:#fff7e5;}
+            .moHelpImageWrap figcaption{font-size:12px;
+                                        color:#7a5b1d;
+                                        margin-top:4px;}
 
             .moHidden{display:none;}
 `);
@@ -278,6 +292,15 @@ function escapeHtml(s) {return String(s ?? '')
                               .replaceAll('>','&gt;')
                               .replaceAll('"','&quot;')
                               .replaceAll("'","&#039;");}
+
+const HELP_IMAGE_URLS = [
+  // Add up to 2 image URLs here (including data:image/...;base64,...).
+  // Example: 'https://example.com/help-step-1.png'
+];
+
+function buildHelpImageHtml() {const urls = (HELP_IMAGE_URLS || []).filter(Boolean).slice(0,2);
+                              if (!urls.length) return '';
+                              return `\n\n<div id="moJsonHelpImages">${urls.map((url,idx) => `<figure class="moHelpImageWrap"><img class="moHelpImage" src="${escapeHtml(url)}" alt="Help image ${idx + 1}" loading="lazy" /><figcaption>Image ${idx + 1}</figcaption></figure>`).join('')}</div>`;}
 
 const dock = document.createElement('div');
 dock.id = 'moJsonDock';
@@ -343,6 +366,7 @@ Once you have Tampermonkey on your Chrome profile, each computer gets its own mo
 > If you have suggestions, please let me know! I use this tool most work days, and update it often. Feel free to update yours with the shared Google Doc, and email tapinstl@gmail.com to reach me or Miranda.
 
 Love, Mason
+${buildHelpImageHtml()}
   </div>
 `;
 (document.body || document.documentElement).appendChild(helpPanel);
@@ -367,6 +391,8 @@ function openHelpPanel() {positionHelpPanel();
                           helpPanel.classList.remove('moHidden');}
 
 function closeHelpPanel() {helpPanel.classList.add('moHidden');}
+
+helpPanel.addEventListener('click',(e) => {if (e?.target?.id === 'moJsonHelpClose') closeHelpPanel();});
 
 window.addEventListener('resize',() => {if (!helpPanel.classList.contains('moHidden')) positionHelpPanel();});
 
