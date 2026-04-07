@@ -292,9 +292,9 @@ function render() {const log = loadLog();
         </div>
       </div>
 
-      <div class="moNameRowBottom">
+      <div class="moNameRowBottom" style="grid-template-columns:minmax(0, 0.36fr) minmax(0, 1.64fr);">
         <div class="moField">
-          <label>Birth Year (four digits)</label>
+          <label>Birth Year</label>
           <input id="moNsYob" type="text" placeholder="YYYY" maxlength="4" value="${escapeHtml(p?.yob || '')}">
         </div>
         <div style="display:flex; gap:8px; align-items:end; width:100%;">
@@ -303,8 +303,8 @@ function render() {const log = loadLog();
         </div>
       </div>
     `);
-                   addBlock('',`
-  <div class="moNameRow" style="grid-template-columns:minmax(0, 1fr) minmax(0, 1.2fr); align-items:end;">
+                   addBlock('Track This Case',`
+  <div class="moNameRow" style="grid-template-columns:minmax(0, 0.9fr) minmax(0, 1.3fr); align-items:end;">
     <div class="moField">
       <label>Case Number</label>
       <input id="moTrackCaseNo" type="text" placeholder="e.g. 18SL-CR01234" value="${escapeHtml((loadTrackState()?.caseNumber) || (loadTrackDraft()?.caseNumber) || '')}">
@@ -315,7 +315,7 @@ function render() {const log = loadLog();
     </div>
   </div>
   <div class="moNameRowBottom" style="grid-template-columns:minmax(0, 1fr) minmax(0, 1fr);">
-    <button class="moBtn" id="moTrackSignup" style="height:32px;">Send Verification for Track This Case</button>
+    <button class="moBtn" id="moTrackSignup" style="height:32px;">Send Verification Email</button>
     <button class="moBtn" id="moTrackClearEntries" style="height:32px;">Clear Entries</button>
   </div>
 `);
