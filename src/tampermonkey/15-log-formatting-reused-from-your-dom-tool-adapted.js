@@ -39,13 +39,14 @@
                                                                if (bucket === 'REFER') refer.push(e);
                                                                else if (bucket === 'URGENT') urgent.push(e);
                                                                else less.push(e);}
-                                  const countsHeader = [`Eligible: ${urgent.length}`,`Refer to City: ${refer.length}`,`Ineligible: ${less.length}`,''].join('\n');
-                                  function block(label,entries) {if (!entries.length) return `${label}\n(none)\n`;
-                                                                 return `${label}\n\n` + entries.map((e,idx) => `===== Case ${idx + 1} =====\n${formatEntry(e)}\n`).join('\n') + '\n';}
-                                  return [countsHeader,
-                                          block('<<<<<<<<<<<<<<<<<<<<<< ELIGIBLE >>>>>>>>>>>>>>>>>>>>>>',urgent),
-                                          block('<<<<<<<<<<<<<<<<<<<< REFER TO CITY >>>>>>>>>>>>>>>>>>>',refer),
-                                          block('<<<<<<<<<<<<<<<<<<<<< INELIGIBLE >>>>>>>>>>>>>>>>>>>>>',less),].join('\n');}
+                                  function block(entries) {if (!entries.length) return '';
+                                                           return entries.map((e,idx) => `===== Case ${idx + 1} =====
+${formatEntry(e)}
+`).join('
+');}
+                                  return [block(urgent),'','',block(refer),'','',block(less)].join('
+').trim();}
+
 
 
   const MUNICIPALITY_CONTACTS_RAW = `ARNOLD MUNICIPAL - (636) 296-0595
@@ -185,15 +186,21 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
                                                                                                    return tok;});
                                     return tokens.join(' ');}
 
-  function normalizeJudgeName(v) {const base = municipalityKey(v).replace(/^JUDGE\s+/,'');
+  function normalizeJudgeName(v) {const base = municipalityKey(v)
+                                      .replace(/JUDGE\/COMMISSIONER\s+ASSIGNED/,'')
+                                      .replace(/^JUDGE\s+/,'');
                                   if (!base) return '';
-                                  const tokens = base.replace(/[^A-Z,\s]/g,' ')
-                                                     .replace(/,/g,' ')
-                                                     .split(/\s+/)
-                                                     .filter(Boolean)
-                                                     .filter((tok) => tok.length > 1 && !/^(JR|SR|II|III|IV|V)$/.test(tok));
+                                  const scrubbed = base.replace(/[^A-Z,\s]/g,' ').replace(/\s+/g,' ').trim();
+                                  const commaMatch = scrubbed.match(/^([A-Z]+)\s*,\s*([A-Z]+)(?:\s+[A-Z]+)?/);
+                                  if (commaMatch) return `${commaMatch[2]} ${commaMatch[1]}`.trim();
+                                  const tokens = scrubbed.replace(/,/g,' ')
+                                                        .split(/\s+/)
+                                                        .filter(Boolean)
+                                                        .filter((tok) => tok.length > 1 && !/^(JR|SR|II|III|IV|V)$/.test(tok));
                                   if (!tokens.length) return '';
-                                  return [...new Set(tokens)].sort().join(' ');}
+                                  if (tokens.length >= 2) return `${tokens[0]} ${tokens[tokens.length - 1]}`;
+                                  return tokens[0];}
+
 
   function parseMunicipalityLine(line) {const trimmed = String(line || '').trim();
                                       if (!trimmed) return null;
@@ -232,13 +239,14 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
                                                                                                                                                                  const entryMatch = entry.matchKey || municipalityMatchKey(entry.key);
                                                                                                                                                                  if (!entryLoose) continue;
                                                                                                                                                                  if (entryLoose === looseKey || entryLoose.startsWith(`${looseKey} `) || looseKey.startsWith(`${entryLoose} `) || (matchKey && entryMatch && (entryMatch === matchKey || entryMatch.startsWith(`${matchKey} `) || matchKey.startsWith(`${entryMatch} `)))) {if (!pool.includes(entry)) pool.push(entry);}}}}
-                                                                        if (!pool.length) return '';
-                                                                        if (pool.length === 1) return pool[0].display;
                                                                         const judgeKey = normalizeJudgeName(judgeName);
+                                                                        if (!pool.length) return judgeKey ? `St. Louis County Circuit - Judge ${judgeKey}` : '';
                                                                         if (judgeKey) {const matched = pool.find((x) => x.judgeKey && x.judgeKey === judgeKey);
                                                                                        if (matched) return matched.display;}
+                                                                        if (pool.length === 1) return pool[0].display;
                                                                         if (looseKey) {const operatingMatch = pool.find((x) => (x.looseKey || '').startsWith(`${looseKey} `) && /\bOPERATES IN\b/i.test(x.display));
                                                                                       if (operatingMatch) return operatingMatch.display;}
+                                                                        if (judgeKey) return `St. Louis County Circuit - Judge ${judgeKey}`;
                                                                         return pool[0].display;}
 
 

@@ -264,13 +264,22 @@ GM_addStyle(`:root{ --mo-bg: #f5f7fb;          /* page chrome */
                              font-weight:900;
                              cursor:pointer;}
             #moJsonHelpHeading{text-align:center;
-                               font-size:16px;
+                               font-size:20.8px;
                                font-weight:950;
-                               margin:2px 96px 8px 0;}
+                               margin:2px 0 8px 0;}
+            #moJsonHelpLogoCaption{position:absolute;
+                                   top:108px;
+                                   right:12px;
+                                   width:88px;
+                                   text-align:center;
+                                   font-size:12px;
+                                   font-weight:900;
+                                   color:#7a5b1d;
+                                   white-space:pre-line;}
             #moJsonHelpSubheading{text-align:center;
                                   font-size:14px;
                                   font-weight:900;
-                                  margin:0 0 12px 0;}
+                                  margin:24px 0 12px 0;}
             #moJsonHelpBody{text-align:left;
                             font-size:14px;
                             font-weight:850;
@@ -350,6 +359,8 @@ helpPanel.className = 'moHidden';
 helpPanel.innerHTML = `
   <button id="moJsonHelpClose" title="Close Help">×</button>
   <img id="moJsonHelpLogo" src="${escapeHtml(LOGO_CASEY_IMAGE)}" alt="ICBiNCn Casey logo" />
+  <div id="moJsonHelpLogoCaption">Casey says:
+Don't tell the cops!</div>
   <div id="moJsonHelpHeading">FAQ / Tips</div>
   <div id="moJsonHelpSubheading">Having trouble? Here are some issues related to how the tool works that you might come across:</div>
   <div id="moJsonHelpBody">
@@ -383,7 +394,7 @@ helpPanel.innerHTML = `
 
 - If you have suggestions, please let me know! I use this tool most work days, and update it often. Feel free to update yours with the shared Google Doc, and email tapinstl@gmail.com to reach me or Miranda.
 
-Love, Mason
+Happy Searching, Mason
 ${buildHelpImageHtml()}
   </div>
 `;
