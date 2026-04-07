@@ -294,8 +294,7 @@ function escapeHtml(s) {return String(s ?? '')
                               .replaceAll("'","&#039;");}
 
 const HELP_IMAGE_URLS = [
-  // Add up to 2 image URLs here (including data:image/...;base64,...).
-  // Example: 'https://example.com/help-step-1.png'
+  'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 280"><defs><pattern id="checks" width="16" height="16" patternUnits="userSpaceOnUse"><rect width="8" height="8" fill="%23f5ec45"/><rect x="8" y="8" width="8" height="8" fill="%23f5ec45"/><rect x="8" width="8" height="8" fill="%23d8d8d8"/><rect y="8" width="8" height="8" fill="%23d8d8d8"/></pattern></defs><rect width="280" height="280" fill="%23f0f0f0"/><rect x="42" y="50" width="200" height="200" rx="6" fill="url(%23checks)" stroke="%23000" stroke-width="10"/><rect x="42" y="92" width="200" height="48" fill="%23020b15"/><circle cx="97" cy="116" r="10" fill="%23fff"/><circle cx="186" cy="116" r="10" fill="%23fff"/><circle cx="97" cy="116" r="4" fill="%23020b15"/><circle cx="186" cy="116" r="4" fill="%23020b15"/><path d="M108 176c11 20 26 30 42 30s31-10 42-30" fill="none" stroke="%231f2447" stroke-width="10" stroke-linecap="round"/><rect x="10" y="10" width="90" height="60" transform="rotate(-22 55 40)" fill="%23f5ccdc" stroke="%23000" stroke-width="8"/><rect x="56" y="22" width="48" height="40" transform="rotate(-22 80 42)" fill="%23da2230" stroke="%23000" stroke-width="8"/><rect x="95" y="2" width="78" height="64" transform="rotate(-22 134 34)" fill="%23f5ccdc" stroke="%23000" stroke-width="8"/></svg>'
 ];
 
 function buildHelpImageHtml() {const urls = (HELP_IMAGE_URLS || []).filter(Boolean).slice(0,2);
@@ -341,29 +340,35 @@ helpPanel.innerHTML = `
   <div id="moJsonHelpHeading">FAQ / Tips</div>
   <div id="moJsonHelpSubheading">Having trouble? Here are some issues related to how the tool works that you might come across:</div>
   <div id="moJsonHelpBody">
-> Buttons -
+- Buttons -
+
 "Copy" - Displays the number of cases in the tool's log. Click to add the full rundown of case information in the log to your clipboard.
+
 "Summary" - Click to add a summary of the "copy" log to your clipboard, with only the Case Number, Charge Text, and a 'status' of warrant/nonwarrant/hold on license. It will display those with holds first, then warrants, then nonwarrants, and sort them by jurisdiction.
+
 "X" - Minimizes the tool. If you want to turn the tool off temporarily, click "Manage Extensions" and toggle Tampermonkey off.
+
 "Search" - Searches. The year is used to sort - the tool searches all name results (up to 1000) then drops mismatched Years of Birth. If you enter a very common first-last name pair, it will search them all and then give up - this is on purpose, I don't want to brick your work laptop. Enter a middle initial maybe.
+
 "Clear Entries" - only from the section the button lives in.
+
 "Send Verification Email" - Click to sign up the case number you entered for Case.net's 'Track This Case' service, and send the verification email to the address listed.
+
 "Stop All" - Emergency stop. Any funny business stops here, and I mean it.
+
 "Clear Log" - Click to empty all cases attached to the current log. It's a good habit to click this before you run a new search, and the tool is supposed to make you do that, but sometimes it forgets.
 
-> Only one page of Case.net should be open while the tool is searching - multiple instances of the tool will try to read over each other's shoulder, and they will be bad at it.
+- Only one page of Case.net should be open while the tool is searching - multiple instances of the tool will try to read over each other's shoulder, and they will be bad at it.
 
-> It doesn't search Municourt.net, you still have to do that.
+- It doesn't search Municourt.net, you still have to do that.
 
-> Do NOT use an account logged into Case.net with a BAR number. I have no idea how the tool will interact with the website with that level of access, it seems like a privacy issue that I am not equipped to deal with professionally.
+- Do NOT use an account logged into Case.net with a BAR number. I have no idea how the tool will interact with the website with that level of access, it seems like a privacy issue that I am not equipped to deal with professionally.
 
-> The tool is tuned to the language of the clerks in our most commonly used Courts, but will not catch unique judge/clerk notes or things like them.
+- The tool is tuned to the language of the clerks in our most commonly used Courts, but will not catch unique judge/clerk notes or things like them.
 
-> The tool only exists on the Google profile you add it to, on the machine you copy-pasted it to. For example, if you install Tampermonkey and load this script onto it while logged into Chrome on a personal computer, that same Chrome profile on any other computer will show the Tampermonkey extension but it will NOT have this script.
+- The tool only exists on the Google profile you add it to, on the machine you copy-pasted it to. For example, if you install Tampermonkey and load this script onto it while logged into Chrome on a personal computer, that same Chrome profile on any other computer will show the Tampermonkey extension but it will NOT have this script. Once you have Tampermonkey on your Chrome profile, each computer gets its own monkey, and you have to teach each one how to use this tool (same install steps, minus the "adding extension" part).
 
-Once you have Tampermonkey on your Chrome profile, each computer gets its own monkey, and you have to teach each one how to use this tool (same install steps, minus the "adding extension" part).
-
-> If you have suggestions, please let me know! I use this tool most work days, and update it often. Feel free to update yours with the shared Google Doc, and email tapinstl@gmail.com to reach me or Miranda.
+- If you have suggestions, please let me know! I use this tool most work days, and update it often. Feel free to update yours with the shared Google Doc, and email tapinstl@gmail.com to reach me or Miranda.
 
 Love, Mason
 ${buildHelpImageHtml()}
