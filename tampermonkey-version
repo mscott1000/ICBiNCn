@@ -1423,8 +1423,8 @@ GM_addStyle(`:root{ --mo-bg: #f5f7fb;          /* page chrome */
                            color:#2f2200;}
             #moJsonHelpBtn:hover{background:#e0ad1f;}
 
-            #moJsonHelpPanel{position:absolute;
-                             right:calc(100% + 10px);
+            #moJsonHelpPanel{position:fixed;
+                             right:542px;
                              bottom:12px;
                              width:460px;
                              max-width:min(460px,calc(100vw - 24px));
@@ -1557,9 +1557,18 @@ function minimizeDock() {dock.classList.add('moHidden');
 function expandDock() {dock.classList.remove('moHidden');
                        launcher.classList.add('moHidden');}
 
-function openHelpPanel() {helpPanel.classList.remove('moHidden');}
+function positionHelpPanel() {const rect = dock.getBoundingClientRect();
+                              const right = Math.max(8,window.innerWidth - rect.left + 10);
+                              const bottom = Math.max(8,window.innerHeight - rect.bottom);
+                              helpPanel.style.right = `${right}px`;
+                              helpPanel.style.bottom = `${bottom}px`;}
+
+function openHelpPanel() {positionHelpPanel();
+                          helpPanel.classList.remove('moHidden');}
 
 function closeHelpPanel() {helpPanel.classList.add('moHidden');}
+
+window.addEventListener('resize',() => {if (!helpPanel.classList.contains('moHidden')) positionHelpPanel();});
 
 function uiStatus(msg) {$status.textContent = msg;
                         setStatus(msg);}
