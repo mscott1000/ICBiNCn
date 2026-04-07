@@ -1031,11 +1031,19 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
                                                                                                    return tok;});
                                     return tokens.join(' ');}
 
-  function normalizeJudgeName(v) {const base = municipalityKey(v)
-                                      .replace(/JUDGE\/COMMISSIONER\s+ASSIGNED/,'')
-                                      .replace(/^JUDGE\s+/,'');
-                                  if (!base) return '';
-                                  const scrubbed = base.replace(/[^A-Z,\s]/g,' ').replace(/\s+/g,' ').trim();
+  function normalizeJudgeName(v) {const raw = municipalityKey(v);
+                                  if (!raw) return '';
+                                  const extracted = (() => {const afterAssigned = raw.match(/ASSIGNED\s*([A-Z,\s]+)/);
+                                                             if (afterAssigned?.[1]) return afterAssigned[1];
+                                                             const commissionerMatch = raw.match(/JUDGE\/COMMISSIONER\s*ASSIGNED\s*([A-Z,\s]+)/);
+                                                             if (commissionerMatch?.[1]) return commissionerMatch[1];
+                                                             return raw;})();
+                                  const withoutNoise = extracted.replace(/\bDATE\s+FILED\b[\s\S]*$/,'')
+                                                               .replace(/\bLOCATION\b[\s\S]*$/,'')
+                                                               .replace(/\bCASE\s+TYPE\b[\s\S]*$/,'')
+                                                               .replace(/JUDGE\/COMMISSIONER\s*ASSIGNED/,'')
+                                                               .replace(/^JUDGE\s+/,'');
+                                  const scrubbed = withoutNoise.replace(/[^A-Z,\s]/g,' ').replace(/\s+/g,' ').trim();
                                   const commaMatch = scrubbed.match(/^([A-Z]+)\s*,\s*([A-Z]+)(?:\s+[A-Z]+)?/);
                                   if (commaMatch) return `${commaMatch[2]} ${commaMatch[1]}`.trim();
                                   const tokens = scrubbed.replace(/,/g,' ')
@@ -1085,13 +1093,13 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
                                                                                                                                                                  if (!entryLoose) continue;
                                                                                                                                                                  if (entryLoose === looseKey || entryLoose.startsWith(`${looseKey} `) || looseKey.startsWith(`${entryLoose} `) || (matchKey && entryMatch && (entryMatch === matchKey || entryMatch.startsWith(`${matchKey} `) || matchKey.startsWith(`${entryMatch} `)))) {if (!pool.includes(entry)) pool.push(entry);}}}}
                                                                         const judgeKey = normalizeJudgeName(judgeName);
-                                                                        if (!pool.length) return judgeKey ? `St. Louis County Circuit - Judge ${judgeKey}` : '';
+                                                                        if (!pool.length) return judgeKey ? `${key} - {Judge ${judgeKey}}` : '';
                                                                         if (judgeKey) {const matched = pool.find((x) => x.judgeKey && x.judgeKey === judgeKey);
                                                                                        if (matched) return matched.display;}
                                                                         if (pool.length === 1) return pool[0].display;
                                                                         if (looseKey) {const operatingMatch = pool.find((x) => (x.looseKey || '').startsWith(`${looseKey} `) && /\bOPERATES IN\b/i.test(x.display));
                                                                                       if (operatingMatch) return operatingMatch.display;}
-                                                                        if (judgeKey) return `St. Louis County Circuit - Judge ${judgeKey}`;
+                                                                        if (judgeKey) return `${key} - {Judge ${judgeKey}}`;
                                                                         return pool[0].display;}
 
 
@@ -1144,21 +1152,28 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
                                                                byJurisdiction.get(jurisdiction).push(e);}
 
                                   const sections = [];
-                                  for (const [jurisdiction,entries] of byJurisdiction.entries()) {const jurisdictionJudge = entries.find((x) => norm(x?.judge || '') && norm(x?.judge || '') !== '- - -')?.judge || '';
-                                                                                                   const header = getMunicipalityHeaderForSummary(jurisdiction,jurisdictionJudge) || jurisdiction.toUpperCase();
-                                                                                                   const sortedEntries = entries.map((entry,idx) => ({entry,idx}))
-                                                                                                                              .sort((a,b) => {const priorityDiff = getSummaryStatusPriority(a.entry) - getSummaryStatusPriority(b.entry);
-                                                                                                                                              if (priorityDiff) return priorityDiff;
-                                                                                                                                              return a.idx - b.idx;})
-                                                                                                                              .map(({entry}) => entry);
-                                                                                                   sections.push(header);
-                                                                                                   for (const e of sortedEntries) {const caseNo = getCaseNumberForSummary(e);
-                                                                                                                             const charge = norm(e?.chargeDescription || '') || 'No Charges Found';
-                                                                                                                             const warrantLabel = getWarrantLabelForSummary(e);
-                                                                                                                             sections.push(`${caseNo}: ${charge} - ${warrantLabel}`);}
-                                                                                                   if (header.includes('FRESH START FRIDAY')) sections.push(FRESH_START_FRIDAY_TEXT);
-                                                                                                   sections.push('');
-                                                                                                   sections.push('');}
+                                  for (const [jurisdiction,entries] of byJurisdiction.entries()) {const jurisdictionKey = municipalityKey(jurisdiction);
+                                                                                                   const isStlCountyCircuit = jurisdictionKey.includes('ST LOUIS COUNTY') && jurisdictionKey.includes('CIRCUIT');
+                                                                                                   const grouped = new Map();
+                                                                                                   if (isStlCountyCircuit) {for (const entry of entries) {const header = getMunicipalityHeaderForSummary(jurisdiction,entry?.judge || '') || jurisdiction.toUpperCase();
+                                                                                                                                                          if (!grouped.has(header)) grouped.set(header,[]);
+                                                                                                                                                          grouped.get(header).push(entry);}}
+                                                                                                   else {const jurisdictionJudge = entries.find((x) => norm(x?.judge || '') && norm(x?.judge || '') !== '- - -')?.judge || '';
+                                                                                                         const header = getMunicipalityHeaderForSummary(jurisdiction,jurisdictionJudge) || jurisdiction.toUpperCase();
+                                                                                                         grouped.set(header,entries);}
+                                                                                                   for (const [header,headerEntries] of grouped.entries()) {const sortedEntries = headerEntries.map((entry,idx) => ({entry,idx}))
+                                                                                                                                                        .sort((a,b) => {const priorityDiff = getSummaryStatusPriority(a.entry) - getSummaryStatusPriority(b.entry);
+                                                                                                                                                                        if (priorityDiff) return priorityDiff;
+                                                                                                                                                                        return a.idx - b.idx;})
+                                                                                                                                                        .map(({entry}) => entry);
+                                                                                                                                                     sections.push(header);
+                                                                                                                                                     for (const e of sortedEntries) {const caseNo = getCaseNumberForSummary(e);
+                                                                                                                                                                               const charge = norm(e?.chargeDescription || '') || 'No Charges Found';
+                                                                                                                                                                               const warrantLabel = getWarrantLabelForSummary(e);
+                                                                                                                                                                               sections.push(`${caseNo}: ${charge} - ${warrantLabel}`);}
+                                                                                                                                                     if (header.includes('FRESH START FRIDAY')) sections.push(FRESH_START_FRIDAY_TEXT);
+                                                                                                                                                     sections.push('');
+                                                                                                                                                     sections.push('');}}
 
                                   const upcomingByJurisdiction = new Map();
                                   for (const e of filteredLog) {const next = parseUpcomingCourtDate(e);
@@ -1473,15 +1488,6 @@ GM_addStyle(`:root{ --mo-bg: #f5f7fb;          /* page chrome */
                                font-size:20.8px;
                                font-weight:950;
                                margin:2px 0 8px 0;}
-            #moJsonHelpLogoCaption{position:absolute;
-                                   top:108px;
-                                   right:12px;
-                                   width:88px;
-                                   text-align:center;
-                                   font-size:12px;
-                                   font-weight:900;
-                                   color:#7a5b1d;
-                                   white-space:pre-line;}
             #moJsonHelpSubheading{text-align:center;
                                   font-size:14px;
                                   font-weight:900;
@@ -1506,6 +1512,19 @@ GM_addStyle(`:root{ --mo-bg: #f5f7fb;          /* page chrome */
             .moHelpImageWrap figcaption{font-size:12px;
                                         color:#7a5b1d;
                                         margin-top:4px;}
+            #moJsonHelpFooterBrand{display:flex;
+                                   justify-content:flex-end;
+                                   align-items:flex-end;
+                                   gap:8px;
+                                   margin-top:10px;}
+            #moJsonHelpFooterCaption{text-align:right;
+                                     font-size:12px;
+                                     font-weight:900;
+                                     color:#7a5b1d;
+                                     white-space:pre-line;}
+            #moJsonHelpFooterLogo{width:88px;
+                                  height:auto;
+                                  display:block;}
 
             .moHidden{display:none;}
 `);
@@ -1565,8 +1584,6 @@ helpPanel.className = 'moHidden';
 helpPanel.innerHTML = `
   <button id="moJsonHelpClose" title="Close Help">×</button>
   <img id="moJsonHelpLogo" src="${escapeHtml(LOGO_CASEY_IMAGE)}" alt="ICBiNCn Casey logo" />
-  <div id="moJsonHelpLogoCaption">Casey says:
-Don't tell the cops!</div>
   <div id="moJsonHelpHeading">FAQ / Tips</div>
   <div id="moJsonHelpSubheading">Having trouble? Here are some issues related to how the tool works that you might come across:</div>
   <div id="moJsonHelpBody">
@@ -1600,8 +1617,14 @@ Don't tell the cops!</div>
 
 - If you have suggestions, please let me know! I use this tool most work days, and update it often. Feel free to update yours with the shared Google Doc, and email tapinstl@gmail.com to reach me or Miranda.
 
-Happy Searching, Mason
+Happy Searching,
+Mason
 ${buildHelpImageHtml()}
+  </div>
+  <div id="moJsonHelpFooterBrand">
+    <div id="moJsonHelpFooterCaption">Casey says:
+Don't tell the cops!</div>
+    <img id="moJsonHelpFooterLogo" src="${escapeHtml(LOGO_CASEY_IMAGE)}" alt="ICBiNCn Casey logo" />
   </div>
 `;
 (document.body || document.documentElement).appendChild(helpPanel);
@@ -1885,7 +1908,7 @@ function render() {const log = loadLog();
                                            const conc = DEFAULT_CONCURRENCY;
                                            clearLastHtml();
                                            saveJson(KEY_NET_STATS,{byPath:{}});
-                                           uiStatus('Harvesting all results pages…');
+                                           uiStatus('Gathering all results…');
                                            render();
                                            await sleep(5000);
                                            let cases = await harvestAllResultCaseKeys();
