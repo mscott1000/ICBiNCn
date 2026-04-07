@@ -294,7 +294,8 @@ function escapeHtml(s) {return String(s ?? '')
                               .replaceAll("'","&#039;");}
 
 const HELP_IMAGE_URLS = [
-  'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 280"><defs><pattern id="checks" width="16" height="16" patternUnits="userSpaceOnUse"><rect width="8" height="8" fill="%23f5ec45"/><rect x="8" y="8" width="8" height="8" fill="%23f5ec45"/><rect x="8" width="8" height="8" fill="%23d8d8d8"/><rect y="8" width="8" height="8" fill="%23d8d8d8"/></pattern></defs><rect width="280" height="280" fill="%23f0f0f0"/><rect x="42" y="50" width="200" height="200" rx="6" fill="url(%23checks)" stroke="%23000" stroke-width="10"/><rect x="42" y="92" width="200" height="48" fill="%23020b15"/><circle cx="97" cy="116" r="10" fill="%23fff"/><circle cx="186" cy="116" r="10" fill="%23fff"/><circle cx="97" cy="116" r="4" fill="%23020b15"/><circle cx="186" cy="116" r="4" fill="%23020b15"/><path d="M108 176c11 20 26 30 42 30s31-10 42-30" fill="none" stroke="%231f2447" stroke-width="10" stroke-linecap="round"/><rect x="10" y="10" width="90" height="60" transform="rotate(-22 55 40)" fill="%23f5ccdc" stroke="%23000" stroke-width="8"/><rect x="56" y="22" width="48" height="40" transform="rotate(-22 80 42)" fill="%23da2230" stroke="%23000" stroke-width="8"/><rect x="95" y="2" width="78" height="64" transform="rotate(-22 134 34)" fill="%23f5ccdc" stroke="%23000" stroke-width="8"/></svg>'
+  // Add up to 2 image URLs here (including data:image/...;base64,...).
+  // Example: 'https://example.com/help-step-1.png'
 ];
 
 function buildHelpImageHtml() {const urls = (HELP_IMAGE_URLS || []).filter(Boolean).slice(0,2);
