@@ -65,6 +65,10 @@
                                                                             return;}
                                              if (id === 'moJsonCloseX') {minimizeDock();
                                                                         return;}
+                                             if (id === 'moJsonHelpBtn') {openHelpPanel();
+                                                                          return;}
+                                             if (id === 'moJsonHelpClose') {closeHelpPanel();
+                                                                            return;}
                                              if (id === 'moTrackClearEntries') {clearTrackDraft();
                                                                               clearTrackState();
                                                                               setStop(true);

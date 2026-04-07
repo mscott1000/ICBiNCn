@@ -1307,6 +1307,10 @@ GM_addStyle(`:root{ --mo-bg: #f5f7fb;          /* page chrome */
                           border-top:1px solid var(--mo-border);
                           padding:10px;
                           flex:0 0 auto;}
+            #moJsonFooterInner{display:flex;
+                               align-items:center;
+                               justify-content:space-between;
+                               gap:8px;}
 
             #moJsonDock *{box-sizing:border-box;}
 
@@ -1414,6 +1418,57 @@ GM_addStyle(`:root{ --mo-bg: #f5f7fb;          /* page chrome */
                          margin-top:0;
                          flex-wrap:wrap;}
 
+            #moJsonHelpBtn{background:#d4a017;
+                           border:1.5px solid #ad7f00;
+                           color:#2f2200;}
+            #moJsonHelpBtn:hover{background:#e0ad1f;}
+
+            #moJsonHelpPanel{position:absolute;
+                             right:calc(100% + 10px);
+                             bottom:12px;
+                             width:460px;
+                             max-width:min(460px,calc(100vw - 24px));
+                             max-height:66vh;
+                             overflow:auto;
+                             background:#fffef8;
+                             border:1px solid #d9be6a;
+                             border-radius:12px;
+                             box-shadow:var(--mo-shadow);
+                             padding:12px 12px 14px 12px;
+                             z-index:1000000;
+                             transition:opacity 140ms ease,transform 140ms ease;}
+            #moJsonHelpPanel.moHidden{display:block;
+                                      opacity:0;
+                                      transform:translateX(12px);
+                                      pointer-events:none;}
+            #moJsonHelpClose{position:sticky;
+                             top:0;
+                             left:0;
+                             width:26px;
+                             height:26px;
+                             border:none;
+                             border-radius:8px;
+                             background:#fff0bf;
+                             color:#574100;
+                             font-size:18px;
+                             line-height:18px;
+                             font-weight:900;
+                             cursor:pointer;}
+            #moJsonHelpHeading{text-align:center;
+                               font-size:16px;
+                               font-weight:950;
+                               margin:2px 0 8px 0;}
+            #moJsonHelpSubheading{text-align:center;
+                                  font-size:14px;
+                                  font-weight:900;
+                                  margin:0 0 12px 0;}
+            #moJsonHelpBody{text-align:left;
+                            font-size:14px;
+                            font-weight:850;
+                            line-height:1.45;
+                            white-space:pre-wrap;
+                            margin:0;}
+
             .moHidden{display:none;}
 `);
 
@@ -1438,9 +1493,12 @@ dock.innerHTML = `
   <div id="moJsonStatus">Ready.</div>
   <div id="moJsonContent"></div>
   <div id="moJsonFooter">
-    <div class="moBottomRow">
-      <button class="moBtn" id="moJsonStop">Stop All</button>
-      <button class="moBtn" id="moJsonClear">Clear Log</button>
+    <div id="moJsonFooterInner">
+      <button class="moBtn" id="moJsonHelpBtn">Help</button>
+      <div class="moBottomRow">
+        <button class="moBtn" id="moJsonStop">Stop All</button>
+        <button class="moBtn" id="moJsonClear">Clear Log</button>
+      </div>
     </div>
   </div>
 `;
@@ -1452,14 +1510,56 @@ launcher.textContent = 'ICBiNCn';
 (document.body || document.documentElement).appendChild(dock);
 (document.body || document.documentElement).appendChild(launcher);
 
+const helpPanel = document.createElement('div');
+helpPanel.id = 'moJsonHelpPanel';
+helpPanel.className = 'moHidden';
+helpPanel.innerHTML = `
+  <button id="moJsonHelpClose" title="Close Help">×</button>
+  <div id="moJsonHelpHeading">FAQ / Tips</div>
+  <div id="moJsonHelpSubheading">Having trouble? Here are some issues related to how the tool works that you might come across:</div>
+  <div id="moJsonHelpBody">
+> Buttons -
+"Copy" - Displays the number of cases in the tool's log. Click to add the full rundown of case information in the log to your clipboard.
+"Summary" - Click to add a summary of the "copy" log to your clipboard, with only the Case Number, Charge Text, and a 'status' of warrant/nonwarrant/hold on license. It will display those with holds first, then warrants, then nonwarrants, and sort them by jurisdiction.
+"X" - Minimizes the tool. If you want to turn the tool off temporarily, click "Manage Extensions" and toggle Tampermonkey off.
+"Search" - Searches. The year is used to sort - the tool searches all name results (up to 1000) then drops mismatched Years of Birth. If you enter a very common first-last name pair, it will search them all and then give up - this is on purpose, I don't want to brick your work laptop. Enter a middle initial maybe.
+"Clear Entries" - only from the section the button lives in.
+"Send Verification Email" - Click to sign up the case number you entered for Case.net's 'Track This Case' service, and send the verification email to the address listed.
+"Stop All" - Emergency stop. Any funny business stops here, and I mean it.
+"Clear Log" - Click to empty all cases attached to the current log. It's a good habit to click this before you run a new search, and the tool is supposed to make you do that, but sometimes it forgets.
+
+> Only one page of Case.net should be open while the tool is searching - multiple instances of the tool will try to read over each other's shoulder, and they will be bad at it.
+
+> It doesn't search Municourt.net, you still have to do that.
+
+> Do NOT use an account logged into Case.net with a BAR number. I have no idea how the tool will interact with the website with that level of access, it seems like a privacy issue that I am not equipped to deal with professionally.
+
+> The tool is tuned to the language of the clerks in our most commonly used Courts, but will not catch unique judge/clerk notes or things like them.
+
+> The tool only exists on the Google profile you add it to, on the machine you copy-pasted it to. For example, if you install Tampermonkey and load this script onto it while logged into Chrome on a personal computer, that same Chrome profile on any other computer will show the Tampermonkey extension but it will NOT have this script.
+
+Once you have Tampermonkey on your Chrome profile, each computer gets its own monkey, and you have to teach each one how to use this tool (same install steps, minus the "adding extension" part).
+
+> If you have suggestions, please let me know! I use this tool most work days, and update it often. Feel free to update yours with the shared Google Doc, and email tapinstl@gmail.com to reach me or Miranda.
+
+Love, Mason
+  </div>
+`;
+(document.body || document.documentElement).appendChild(helpPanel);
+
 const $status = dock.querySelector('#moJsonStatus');
 const $content = dock.querySelector('#moJsonContent');
 
 function minimizeDock() {dock.classList.add('moHidden');
-                         launcher.classList.remove('moHidden');}
+                         launcher.classList.remove('moHidden');
+                         closeHelpPanel();}
 
 function expandDock() {dock.classList.remove('moHidden');
                        launcher.classList.add('moHidden');}
+
+function openHelpPanel() {helpPanel.classList.remove('moHidden');}
+
+function closeHelpPanel() {helpPanel.classList.add('moHidden');}
 
 function uiStatus(msg) {$status.textContent = msg;
                         setStatus(msg);}
@@ -1838,6 +1938,10 @@ function render() {const log = loadLog();
                                                                             return;}
                                              if (id === 'moJsonCloseX') {minimizeDock();
                                                                         return;}
+                                             if (id === 'moJsonHelpBtn') {openHelpPanel();
+                                                                          return;}
+                                             if (id === 'moJsonHelpClose') {closeHelpPanel();
+                                                                            return;}
                                              if (id === 'moTrackClearEntries') {clearTrackDraft();
                                                                               clearTrackState();
                                                                               setStop(true);
