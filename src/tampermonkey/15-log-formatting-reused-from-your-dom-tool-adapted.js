@@ -42,10 +42,8 @@
                                   function block(entries) {if (!entries.length) return '';
                                                            return entries.map((e,idx) => `===== Case ${idx + 1} =====
 ${formatEntry(e)}
-`).join('
-');}
-                                  return [block(urgent),'','',block(refer),'','',block(less)].join('
-').trim();}
+`).join('\n');}
+                                  return [block(urgent),'','',block(refer),'','',block(less)].join('\n').trim();}
 
 
 
