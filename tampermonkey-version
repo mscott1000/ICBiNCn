@@ -1,7 +1,7 @@
 // ==UserScript==
-// @name         ICBiNCn 4.2
+// @name         ICBiNCn 4.7
 // @namespace    http://tampermonkey.net/
-// @version      2026-04-02
+// @version      2026-04-07
 // @description  Background Case.net scraper using JSON/XHR endpoints. Navs to search results pages, pulls case data via POST requests, then writes to a persistent log for copying. Now with Track This Case.
 // @author       Mason Scott
 // @match        https://www.courts.mo.gov/casenet/*
@@ -1587,6 +1587,8 @@ Don't tell the cops!</div>
 "Stop All" - Emergency stop. Any funny business stops here, and I mean it.
 
 "Clear Log" - Click to empty all cases attached to the current log. It's a good habit to click this before you run a new search, and the tool is supposed to make you do that, but sometimes it forgets.
+
+- Common Roadblocks -
 
 - Only one page of Case.net should be open while the tool is searching - multiple instances of the tool will try to read over each other's shoulder, and they will be bad at it.
 
