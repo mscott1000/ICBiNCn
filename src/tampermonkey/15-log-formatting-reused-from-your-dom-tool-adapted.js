@@ -268,6 +268,7 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
                                         if (upcoming && upcoming !== '- - -') return 'upcoming';
                                         const ws = norm(String(e?.warrantSummary || '')).toLowerCase();
                                         if (!ws || ws === '- - -') return 'nonwarrant';
+                                        if (/\b(?:recall\w*|withdr\w*)\b/i.test(ws)) return 'nonwarrant';
                                         if (ws.includes('warrant served')) return 'nonwarrant';
                                         if (ws.includes('warrant')) return 'warrant';
                                         return 'nonwarrant';}
@@ -291,10 +292,14 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
                                   const expected = norm(document.getElementById('moNsYob')?.value || '');
                                   const filteredLog = log.filter((e) => {const m = yobMatchesExpected(expected,e?.yobRaw || e?.yob || '');
                                                                          return m.ok && !e?._skipReason;});
+                                  const entriesWithoutUpcoming = [];
+                                  const entriesWithUpcoming = [];
+                                  for (const e of filteredLog) {if (parseUpcomingCourtDate(e)) entriesWithUpcoming.push(e);
+                                                                else entriesWithoutUpcoming.push(e);}
                                   const byJurisdiction = new Map();
-                                  for (const e of filteredLog) {const jurisdiction = norm(e?.location || '') || '- - -';
-                                                               if (!byJurisdiction.has(jurisdiction)) byJurisdiction.set(jurisdiction,[]);
-                                                               byJurisdiction.get(jurisdiction).push(e);}
+                                  for (const e of entriesWithoutUpcoming) {const jurisdiction = norm(e?.location || '') || '- - -';
+                                                                           if (!byJurisdiction.has(jurisdiction)) byJurisdiction.set(jurisdiction,[]);
+                                                                           byJurisdiction.get(jurisdiction).push(e);}
 
                                   const sections = [];
                                   for (const [jurisdiction,entries] of byJurisdiction.entries()) {const jurisdictionJudge = entries.find((x) => norm(x?.judge || '') && norm(x?.judge || '') !== '- - -')?.judge || '';
@@ -314,7 +319,7 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
                                                                                                    sections.push('');}
 
                                   const upcomingByJurisdiction = new Map();
-                                  for (const e of filteredLog) {const next = parseUpcomingCourtDate(e);
+                                  for (const e of entriesWithUpcoming) {const next = parseUpcomingCourtDate(e);
                                                                if (!next) continue;
                                                                const jurisdiction = norm(e?.location || '') || '- - -';
                                                                if (!upcomingByJurisdiction.has(jurisdiction)) upcomingByJurisdiction.set(jurisdiction,[]);
