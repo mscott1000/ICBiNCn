@@ -70,7 +70,9 @@
                                                                                              entry.initialAppearanceDate = '';}
                                                                  else {entry.warrantSummary = [hit.filingDate ? `${hit.filingDate}` : '',`Event: ${hit.event}`,hit.bond ? hit.bond : ''].filter(Boolean).join('\n');
                                                                        entry.initialAppearanceDate = '';}
-                                                                 const baseStatus = !hit ? 'nonwarrant' : (hit.kind === 'warrant' ? 'warrant' : 'nonwarrant');
+                                                                 const normalizedEventKind = String(hit?.normalizedEventKind || '').toLowerCase();
+                                                                 const isResolvedWarrantEvent = normalizedEventKind === 'recall' || normalizedEventKind === 'withdraw';
+                                                                 const baseStatus = !hit || isResolvedWarrantEvent ? 'nonwarrant' : (hit.kind === 'warrant' ? 'warrant' : 'nonwarrant');
                                                                  entry.summaryStatus = docketStatus.hasActiveHold ? `${baseStatus} and HOLD placed on license` : baseStatus;
                                                                  let chargesResp = null;
                                                                  try {chargesResp = await postFormJsonRetry_tryCourtIds('/casenet/cases/charges.do',{caseNumber,courtId,isTicket:'',tabName:'Charge',});}
