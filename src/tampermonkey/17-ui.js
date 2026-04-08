@@ -1,5 +1,4 @@
-
-  /************************************************************
+/************************************************************
  * UI
  ************************************************************/
 GM_addStyle(`:root{ --mo-bg: #f5f7fb;          /* page chrome */
@@ -267,15 +266,6 @@ GM_addStyle(`:root{ --mo-bg: #f5f7fb;          /* page chrome */
                                font-size:20.8px;
                                font-weight:950;
                                margin:2px 0 8px 0;}
-            #moJsonHelpLogoCaption{position:absolute;
-                                   top:108px;
-                                   right:12px;
-                                   width:88px;
-                                   text-align:center;
-                                   font-size:12px;
-                                   font-weight:900;
-                                   color:#7a5b1d;
-                                   white-space:pre-line;}
             #moJsonHelpSubheading{text-align:center;
                                   font-size:14px;
                                   font-weight:900;
@@ -300,6 +290,19 @@ GM_addStyle(`:root{ --mo-bg: #f5f7fb;          /* page chrome */
             .moHelpImageWrap figcaption{font-size:12px;
                                         color:#7a5b1d;
                                         margin-top:4px;}
+            #moJsonHelpFooterBrand{display:flex;
+                                   justify-content:flex-end;
+                                   align-items:flex-end;
+                                   gap:8px;
+                                   margin-top:10px;}
+            #moJsonHelpFooterCaption{text-align:right;
+                                     font-size:12px;
+                                     font-weight:900;
+                                     color:#7a5b1d;
+                                     white-space:pre-line;}
+            #moJsonHelpFooterLogo{width:88px;
+                                  height:auto;
+                                  display:block;}
 
             .moHidden{display:none;}
 `);
@@ -359,8 +362,6 @@ helpPanel.className = 'moHidden';
 helpPanel.innerHTML = `
   <button id="moJsonHelpClose" title="Close Help">×</button>
   <img id="moJsonHelpLogo" src="${escapeHtml(LOGO_CASEY_IMAGE)}" alt="ICBiNCn Casey logo" />
-  <div id="moJsonHelpLogoCaption">Casey says:
-Don't tell the cops!</div>
   <div id="moJsonHelpHeading">FAQ / Tips</div>
   <div id="moJsonHelpSubheading">Having trouble? Here are some issues related to how the tool works that you might come across:</div>
   <div id="moJsonHelpBody">
@@ -378,7 +379,7 @@ Don't tell the cops!</div>
 
 "Copy" - Displays the number of cases in the tool's log. Click to add the full rundown of case information in the log to your clipboard.
 
-"Summary" - Click to add a summary of the "copy" log to your clipboard, with only the Case Number, Charge Text, and a status. Cases are scored and sorted by status priority (hold = 3, warrant = 2, nonwarrant = 1, anything else = 0), and jurisdictions with the highest-priority cases are listed first.
+"Summary" - Click to add a summary of the "copy" log to your clipboard, with only the Case Number, Charge Text, and a 'status' of warrant/nonwarrant/hold on license. It will display those with holds first, then warrants, then nonwarrants, and sort them by jurisdiction.
 
 "X" - Minimizes the tool. If you want to turn the tool off temporarily, click "Manage Extensions" and toggle Tampermonkey off.
 
@@ -392,10 +393,18 @@ Don't tell the cops!</div>
 
 "Clear Log" - Click to empty all cases attached to the current log. It's a good habit to click this before you run a new search, and the tool is supposed to make you do that, but sometimes it forgets.
 
+
 - If you have suggestions, please let me know! I use this tool most work days, and update it often. Feel free to update yours with the shared Google Doc (if the date has been updated, something else has changed too), and email tapinstl@gmail.com to reach me or Miranda.
 
-Happy Searching, Mason
+
+Happy Searching,
+Mason
 ${buildHelpImageHtml()}
+  </div>
+  <div id="moJsonHelpFooterBrand">
+    <div id="moJsonHelpFooterCaption">Casey says:
+Don't tell the cops!</div>
+    <img id="moJsonHelpFooterLogo" src="${escapeHtml(LOGO_CASEY_IMAGE)}" alt="ICBiNCn Casey logo" />
   </div>
 `;
 (document.body || document.documentElement).appendChild(helpPanel);

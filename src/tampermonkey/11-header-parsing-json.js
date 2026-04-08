@@ -1,5 +1,4 @@
-
-  /************************************************************
+/************************************************************
    * Header parsing (JSON)
    ************************************************************/
   function headerToEntryBasics(headerResp) {const caseNumber = norm(headerResp?.caseNumber || '');

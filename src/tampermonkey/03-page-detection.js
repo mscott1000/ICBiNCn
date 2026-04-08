@@ -1,5 +1,4 @@
-
-  /************************************************************
+/************************************************************
    * Page Detection
    ************************************************************/
   function isNoMatchesMessagePage() {const text = (document.querySelector('#nameSearchResult')?.innerText ||
