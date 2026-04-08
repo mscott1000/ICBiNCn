@@ -1113,6 +1113,14 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
                                         if (ws.includes('warrant')) return 'warrant';
                                         return 'nonwarrant';}
 
+  function getFineTextForSummary(e) {const raw = norm(String(e?.caseBalance || ''));
+                                    if (!raw || raw === '- - -') return '';
+                                    const cleaned = raw.replace(/[$,\s]/g,'');
+                                    if (!cleaned || cleaned === '- - -') return '';
+                                    const n = Number(cleaned);
+                                    if (!Number.isFinite(n) || Math.abs(n) < 0.000001) return '';
+                                    return `${n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})} fine`;}
+
   function parseUpcomingCourtDate(e) {const raw = norm(e?.nextDocketDate || '');
                                      if (!raw || raw === '- - -') return '';
                                      const parts = raw.split(';').map((x) => norm(x));
@@ -1138,6 +1146,17 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
                                                                     else score += 1;}
                                           return score;}
 
+  function getCourtroomSubheading(jurisdiction,judgeName = '') {const normalizedJudge = normalizeJudgeName(judgeName);
+                                                               const header = getMunicipalityHeaderForSummary(jurisdiction,judgeName);
+                                                               const divisionMatch = norm(header).match(/\bDIVISION\s+\d+[A-Z]?\b/i);
+                                                               const phoneMatch = norm(header).match(/-\s*(\(\d{3}\)\s*\d{3}[-\s]\d{4}(?:\s*EXT\.?\s*\d+)?)\s*(?:\{|$)/i);
+                                                               const bits = [];
+                                                               if (normalizedJudge) bits.push(`Judge ${normalizedJudge}`);
+                                                               else bits.push('Judge - - -');
+                                                               if (divisionMatch?.[0]) bits.push(divisionMatch[0].replace(/\s+/g,' ').trim());
+                                                               if (phoneMatch?.[1]) bits.push(phoneMatch[1].replace(/\s+/g,' ').trim());
+                                                               return `- ${bits.join(', ')} -`;}
+
   function buildSummaryCopyText() {const log = loadLog();
                                   const expected = norm(document.getElementById('moNsYob')?.value || '');
                                   const filteredLog = log.filter((e) => {const m = yobMatchesExpected(expected,e?.yobRaw || e?.yob || '');
@@ -1156,28 +1175,42 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
 
                                   const sections = [];
                                   let hasFreshStartFridaySection = false;
-                                  for (const {jurisdiction,entries} of sortedJurisdictions) {const jurisdictionKey = municipalityKey(jurisdiction);
-                                                                                              const isStlCountyCircuit = jurisdictionKey.includes('ST LOUIS COUNTY') && jurisdictionKey.includes('CIRCUIT');
-                                                                                              const grouped = new Map();
-                                                                                              if (isStlCountyCircuit) {for (const entry of entries) {const header = getMunicipalityHeaderForSummary(jurisdiction,entry?.judge || '') || jurisdiction.toUpperCase();
-                                                                                                                                                     if (!grouped.has(header)) grouped.set(header,[]);
-                                                                                                                                                     grouped.get(header).push(entry);}}
+                                  for (const {jurisdiction,entries} of sortedJurisdictions) {const groupedByJudge = new Map();
+                                                                                              for (const entry of entries) {const judgeKey = normalizeJudgeName(entry?.judge || '') || '__UNKNOWN__';
+                                                                                                                           if (!groupedByJudge.has(judgeKey)) groupedByJudge.set(judgeKey,[]);
+                                                                                                                           groupedByJudge.get(judgeKey).push(entry);}
+                                                                                              const hasMultipleCourtrooms = groupedByJudge.size > 1;
+                                                                                              if (hasMultipleCourtrooms) {sections.push(`${municipalityKey(jurisdiction) || jurisdiction.toUpperCase()} - {multiple courtrooms}`);
+                                                                                                                          for (const [,judgeEntries] of groupedByJudge.entries()) {const sortedEntries = judgeEntries.map((entry,idx) => ({entry,idx}))
+                                                                                                                                                                                   .sort((a,b) => {const priorityDiff = getSummaryStatusPriority(a.entry) - getSummaryStatusPriority(b.entry);
+                                                                                                                                                                                                   if (priorityDiff) return priorityDiff;
+                                                                                                                                                                                                   return a.idx - b.idx;})
+                                                                                                                                                                                   .map(({entry}) => entry);
+                                                                                                                                                    const judgeLine = getCourtroomSubheading(jurisdiction,sortedEntries[0]?.judge || '');
+                                                                                                                                                    sections.push(judgeLine);
+                                                                                                                                                    for (const e of sortedEntries) {const caseNo = getCaseNumberForSummary(e);
+                                                                                                                                                                              const charge = norm(e?.chargeDescription || '') || 'No Charges Found';
+                                                                                                                                                                              const warrantLabel = getWarrantLabelForSummary(e);
+                                                                                                                                                                              const fineText = getFineTextForSummary(e);
+                                                                                                                                                                              sections.push(`${caseNo}: ${charge} - ${warrantLabel}${fineText ? `, ${fineText}` : ''}`);}
+                                                                                                                                                    sections.push('');}
+                                                                                                                          sections.push('');}
                                                                                               else {const jurisdictionJudge = entries.find((x) => norm(x?.judge || '') && norm(x?.judge || '') !== '- - -')?.judge || '';
                                                                                                     const header = getMunicipalityHeaderForSummary(jurisdiction,jurisdictionJudge) || jurisdiction.toUpperCase();
-                                                                                                    grouped.set(header,entries);}
-                                                                                              for (const [header,headerEntries] of grouped.entries()) {const sortedEntries = headerEntries.map((entry,idx) => ({entry,idx}))
-                                                                                                                                                   .sort((a,b) => {const priorityDiff = getSummaryStatusPriority(a.entry) - getSummaryStatusPriority(b.entry);
-                                                                                                                                                                   if (priorityDiff) return priorityDiff;
-                                                                                                                                                                   return a.idx - b.idx;})
-                                                                                                                                                   .map(({entry}) => entry);
-                                                                                                                                                sections.push(header);
-                                                                                                                                                for (const e of sortedEntries) {const caseNo = getCaseNumberForSummary(e);
-                                                                                                                                                                          const charge = norm(e?.chargeDescription || '') || 'No Charges Found';
-                                                                                                                                                                          const warrantLabel = getWarrantLabelForSummary(e);
-                                                                                                                                                                          sections.push(`${caseNo}: ${charge} - ${warrantLabel}`);}
-                                                                                                                                                if (header.includes('FRESH START FRIDAY')) hasFreshStartFridaySection = true;
-                                                                                                                                                sections.push('');
-                                                                                                                                                sections.push('');}}
+                                                                                                    const sortedEntries = entries.map((entry,idx) => ({entry,idx}))
+                                                                                                                               .sort((a,b) => {const priorityDiff = getSummaryStatusPriority(a.entry) - getSummaryStatusPriority(b.entry);
+                                                                                                                                               if (priorityDiff) return priorityDiff;
+                                                                                                                                               return a.idx - b.idx;})
+                                                                                                                               .map(({entry}) => entry);
+                                                                                                    sections.push(header);
+                                                                                                    for (const e of sortedEntries) {const caseNo = getCaseNumberForSummary(e);
+                                                                                                                                      const charge = norm(e?.chargeDescription || '') || 'No Charges Found';
+                                                                                                                                      const warrantLabel = getWarrantLabelForSummary(e);
+                                                                                                                                      const fineText = getFineTextForSummary(e);
+                                                                                                                                      sections.push(`${caseNo}: ${charge} - ${warrantLabel}${fineText ? `, ${fineText}` : ''}`);}
+                                                                                                    if (header.includes('FRESH START FRIDAY')) hasFreshStartFridaySection = true;
+                                                                                                    sections.push('');
+                                                                                                    sections.push('');}}
 
                                   if (hasFreshStartFridaySection) {sections.push(FRESH_START_FRIDAY_TEXT);
                                                                    sections.push('');
@@ -1494,6 +1527,7 @@ GM_addStyle(`:root{ --mo-bg: #f5f7fb;          /* page chrome */
                                font-size:20.8px;
                                font-weight:950;
                                margin:2px 0 8px 0;}
+            #moJsonHelpSubheadingSpacer{height:1em;}
             #moJsonHelpSubheading{text-align:center;
                                   font-size:14px;
                                   font-weight:900;
@@ -1591,6 +1625,7 @@ helpPanel.innerHTML = `
   <button id="moJsonHelpClose" title="Close Help">×</button>
   <img id="moJsonHelpLogo" src="${escapeHtml(LOGO_CASEY_IMAGE)}" alt="ICBiNCn Casey logo" />
   <div id="moJsonHelpHeading">FAQ / Tips</div>
+  <div id="moJsonHelpSubheadingSpacer"></div>
   <div id="moJsonHelpSubheading">Having trouble? Here are some issues related to how the tool works that you might come across:</div>
   <div id="moJsonHelpBody">
 - Only one page of Case.net should be open while the tool is searching - multiple instances of the tool will try to read over each other's shoulder, and they will be bad at it.
