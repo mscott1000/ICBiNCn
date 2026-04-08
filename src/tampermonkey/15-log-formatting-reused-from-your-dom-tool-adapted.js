@@ -213,7 +213,6 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
                                               key,
                                               looseKey: municipalityLooseKey(base),
                                               matchKey: municipalityMatchKey(base),
-                                              judgeDisplay: judgeTag || '',
                                               judgeKey: judgeTag ? normalizeJudgeName(judgeTag) : ''};}
 
   const MUNICIPALITY_CONTACTS = (() => {const map = new Map();
@@ -239,16 +238,15 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
                                                                                                                                                                  if (!entryLoose) continue;
                                                                                                                                                                  if (entryLoose === looseKey || entryLoose.startsWith(`${looseKey} `) || looseKey.startsWith(`${entryLoose} `) || (matchKey && entryMatch && (entryMatch === matchKey || entryMatch.startsWith(`${matchKey} `) || matchKey.startsWith(`${entryMatch} `)))) {if (!pool.includes(entry)) pool.push(entry);}}}}
                                                                         const judgeKey = normalizeJudgeName(judgeName);
-                                                                        const withJudge = (display,fallbackJudge = '') => {const label = judgeKey || normalizeJudgeName(fallbackJudge);
-                                                                                                                             return label ? `${display} (Judge: ${label})` : display;};
+                                                                        const withJudge = (display) => judgeKey ? `${display} (Judge: ${judgeKey})` : display;
                                                                         if (!pool.length) return judgeKey ? `St. Louis County Circuit - Judge ${judgeKey}` : '';
                                                                         if (judgeKey) {const matched = pool.find((x) => x.judgeKey && x.judgeKey === judgeKey);
-                                                                                       if (matched) return withJudge(matched.display,matched.judgeDisplay);}
-                                                                        if (pool.length === 1) return withJudge(pool[0].display,pool[0].judgeDisplay);
+                                                                                       if (matched) return withJudge(matched.display);}
+                                                                        if (pool.length === 1) return withJudge(pool[0].display);
                                                                         if (looseKey) {const operatingMatch = pool.find((x) => (x.looseKey || '').startsWith(`${looseKey} `) && /\bOPERATES IN\b/i.test(x.display));
-                                                                                      if (operatingMatch) return withJudge(operatingMatch.display,operatingMatch.judgeDisplay);}
+                                                                                      if (operatingMatch) return withJudge(operatingMatch.display);}
                                                                         if (judgeKey) return `St. Louis County Circuit - Judge ${judgeKey}`;
-                                                                        return withJudge(pool[0].display,pool[0].judgeDisplay);}
+                                                                        return withJudge(pool[0].display);}
 
 
   const FRESH_START_FRIDAY_TEXT = ['- - - - -',
@@ -281,8 +279,6 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
                                      const caseNo = getCaseNumberForSummary(e);
                                      return `${dt} (for ${caseNo})`;}
 
-  function hasUpcomingCourtDate(e) {return !!parseUpcomingCourtDate(e);}
-
   function getSummaryStatusPoints(e) {const label = getWarrantLabelForSummary(e);
                                      const normalized = norm(String(label || '')).toLowerCase();
                                      if (normalized.includes('hold')) return 3;
@@ -294,18 +290,17 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
                                   const expected = norm(document.getElementById('moNsYob')?.value || '');
                                   const filteredLog = log.filter((e) => {const m = yobMatchesExpected(expected,e?.yobRaw || e?.yob || '');
                                                                          return m.ok && !e?._skipReason;});
-                                  const jurisdictionLog = filteredLog.filter((e) => !hasUpcomingCourtDate(e));
                                   const byJurisdiction = new Map();
-                                  for (const e of jurisdictionLog) {const jurisdiction = norm(e?.location || '') || '- - -';
+                                  for (const e of filteredLog) {const jurisdiction = norm(e?.location || '') || '- - -';
                                                                if (!byJurisdiction.has(jurisdiction)) byJurisdiction.set(jurisdiction,[]);
                                                                byJurisdiction.get(jurisdiction).push(e);}
                                   const sortedJurisdictions = Array.from(byJurisdiction.entries())
-                                                                   .sort(([aJur,aEntries],[bJur,bEntries]) => {const aTotal = aEntries.reduce((sum,entry) => sum + getSummaryStatusPoints(entry),0);
-                                                                                                                const bTotal = bEntries.reduce((sum,entry) => sum + getSummaryStatusPoints(entry),0);
-                                                                                                                if (bTotal !== aTotal) return bTotal - aTotal;
-                                                                                                                const aMax = Math.max(...aEntries.map(getSummaryStatusPoints),0);
+                                                                   .sort(([aJur,aEntries],[bJur,bEntries]) => {const aMax = Math.max(...aEntries.map(getSummaryStatusPoints),0);
                                                                                                                 const bMax = Math.max(...bEntries.map(getSummaryStatusPoints),0);
                                                                                                                 if (bMax !== aMax) return bMax - aMax;
+                                                                                                                const aTotal = aEntries.reduce((sum,entry) => sum + getSummaryStatusPoints(entry),0);
+                                                                                                                const bTotal = bEntries.reduce((sum,entry) => sum + getSummaryStatusPoints(entry),0);
+                                                                                                                if (bTotal !== aTotal) return bTotal - aTotal;
                                                                                                                 return aJur.localeCompare(bJur);});
 
                                   const sections = [];

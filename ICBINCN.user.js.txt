@@ -1,7 +1,7 @@
 // ==UserScript==
-// @name         ICBiNCn 4.2
+// @name         ICBiNCn 4.7
 // @namespace    http://tampermonkey.net/
-// @version      2026-04-02
+// @version      2026-04-07
 // @description  Background Case.net scraper using JSON/XHR endpoints. Navs to search results pages, pulls case data via POST requests, then writes to a persistent log for copying. Now with Track This Case.
 // @author       Mason Scott
 // @match        https://www.courts.mo.gov/casenet/*
@@ -476,22 +476,10 @@
                                           const hasHold = /\bhold\b/.test(t) || /\bheld\b/.test(t);
                                           const hasLicense = /\blicen[sc]e\b/.test(t);
                                           if (!hasHold || !hasLicense) return '';
-                                          if (/\breleased?\b/.test(t) || /\blifted\b/.test(t) || /\bremoved\b/.test(t) || /\bwithdrawn?\b/.test(t) || /\brecalled?\b/.test(t)) return 'released';
+                                          if (/\breleased\b/.test(t) || /\blifted\b/.test(t) || /\bremoved\b/.test(t)) return 'released';
                                           if (/\bplaced\b/.test(t)) return 'placed';
                                           if (/\bplace\b/.test(t)) return 'placed';
                                           return 'placed';}
-
-  function isReleaseLikeTerm(text) {const t = normalizePhraseForMatch(text);
-                                    if (!t) return false;
-                                    return /\breleased?\b/.test(t) || /\blifted\b/.test(t) || /\bremoved\b/.test(t) || /\bwithdrawn?\b/.test(t) || /\brecalled?\b/.test(t);}
-
-  function normalizeWarrantSummonsEventKind(text) {const t = normalizePhraseForMatch(text);
-                                                   if (!t) return '';
-                                                   if (/\brecalled?\b/.test(t)) return 'recall';
-                                                   if (/\bwithdrawn?\b/.test(t)) return 'withdraw';
-                                                   if (/\breleased?\b/.test(t) || /\blifted\b/.test(t) || /\bremoved\b/.test(t)) return 'release';
-                                                   if (/\bissued?\b/.test(t)) return 'issue';
-                                                   return '';}
 
   function findFirstWarrantOrSummons(docketList) {const isWarrantServed = (t) => /\bwarrant\s+served\b/i.test(t);
                                                  const isWarrant = (t) => /\bwarrant\b/i.test(t) && !isWarrantServed(t);
@@ -504,14 +492,14 @@
                                                                                                                          const event = desc || (isWarrant(hay) ? 'Warrant' : 'Summons');
                                                                                                                          const bond = parseBondSummary(e?.docketText || '');
                                                                                                                          let sched = '';
-                                                                                                                         const normalizedEventKind = normalizeWarrantSummonsEventKind(hay);
-                                                                                                                         if (normalizedEventKind === 'recall' || normalizedEventKind === 'withdraw') {const s = (e?.associatedDocketScheduledInfo || [])[0];
-                                                                                                                                                                                                                   if (s?.associatedDate) {const t2 = norm(s?.associatedTime || '');
-                                                                                                                                                                                                                                           const nm = norm(s?.associatedName || '');
-                                                                                                                                                                                                                                           sched = [s.associatedDate,t2].filter(Boolean).join(' ') + (nm ? ` — ${nm}` : '');}
-                                                                                                                                                                                                                   else {const d2 = (e?.associatedDocketInfoDetails || [])[0]?.associatedDate || '';
-                                                                                                                                                                                                                         if (d2) sched = d2;}}
-                                                                                                                         return {kind:isWarrant(hay) ? 'warrant' : 'summons',filingDate,event,bond,scheduledFor:sched,normalizedEventKind};}}
+                                                                                                                         const isRecalled = isWarrant(hay) && /(recalled|withdrawn)/i.test(hay);
+                                                                                                                         if (isRecalled) {const s = (e?.associatedDocketScheduledInfo || [])[0];
+                                                                                                                                          if (s?.associatedDate) {const t2 = norm(s?.associatedTime || '');
+                                                                                                                                                                  const nm = norm(s?.associatedName || '');
+                                                                                                                                                                  sched = [s.associatedDate,t2].filter(Boolean).join(' ') + (nm ? ` — ${nm}` : '');}
+                                                                                                                                          else {const d2 = (e?.associatedDocketInfoDetails || [])[0]?.associatedDate || '';
+                                                                                                                                                if (d2) sched = d2;}}
+                                                                                                                         return {kind:isWarrant(hay) ? 'warrant' : 'summons',filingDate,event,bond,scheduledFor:sched};}}
                                                  return null;}
 
   function countFtas(docketList) {let count = 0;
@@ -533,18 +521,15 @@
   function analyzeDocketStatus(docketList) {let paidInFull = false;
                                            let holdPlacedTs = Number.NEGATIVE_INFINITY;
                                            let holdReleasedTs = Number.NEGATIVE_INFINITY;
-                                           let latestAppearanceReleaseTs = Number.NEGATIVE_INFINITY;
                                            for (const e of docketList || []) {const line = docketEntryText(e);
                                                                              if (!line) continue;
                                                                              if (isPaidInFullText(line)) paidInFull = true;
                                                                              const holdState = classifyLicenseHoldEvent(line);
+                                                                             if (!holdState) continue;
                                                                              const ts = getDocketEntryTimestamp(e);
                                                                              if (holdState === 'placed' && ts >= holdPlacedTs) holdPlacedTs = ts;
-                                                                             if (holdState === 'released' && ts >= holdReleasedTs) holdReleasedTs = ts;
-                                                                             const isAppearance = /\bappearance\b/i.test(line);
-                                                                             if (isAppearance && isReleaseLikeTerm(line) && ts >= latestAppearanceReleaseTs) latestAppearanceReleaseTs = ts;}
-                                           const releasedAfterHoldByAppearance = latestAppearanceReleaseTs > holdPlacedTs;
-                                           const hasActiveHold = holdPlacedTs > Number.NEGATIVE_INFINITY && holdPlacedTs > holdReleasedTs && !paidInFull && !releasedAfterHoldByAppearance;
+                                                                             if (holdState === 'released' && ts >= holdReleasedTs) holdReleasedTs = ts;}
+                                           const hasActiveHold = holdPlacedTs > Number.NEGATIVE_INFINITY && holdPlacedTs > holdReleasedTs && !paidInFull;
                                            return {paidInFull,hasActiveHold};}
 
   function findInitialAppearanceDate(docketList) {for (const e of docketList || []) {const line = docketEntryText(e);
@@ -844,9 +829,7 @@ async function trackTick() {const st = loadTrackState();
                                                                                              entry.initialAppearanceDate = '';}
                                                                  else {entry.warrantSummary = [hit.filingDate ? `${hit.filingDate}` : '',`Event: ${hit.event}`,hit.bond ? hit.bond : ''].filter(Boolean).join('\n');
                                                                        entry.initialAppearanceDate = '';}
-                                                                 const normalizedEventKind = String(hit?.normalizedEventKind || '').toLowerCase();
-                                                                 const isResolvedWarrantEvent = normalizedEventKind === 'recall' || normalizedEventKind === 'withdraw';
-                                                                 const baseStatus = !hit || isResolvedWarrantEvent ? 'nonwarrant' : (hit.kind === 'warrant' ? 'warrant' : 'nonwarrant');
+                                                                 const baseStatus = !hit ? 'nonwarrant' : (hit.kind === 'warrant' ? 'warrant' : 'nonwarrant');
                                                                  entry.summaryStatus = docketStatus.hasActiveHold ? `${baseStatus} and HOLD placed on license` : baseStatus;
                                                                  let chargesResp = null;
                                                                  try {chargesResp = await postFormJsonRetry_tryCourtIds('/casenet/cases/charges.do',{caseNumber,courtId,isTicket:'',tabName:'Charge',});}
@@ -1048,11 +1031,19 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
                                                                                                    return tok;});
                                     return tokens.join(' ');}
 
-  function normalizeJudgeName(v) {const base = municipalityKey(v)
-                                      .replace(/JUDGE\/COMMISSIONER\s+ASSIGNED/,'')
-                                      .replace(/^JUDGE\s+/,'');
-                                  if (!base) return '';
-                                  const scrubbed = base.replace(/[^A-Z,\s]/g,' ').replace(/\s+/g,' ').trim();
+  function normalizeJudgeName(v) {const raw = municipalityKey(v);
+                                  if (!raw) return '';
+                                  const extracted = (() => {const afterAssigned = raw.match(/ASSIGNED\s*([A-Z,\s]+)/);
+                                                             if (afterAssigned?.[1]) return afterAssigned[1];
+                                                             const commissionerMatch = raw.match(/JUDGE\/COMMISSIONER\s*ASSIGNED\s*([A-Z,\s]+)/);
+                                                             if (commissionerMatch?.[1]) return commissionerMatch[1];
+                                                             return raw;})();
+                                  const withoutNoise = extracted.replace(/\bDATE\s+FILED\b[\s\S]*$/,'')
+                                                               .replace(/\bLOCATION\b[\s\S]*$/,'')
+                                                               .replace(/\bCASE\s+TYPE\b[\s\S]*$/,'')
+                                                               .replace(/JUDGE\/COMMISSIONER\s*ASSIGNED/,'')
+                                                               .replace(/^JUDGE\s+/,'');
+                                  const scrubbed = withoutNoise.replace(/[^A-Z,\s]/g,' ').replace(/\s+/g,' ').trim();
                                   const commaMatch = scrubbed.match(/^([A-Z]+)\s*,\s*([A-Z]+)(?:\s+[A-Z]+)?/);
                                   if (commaMatch) return `${commaMatch[2]} ${commaMatch[1]}`.trim();
                                   const tokens = scrubbed.replace(/,/g,' ')
@@ -1077,7 +1068,6 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
                                               key,
                                               looseKey: municipalityLooseKey(base),
                                               matchKey: municipalityMatchKey(base),
-                                              judgeDisplay: judgeTag || '',
                                               judgeKey: judgeTag ? normalizeJudgeName(judgeTag) : ''};}
 
   const MUNICIPALITY_CONTACTS = (() => {const map = new Map();
@@ -1103,16 +1093,14 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
                                                                                                                                                                  if (!entryLoose) continue;
                                                                                                                                                                  if (entryLoose === looseKey || entryLoose.startsWith(`${looseKey} `) || looseKey.startsWith(`${entryLoose} `) || (matchKey && entryMatch && (entryMatch === matchKey || entryMatch.startsWith(`${matchKey} `) || matchKey.startsWith(`${entryMatch} `)))) {if (!pool.includes(entry)) pool.push(entry);}}}}
                                                                         const judgeKey = normalizeJudgeName(judgeName);
-                                                                        const withJudge = (display,fallbackJudge = '') => {const label = judgeKey || normalizeJudgeName(fallbackJudge);
-                                                                                                                             return label ? `${display} (Judge: ${label})` : display;};
-                                                                        if (!pool.length) return judgeKey ? `St. Louis County Circuit - Judge ${judgeKey}` : '';
+                                                                        if (!pool.length) return judgeKey ? `${key} - {Judge ${judgeKey}}` : '';
                                                                         if (judgeKey) {const matched = pool.find((x) => x.judgeKey && x.judgeKey === judgeKey);
-                                                                                       if (matched) return withJudge(matched.display,matched.judgeDisplay);}
-                                                                        if (pool.length === 1) return withJudge(pool[0].display,pool[0].judgeDisplay);
+                                                                                       if (matched) return matched.display;}
+                                                                        if (pool.length === 1) return pool[0].display;
                                                                         if (looseKey) {const operatingMatch = pool.find((x) => (x.looseKey || '').startsWith(`${looseKey} `) && /\bOPERATES IN\b/i.test(x.display));
-                                                                                      if (operatingMatch) return withJudge(operatingMatch.display,operatingMatch.judgeDisplay);}
-                                                                        if (judgeKey) return `St. Louis County Circuit - Judge ${judgeKey}`;
-                                                                        return withJudge(pool[0].display,pool[0].judgeDisplay);}
+                                                                                      if (operatingMatch) return operatingMatch.display;}
+                                                                        if (judgeKey) return `${key} - {Judge ${judgeKey}}`;
+                                                                        return pool[0].display;}
 
 
   const FRESH_START_FRIDAY_TEXT = ['- - - - -',
@@ -1131,6 +1119,8 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
 
   function getWarrantLabelForSummary(e) {const explicit = norm(String(e?.summaryStatus || '')).toLowerCase();
                                         if (explicit) return explicit;
+                                        const upcoming = norm(String(e?.nextDocketDate || '')).toLowerCase();
+                                        if (upcoming && upcoming !== '- - -') return 'upcoming';
                                         const ws = norm(String(e?.warrantSummary || '')).toLowerCase();
                                         if (!ws || ws === '- - -') return 'nonwarrant';
                                         if (ws.includes('warrant served')) return 'nonwarrant';
@@ -1145,49 +1135,45 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
                                      const caseNo = getCaseNumberForSummary(e);
                                      return `${dt} (for ${caseNo})`;}
 
-  function hasUpcomingCourtDate(e) {return !!parseUpcomingCourtDate(e);}
-
-  function getSummaryStatusPoints(e) {const label = getWarrantLabelForSummary(e);
-                                     const normalized = norm(String(label || '')).toLowerCase();
-                                     if (normalized.includes('hold')) return 3;
-                                     if (/^warrant\b/.test(normalized)) return 2;
-                                     if (/^nonwarrant\b/.test(normalized)) return 1;
-                                     return 0;}
+  function getSummaryStatusPriority(e) {const label = getWarrantLabelForSummary(e);
+                                       const normalized = norm(String(label || '')).toLowerCase();
+                                       if (normalized.includes('hold')) return 0;
+                                       if (/^warrant\b/.test(normalized)) return 1;
+                                       if (/^nonwarrant\b/.test(normalized)) return 2;
+                                       return 3;}
 
   function buildSummaryCopyText() {const log = loadLog();
                                   const expected = norm(document.getElementById('moNsYob')?.value || '');
                                   const filteredLog = log.filter((e) => {const m = yobMatchesExpected(expected,e?.yobRaw || e?.yob || '');
                                                                          return m.ok && !e?._skipReason;});
-                                  const jurisdictionLog = filteredLog.filter((e) => !hasUpcomingCourtDate(e));
                                   const byJurisdiction = new Map();
-                                  for (const e of jurisdictionLog) {const jurisdiction = norm(e?.location || '') || '- - -';
+                                  for (const e of filteredLog) {const jurisdiction = norm(e?.location || '') || '- - -';
                                                                if (!byJurisdiction.has(jurisdiction)) byJurisdiction.set(jurisdiction,[]);
                                                                byJurisdiction.get(jurisdiction).push(e);}
-                                  const sortedJurisdictions = Array.from(byJurisdiction.entries())
-                                                                   .sort(([aJur,aEntries],[bJur,bEntries]) => {const aTotal = aEntries.reduce((sum,entry) => sum + getSummaryStatusPoints(entry),0);
-                                                                                                                const bTotal = bEntries.reduce((sum,entry) => sum + getSummaryStatusPoints(entry),0);
-                                                                                                                if (bTotal !== aTotal) return bTotal - aTotal;
-                                                                                                                const aMax = Math.max(...aEntries.map(getSummaryStatusPoints),0);
-                                                                                                                const bMax = Math.max(...bEntries.map(getSummaryStatusPoints),0);
-                                                                                                                if (bMax !== aMax) return bMax - aMax;
-                                                                                                                return aJur.localeCompare(bJur);});
 
                                   const sections = [];
-                                  for (const [jurisdiction,entries] of sortedJurisdictions) {const jurisdictionJudge = entries.find((x) => norm(x?.judge || '') && norm(x?.judge || '') !== '- - -')?.judge || '';
-                                                                                                   const header = getMunicipalityHeaderForSummary(jurisdiction,jurisdictionJudge) || jurisdiction.toUpperCase();
-                                                                                                   const sortedEntries = entries.map((entry,idx) => ({entry,idx}))
-                                                                                                                              .sort((a,b) => {const pointsDiff = getSummaryStatusPoints(b.entry) - getSummaryStatusPoints(a.entry);
-                                                                                                                                              if (pointsDiff) return pointsDiff;
-                                                                                                                                              return a.idx - b.idx;})
-                                                                                                                              .map(({entry}) => entry);
-                                                                                                   sections.push(header);
-                                                                                                   for (const e of sortedEntries) {const caseNo = getCaseNumberForSummary(e);
-                                                                                                                             const charge = norm(e?.chargeDescription || '') || 'No Charges Found';
-                                                                                                                             const warrantLabel = getWarrantLabelForSummary(e);
-                                                                                                                             sections.push(`${caseNo}: ${charge} - ${warrantLabel}`);}
-                                                                                                   if (header.includes('FRESH START FRIDAY')) sections.push(FRESH_START_FRIDAY_TEXT);
-                                                                                                   sections.push('');
-                                                                                                   sections.push('');}
+                                  for (const [jurisdiction,entries] of byJurisdiction.entries()) {const jurisdictionKey = municipalityKey(jurisdiction);
+                                                                                                   const isStlCountyCircuit = jurisdictionKey.includes('ST LOUIS COUNTY') && jurisdictionKey.includes('CIRCUIT');
+                                                                                                   const grouped = new Map();
+                                                                                                   if (isStlCountyCircuit) {for (const entry of entries) {const header = getMunicipalityHeaderForSummary(jurisdiction,entry?.judge || '') || jurisdiction.toUpperCase();
+                                                                                                                                                          if (!grouped.has(header)) grouped.set(header,[]);
+                                                                                                                                                          grouped.get(header).push(entry);}}
+                                                                                                   else {const jurisdictionJudge = entries.find((x) => norm(x?.judge || '') && norm(x?.judge || '') !== '- - -')?.judge || '';
+                                                                                                         const header = getMunicipalityHeaderForSummary(jurisdiction,jurisdictionJudge) || jurisdiction.toUpperCase();
+                                                                                                         grouped.set(header,entries);}
+                                                                                                   for (const [header,headerEntries] of grouped.entries()) {const sortedEntries = headerEntries.map((entry,idx) => ({entry,idx}))
+                                                                                                                                                        .sort((a,b) => {const priorityDiff = getSummaryStatusPriority(a.entry) - getSummaryStatusPriority(b.entry);
+                                                                                                                                                                        if (priorityDiff) return priorityDiff;
+                                                                                                                                                                        return a.idx - b.idx;})
+                                                                                                                                                        .map(({entry}) => entry);
+                                                                                                                                                     sections.push(header);
+                                                                                                                                                     for (const e of sortedEntries) {const caseNo = getCaseNumberForSummary(e);
+                                                                                                                                                                               const charge = norm(e?.chargeDescription || '') || 'No Charges Found';
+                                                                                                                                                                               const warrantLabel = getWarrantLabelForSummary(e);
+                                                                                                                                                                               sections.push(`${caseNo}: ${charge} - ${warrantLabel}`);}
+                                                                                                                                                     if (header.includes('FRESH START FRIDAY')) sections.push(FRESH_START_FRIDAY_TEXT);
+                                                                                                                                                     sections.push('');
+                                                                                                                                                     sections.push('');}}
 
                                   const upcomingByJurisdiction = new Map();
                                   for (const e of filteredLog) {const next = parseUpcomingCourtDate(e);
@@ -1502,15 +1488,6 @@ GM_addStyle(`:root{ --mo-bg: #f5f7fb;          /* page chrome */
                                font-size:20.8px;
                                font-weight:950;
                                margin:2px 0 8px 0;}
-            #moJsonHelpLogoCaption{position:absolute;
-                                   top:108px;
-                                   right:12px;
-                                   width:88px;
-                                   text-align:center;
-                                   font-size:12px;
-                                   font-weight:900;
-                                   color:#7a5b1d;
-                                   white-space:pre-line;}
             #moJsonHelpSubheading{text-align:center;
                                   font-size:14px;
                                   font-weight:900;
@@ -1535,6 +1512,19 @@ GM_addStyle(`:root{ --mo-bg: #f5f7fb;          /* page chrome */
             .moHelpImageWrap figcaption{font-size:12px;
                                         color:#7a5b1d;
                                         margin-top:4px;}
+            #moJsonHelpFooterBrand{display:flex;
+                                   justify-content:flex-end;
+                                   align-items:flex-end;
+                                   gap:8px;
+                                   margin-top:10px;}
+            #moJsonHelpFooterCaption{text-align:right;
+                                     font-size:12px;
+                                     font-weight:900;
+                                     color:#7a5b1d;
+                                     white-space:pre-line;}
+            #moJsonHelpFooterLogo{width:88px;
+                                  height:auto;
+                                  display:block;}
 
             .moHidden{display:none;}
 `);
@@ -1594,8 +1584,6 @@ helpPanel.className = 'moHidden';
 helpPanel.innerHTML = `
   <button id="moJsonHelpClose" title="Close Help">×</button>
   <img id="moJsonHelpLogo" src="${escapeHtml(LOGO_CASEY_IMAGE)}" alt="ICBiNCn Casey logo" />
-  <div id="moJsonHelpLogoCaption">Casey says:
-Don't tell the cops!</div>
   <div id="moJsonHelpHeading">FAQ / Tips</div>
   <div id="moJsonHelpSubheading">Having trouble? Here are some issues related to how the tool works that you might come across:</div>
   <div id="moJsonHelpBody">
@@ -1613,7 +1601,7 @@ Don't tell the cops!</div>
 
 "Copy" - Displays the number of cases in the tool's log. Click to add the full rundown of case information in the log to your clipboard.
 
-"Summary" - Click to add a summary of the "copy" log to your clipboard, with only the Case Number, Charge Text, and a status. Cases are scored and sorted by status priority (hold = 3, warrant = 2, nonwarrant = 1, anything else = 0), and jurisdictions with the highest-priority cases are listed first.
+"Summary" - Click to add a summary of the "copy" log to your clipboard, with only the Case Number, Charge Text, and a 'status' of warrant/nonwarrant/hold on license. It will display those with holds first, then warrants, then nonwarrants, and sort them by jurisdiction.
 
 "X" - Minimizes the tool. If you want to turn the tool off temporarily, click "Manage Extensions" and toggle Tampermonkey off.
 
@@ -1627,10 +1615,18 @@ Don't tell the cops!</div>
 
 "Clear Log" - Click to empty all cases attached to the current log. It's a good habit to click this before you run a new search, and the tool is supposed to make you do that, but sometimes it forgets.
 
+
 - If you have suggestions, please let me know! I use this tool most work days, and update it often. Feel free to update yours with the shared Google Doc (if the date has been updated, something else has changed too), and email tapinstl@gmail.com to reach me or Miranda.
 
-Happy Searching, Mason
+
+Happy Searching,
+Mason
 ${buildHelpImageHtml()}
+  </div>
+  <div id="moJsonHelpFooterBrand">
+    <div id="moJsonHelpFooterCaption">Casey says:
+Don't tell the cops!</div>
+    <img id="moJsonHelpFooterLogo" src="${escapeHtml(LOGO_CASEY_IMAGE)}" alt="ICBiNCn Casey logo" />
   </div>
 `;
 (document.body || document.documentElement).appendChild(helpPanel);
@@ -1914,7 +1910,7 @@ function render() {const log = loadLog();
                                            const conc = DEFAULT_CONCURRENCY;
                                            clearLastHtml();
                                            saveJson(KEY_NET_STATS,{byPath:{}});
-                                           uiStatus('Harvesting all results pages…');
+                                           uiStatus('Gathering all results…');
                                            render();
                                            await sleep(5000);
                                            let cases = await harvestAllResultCaseKeys();
