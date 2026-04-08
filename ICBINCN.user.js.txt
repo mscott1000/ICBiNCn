@@ -1,7 +1,7 @@
 // ==UserScript==
-// @name         ICBiNCn 4.7
+// @name         ICBiNCn 4.8
 // @namespace    http://tampermonkey.net/
-// @version      2026-04-07
+// @version      2026-04-08
 // @description  Background Case.net scraper using JSON/XHR endpoints. Navs to search results pages, pulls case data via POST requests, then writes to a persistent log for copying. Now with Track This Case.
 // @author       Mason Scott
 // @match        https://www.courts.mo.gov/casenet/*
@@ -816,7 +816,7 @@ async function trackTick() {const st = loadTrackState();
                                                                  else {entry.warrantSummary = [hit.filingDate ? `${hit.filingDate}` : '',`Event: ${hit.event}`,hit.bond ? hit.bond : ''].filter(Boolean).join('\n');
                                                                        entry.initialAppearanceDate = '';}
                                                                  const baseStatus = !hit ? 'nonwarrant' : (hit.kind === 'warrant' ? 'warrant' : 'nonwarrant');
-                                                                 entry.summaryStatus = docketStatus.hasActiveHold ? `${baseStatus} and HOLD placed on license` : baseStatus;
+                                                                 entry.summaryStatus = docketStatus.hasActiveHold ? `${baseStatus} and hold on license` : baseStatus;
                                                                  let chargesResp = null;
                                                                  try {chargesResp = await postFormJsonRetry_tryCourtIds('/casenet/cases/charges.do',{caseNumber,courtId,isTicket:'',tabName:'Charge',});}
                                                                  catch (e) {dbg('charges_fetch_failed',{caseKey,msg:String(e?.message || e)});}
