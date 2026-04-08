@@ -1,5 +1,4 @@
-
-  /************************************************************
+/************************************************************
    * Party parsing (JSON)
    ************************************************************/
   function extractDefendantAddressYob(partyResp) {const list = partyResp?.partyDetailsList || [];

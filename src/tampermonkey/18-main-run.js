@@ -1,5 +1,4 @@
-
-  /************************************************************
+/************************************************************
    * Main run
    ************************************************************/
   async function harvestAllResultCaseKeys() {const seen = new Set();
@@ -193,7 +192,7 @@
                                            const conc = DEFAULT_CONCURRENCY;
                                            clearLastHtml();
                                            saveJson(KEY_NET_STATS,{byPath:{}});
-                                           uiStatus('Harvesting all results pages…');
+                                           uiStatus('Gathering all results…');
                                            render();
                                            await sleep(5000);
                                            let cases = await harvestAllResultCaseKeys();

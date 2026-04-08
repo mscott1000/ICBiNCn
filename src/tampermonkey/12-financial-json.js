@@ -1,5 +1,4 @@
-
-  /************************************************************
+/************************************************************
    * Financial (JSON)
    ************************************************************/
   async function getCaseBalanceIfGuiltyViaApi(dispositionText,headerMeta,caseNumber,courtId) {if (!/guilty/i.test(dispositionText || '')) return '- - -';

@@ -1,5 +1,4 @@
-
-  /************************************************************
+/************************************************************
    * Charges parsing (JSON)
    ************************************************************/
   function extractChargePartsFromChargesResponse(chargesResp,headerResp) {const arr = Array.isArray(chargesResp) ? chargesResp : Array.isArray(headerResp?.caseChargeList) ? headerResp.caseChargeList : [];
