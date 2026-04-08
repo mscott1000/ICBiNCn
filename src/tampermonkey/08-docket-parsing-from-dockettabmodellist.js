@@ -49,10 +49,22 @@
                                           const hasHold = /\bhold\b/.test(t) || /\bheld\b/.test(t);
                                           const hasLicense = /\blicen[sc]e\b/.test(t);
                                           if (!hasHold || !hasLicense) return '';
-                                          if (/\breleased\b/.test(t) || /\blifted\b/.test(t) || /\bremoved\b/.test(t)) return 'released';
+                                          if (/\breleased?\b/.test(t) || /\blifted\b/.test(t) || /\bremoved\b/.test(t) || /\bwithdrawn?\b/.test(t) || /\brecalled?\b/.test(t)) return 'released';
                                           if (/\bplaced\b/.test(t)) return 'placed';
                                           if (/\bplace\b/.test(t)) return 'placed';
                                           return 'placed';}
+
+  function isReleaseLikeTerm(text) {const t = normalizePhraseForMatch(text);
+                                    if (!t) return false;
+                                    return /\breleased?\b/.test(t) || /\blifted\b/.test(t) || /\bremoved\b/.test(t) || /\bwithdrawn?\b/.test(t) || /\brecalled?\b/.test(t);}
+
+  function normalizeWarrantSummonsEventKind(text) {const t = normalizePhraseForMatch(text);
+                                                   if (!t) return '';
+                                                   if (/\brecalled?\b/.test(t)) return 'recall';
+                                                   if (/\bwithdrawn?\b/.test(t)) return 'withdraw';
+                                                   if (/\breleased?\b/.test(t) || /\blifted\b/.test(t) || /\bremoved\b/.test(t)) return 'release';
+                                                   if (/\bissued?\b/.test(t)) return 'issue';
+                                                   return '';}
 
   function findFirstWarrantOrSummons(docketList) {const isWarrantServed = (t) => /\bwarrant\s+served\b/i.test(t);
                                                  const isWarrant = (t) => /\bwarrant\b/i.test(t) && !isWarrantServed(t);
@@ -65,14 +77,14 @@
                                                                                                                          const event = desc || (isWarrant(hay) ? 'Warrant' : 'Summons');
                                                                                                                          const bond = parseBondSummary(e?.docketText || '');
                                                                                                                          let sched = '';
-                                                                                                                         const isRecalled = isWarrant(hay) && /(recalled|withdrawn)/i.test(hay);
-                                                                                                                         if (isRecalled) {const s = (e?.associatedDocketScheduledInfo || [])[0];
-                                                                                                                                          if (s?.associatedDate) {const t2 = norm(s?.associatedTime || '');
-                                                                                                                                                                  const nm = norm(s?.associatedName || '');
-                                                                                                                                                                  sched = [s.associatedDate,t2].filter(Boolean).join(' ') + (nm ? ` — ${nm}` : '');}
-                                                                                                                                          else {const d2 = (e?.associatedDocketInfoDetails || [])[0]?.associatedDate || '';
-                                                                                                                                                if (d2) sched = d2;}}
-                                                                                                                         return {kind:isWarrant(hay) ? 'warrant' : 'summons',filingDate,event,bond,scheduledFor:sched};}}
+                                                                                                                         const normalizedEventKind = normalizeWarrantSummonsEventKind(hay);
+                                                                                                                         if (normalizedEventKind === 'recall' || normalizedEventKind === 'withdraw') {const s = (e?.associatedDocketScheduledInfo || [])[0];
+                                                                                                                                                                                                                   if (s?.associatedDate) {const t2 = norm(s?.associatedTime || '');
+                                                                                                                                                                                                                                           const nm = norm(s?.associatedName || '');
+                                                                                                                                                                                                                                           sched = [s.associatedDate,t2].filter(Boolean).join(' ') + (nm ? ` — ${nm}` : '');}
+                                                                                                                                                                                                                   else {const d2 = (e?.associatedDocketInfoDetails || [])[0]?.associatedDate || '';
+                                                                                                                                                                                                                         if (d2) sched = d2;}}
+                                                                                                                         return {kind:isWarrant(hay) ? 'warrant' : 'summons',filingDate,event,bond,scheduledFor:sched,normalizedEventKind};}}
                                                  return null;}
 
   function countFtas(docketList) {let count = 0;
@@ -94,15 +106,18 @@
   function analyzeDocketStatus(docketList) {let paidInFull = false;
                                            let holdPlacedTs = Number.NEGATIVE_INFINITY;
                                            let holdReleasedTs = Number.NEGATIVE_INFINITY;
+                                           let latestAppearanceReleaseTs = Number.NEGATIVE_INFINITY;
                                            for (const e of docketList || []) {const line = docketEntryText(e);
                                                                              if (!line) continue;
                                                                              if (isPaidInFullText(line)) paidInFull = true;
                                                                              const holdState = classifyLicenseHoldEvent(line);
-                                                                             if (!holdState) continue;
                                                                              const ts = getDocketEntryTimestamp(e);
                                                                              if (holdState === 'placed' && ts >= holdPlacedTs) holdPlacedTs = ts;
-                                                                             if (holdState === 'released' && ts >= holdReleasedTs) holdReleasedTs = ts;}
-                                           const hasActiveHold = holdPlacedTs > Number.NEGATIVE_INFINITY && holdPlacedTs > holdReleasedTs && !paidInFull;
+                                                                             if (holdState === 'released' && ts >= holdReleasedTs) holdReleasedTs = ts;
+                                                                             const isAppearance = /\bappearance\b/i.test(line);
+                                                                             if (isAppearance && isReleaseLikeTerm(line) && ts >= latestAppearanceReleaseTs) latestAppearanceReleaseTs = ts;}
+                                           const releasedAfterHoldByAppearance = latestAppearanceReleaseTs > holdPlacedTs;
+                                           const hasActiveHold = holdPlacedTs > Number.NEGATIVE_INFINITY && holdPlacedTs > holdReleasedTs && !paidInFull && !releasedAfterHoldByAppearance;
                                            return {paidInFull,hasActiveHold};}
 
   function findInitialAppearanceDate(docketList) {for (const e of docketList || []) {const line = docketEntryText(e);

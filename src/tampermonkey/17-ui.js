@@ -378,7 +378,7 @@ Don't tell the cops!</div>
 
 "Copy" - Displays the number of cases in the tool's log. Click to add the full rundown of case information in the log to your clipboard.
 
-"Summary" - Click to add a summary of the "copy" log to your clipboard, with only the Case Number, Charge Text, and a 'status' of warrant/nonwarrant/hold on license. It will display those with holds first, then warrants, then nonwarrants, and sort them by jurisdiction.
+"Summary" - Click to add a summary of the "copy" log to your clipboard, with only the Case Number, Charge Text, and a status. Cases are scored and sorted by status priority (hold = 3, warrant = 2, nonwarrant = 1, anything else = 0), and jurisdictions with the highest-priority cases are listed first.
 
 "X" - Minimizes the tool. If you want to turn the tool off temporarily, click "Manage Extensions" and toggle Tampermonkey off.
 
