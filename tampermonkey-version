@@ -1,6 +1,3 @@
-
-
-
 // ==UserScript==
 // @name         ICBiNCn 4.7
 // @namespace    http://tampermonkey.net/
@@ -2133,7 +2130,3 @@ setInterval(() => {try {nameSearchTick();}
                    catch (e) {/* ignore */}
                    try {trackTick();}
                    catch (e) {}},900);})();
-
-
-
-
