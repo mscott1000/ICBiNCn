@@ -270,19 +270,21 @@
   }
 
   async function scrapeUpcomingDate({ caseNumber, courtId }) {
-    await postJson('/casenet/cases/newHeaderData.do', {
+    const header = await postJson('/casenet/cases/newHeaderData.do', {
       caseNumber,
-      courtId,
+      courtId: courtId || '',
       isTicket: '',
       locnCode: '',
       isCriminal: '',
       diposed: '',
       pleaAndPayInd: ''
     });
+    const resolvedCourtId = norm(header?.courtId || courtId || '').toUpperCase();
+    if (!resolvedCourtId) throw new Error('Unable to resolve courtId from header data');
 
     const docket = await postJson(
       '/casenet/cases/docketEntriesSearch.do',
-      { caseNumber, courtId, isTicket: '', tabName: 'Docket' },
+      { caseNumber, courtId: resolvedCourtId, isTicket: '', tabName: 'Docket' },
       'displayOption=A&sortOption=D&hasChange=false'
     );
 
@@ -307,10 +309,9 @@
       const item = requested[i];
       setStatus(`Processing ${i + 1}/${requested.length}: ${item.caseNumber}`);
       try {
-        let resolved = null;
+        let resolved = { caseNumber: item.caseNumber, courtId: item.courtId || '' };
 
         if (item.courtId) {
-          resolved = { caseNumber: item.caseNumber, courtId: item.courtId };
           appendDebug('batch_use_supplied_court_id', {
             caseNumber: item.caseNumber,
             courtId: item.courtId
@@ -323,17 +324,13 @@
             sampleCourtIds: candidates.map((c) => c.courtId).slice(0, 10)
           });
           if (!candidates.length) {
-            lines.push(`${item.caseNumber}: Case Not Found`);
-            appendDebug('batch_case_not_found', { caseNumber: item.caseNumber });
-            continue;
+            appendDebug('batch_case_resolve_direct', { caseNumber: item.caseNumber, reason: 'no_candidates' });
+          } else if (candidates.length > 1) {
+            appendDebug('batch_case_resolve_direct', { caseNumber: item.caseNumber, reason: 'ambiguous' });
+          } else {
+            resolved = { caseNumber: candidates[0].caseNumber, courtId: candidates[0].courtId };
+            appendDebug('batch_case_resolved', resolved);
           }
-          if (candidates.length > 1) {
-            lines.push(`${item.caseNumber}: Multiple Cases Found (add Court ID to resolve)`);
-            appendDebug('batch_case_ambiguous', { caseNumber: item.caseNumber });
-            continue;
-          }
-          resolved = { caseNumber: candidates[0].caseNumber, courtId: candidates[0].courtId };
-          appendDebug('batch_case_resolved', resolved);
         }
 
         const upcoming = await scrapeUpcomingDate(resolved);
