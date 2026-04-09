@@ -313,6 +313,18 @@ Court Clerk: ${clerk}` : display;
                                         if (ws.includes('warrant')) return 'warrant';
                                         return 'nonwarrant';}
 
+  function getFineSuffixForSummary(e) {const raw = norm(String(e?.caseBalance || ''));
+                                      if (!raw || raw === '- - -') return '';
+                                      const cleaned = raw.replace(/\$/g,'').replace(/,/g,'').trim();
+                                      if (!cleaned) return '';
+                                      const numeric = Number(cleaned);
+                                      if (!Number.isFinite(numeric) || numeric === 0) return '';
+                                      return `, ${numeric.toFixed(2)} fine`;}
+
+  function getSummaryLineStatus(e) {const warrantLabel = getWarrantLabelForSummary(e);
+                                   const fineSuffix = getFineSuffixForSummary(e);
+                                   return `${warrantLabel}${fineSuffix}`;}
+
   function parseUpcomingCourtDate(e) {const raw = norm(e?.nextDocketDate || '');
                                      if (!raw || raw === '- - -') return '';
                                      const parts = raw.split(';').map((x) => norm(x));
@@ -377,8 +389,8 @@ Court Clerk: ${clerk}` : display;
                                                                                                                                                                                                  sections.push(`${division}, Judge ${judge} - Court Clerk: ${clerk}`);
                                                                                                                                                                                                  for (const e of sortedEntries) {const caseNo = getCaseNumberForSummary(e);
                                                                                                                                                                                                                            const charge = norm(e?.chargeDescription || '') || 'No Charges Found';
-                                                                                                                                                                                                                           const warrantLabel = getWarrantLabelForSummary(e);
-                                                                                                                                                                                                                           sections.push(`${caseNo}: ${charge} - ${warrantLabel}`);}}
+                                                                                                                                                                                                                           const lineStatus = getSummaryLineStatus(e);
+                                                                                                                                                                                                                           sections.push(`${caseNo}: ${charge} - ${lineStatus}`);}}
                                                                                                                                                                                        sections.push('');
                                                                                                                                                                                        sections.push('');
                                                                                               continue;}
@@ -394,8 +406,8 @@ Court Clerk: ${clerk}` : display;
                                                                                                                                                                                              sections.push(`Judge ${judge}`);
                                                                                                                                                                                              for (const e of sortedEntries) {const caseNo = getCaseNumberForSummary(e);
                                                                                                                                                                                                                        const charge = norm(e?.chargeDescription || '') || 'No Charges Found';
-                                                                                                                                                                                                                       const warrantLabel = getWarrantLabelForSummary(e);
-                                                                                                                                                                                                                       sections.push(`${caseNo}: ${charge} - ${warrantLabel}`);}}
+                                                                                                                                                                                                                       const lineStatus = getSummaryLineStatus(e);
+                                                                                                                                                                                                                       sections.push(`${caseNo}: ${charge} - ${lineStatus}`);}}
                                                                                                                                               sections.push('- - -');
                                                                                                                                               sections.push('');
                                                                                                                                               sections.push('');
@@ -409,8 +421,8 @@ Court Clerk: ${clerk}` : display;
                                                                                                                                                 sections.push(header);
                                                                                                                                                 for (const e of sortedEntries) {const caseNo = getCaseNumberForSummary(e);
                                                                                                                                                                           const charge = norm(e?.chargeDescription || '') || 'No Charges Found';
-                                                                                                                                                                          const warrantLabel = getWarrantLabelForSummary(e);
-                                                                                                                                                                          sections.push(`${caseNo}: ${charge} - ${warrantLabel}`);}
+                                                                                                                                                                          const lineStatus = getSummaryLineStatus(e);
+                                                                                                                                                                          sections.push(`${caseNo}: ${charge} - ${lineStatus}`);}
                                                                                                                                                 if (header.includes('FRESH START FRIDAY')) hasFreshStartFridaySection = true;
                                                                                                                                                 sections.push('');
                                                                                                                                                 sections.push('');}}
