@@ -18,3 +18,7 @@ This repository now keeps the CaseNet userscript in two forms:
 ## Source map
 
 The source parts are numbered so they concatenate in the correct order. The current breakdown mirrors the major functional areas of the original script, including storage, helpers, page detection, search automation, parsing, UI, and initialization.
+## Design notes
+
+- Case-number batch UI discovery checklist: `docs/case-number-batch-ui-requirements.md`
+
