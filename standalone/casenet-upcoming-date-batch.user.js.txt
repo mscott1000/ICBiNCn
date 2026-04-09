@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Case.net Upcoming Court Date Batch Lookup (Standalone)
 // @namespace    icbincn-standalone
-// @version      1.0.4
+// @version      1.1.0
 // @description  Standalone Case.net batch case-number lookup for upcoming court dates. Does not modify ICBiNCn UI.
 // @match        https://www.courts.mo.gov/*
 // @grant        GM_addStyle
@@ -15,14 +15,14 @@
   const STORAGE_INPUT = 'cn_upcoming_batch_input_v1';
   const STORAGE_OUTPUT = 'cn_upcoming_batch_output_v1';
   const STORAGE_DEBUG = 'cn_upcoming_batch_debug_v1';
-  const STORAGE_STOP_REASON = 'cn_upcoming_batch_stop_reason_v1';
+  const STORAGE_CONCURRENCY = 'cn_upcoming_batch_concurrency_v1';
 
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   const norm = (s) => String(s || '').replace(/\s+/g, ' ').trim();
   const DEFAULT_COURT_ID = 'CT21';
   const COURT_ID_SWEEP_MAX = 250;
-  let activeRun = null;
-  let stopRequested = false;
+  const DEFAULT_CONCURRENCY = 1;
+  const MAX_CONCURRENCY = 10;
 
   function normalizeCourtId(courtId) {
     const raw = norm(courtId || '').toUpperCase();
@@ -142,6 +142,10 @@
     <div class="bd">
       <label style="font-size:12px;font-weight:700;color:#334155">Case Numbers (newline-separated)</label>
       <textarea id="cnStandaloneInput" placeholder="18SL-CR01234\n704581692"></textarea>
+      <div class="row" style="align-items:center">
+        <label for="cnStandaloneConcurrency" style="font-size:12px;font-weight:700;color:#334155">Concurrency</label>
+        <input id="cnStandaloneConcurrency" type="number" min="1" max="10" step="1" style="width:82px;border:1px solid #94a3b8;border-radius:8px;padding:6px 8px;font-size:12px" />
+      </div>
       <div class="row">
         <button class="run" id="cnStandaloneRun">Find Upcoming Dates</button>
         <button class="stop" id="cnStandaloneStop" disabled>Stop</button>
@@ -165,12 +169,21 @@
   const $output = panel.querySelector('#cnStandaloneOutput');
   const $debug = panel.querySelector('#cnStandaloneDebug');
   const $status = panel.querySelector('#cnStandaloneStatus');
+  const $concurrency = panel.querySelector('#cnStandaloneConcurrency');
   const $runBtn = panel.querySelector('#cnStandaloneRun');
   const $stopBtn = panel.querySelector('#cnStandaloneStop');
 
   $input.value = localStorage.getItem(STORAGE_INPUT) || '';
   $output.value = localStorage.getItem(STORAGE_OUTPUT) || '';
   $debug.value = localStorage.getItem(STORAGE_DEBUG) || '';
+
+  function normalizeConcurrency(raw) {
+    const n = Number.parseInt(String(raw ?? ''), 10);
+    if (!Number.isFinite(n)) return DEFAULT_CONCURRENCY;
+    return Math.max(1, Math.min(MAX_CONCURRENCY, n));
+  }
+
+  $concurrency.value = String(normalizeConcurrency(localStorage.getItem(STORAGE_CONCURRENCY)));
 
   function setStatus(msg) {
     $status.textContent = msg;
@@ -180,6 +193,7 @@
     localStorage.setItem(STORAGE_INPUT, $input.value || '');
     localStorage.setItem(STORAGE_OUTPUT, $output.value || '');
     localStorage.setItem(STORAGE_DEBUG, $debug.value || '');
+    localStorage.setItem(STORAGE_CONCURRENCY, String(normalizeConcurrency($concurrency.value)));
   }
 
   function appendDebug(event, details = {}) {
@@ -375,6 +389,28 @@
     };
   }
 
+  async function runPool(items, limit, worker, onProgress) {
+    const total = items.length;
+    const results = new Array(total);
+    if (!total) return results;
+    const conc = Math.max(1, Math.min(normalizeConcurrency(limit), total));
+    let nextIdx = 0;
+    let done = 0;
+
+    async function runOne() {
+      while (true) {
+        const idx = nextIdx++;
+        if (idx >= total) return;
+        results[idx] = await worker(items[idx], idx);
+        done += 1;
+        if (typeof onProgress === 'function') onProgress(done, total);
+      }
+    }
+
+    await Promise.all(Array.from({ length: conc }, () => runOne()));
+    return results;
+  }
+
   async function runBatch() {
     const requested = parseInput($input.value);
     if (!requested.length) {
@@ -382,6 +418,8 @@
       return;
     }
 
+    const conc = normalizeConcurrency($concurrency.value);
+    $concurrency.value = String(conc);
     stopRequested = false;
     activeRun = { controller: new AbortController() };
     $runBtn.disabled = true;
@@ -390,8 +428,45 @@
     const lines = [];
     appendDebug('batch_start', {
       requestedCount: requested.length,
-      hasOutput: !!norm($output.value || '')
+      hasOutput: !!norm($output.value || ''),
+      concurrency: conc
     });
+    setStatus(`Resolving ${requested.length} case number(s) at concurrency ${conc}...`);
+
+    const lines = await runPool(
+      requested,
+      conc,
+      async (item, i) => {
+        try {
+          const seed = { caseNumber: item.caseNumber, courtId: normalizeCourtId(item.courtId || DEFAULT_COURT_ID) };
+          const scraped = await scrapeUpcomingDate(seed);
+          const upcoming = scraped?.upcoming || 'No Upcoming Court Date Found';
+          appendDebug('batch_case_complete', {
+            requestedCaseNumber: item.caseNumber,
+            resolvedCaseNumber: item.caseNumber,
+            courtId: scraped?.resolvedCourtId || seed.courtId,
+            resolvedHeaderUrl: scraped?.resolvedHeaderUrl || buildCaseHeaderUrl(item.caseNumber, seed.courtId),
+            result: upcoming
+          });
+          await sleep(100);
+          return `${item.caseNumber}: ${upcoming}`;
+        } catch (err) {
+          appendDebug('batch_case_error', {
+            caseNumber: item.caseNumber,
+            message: String(err?.message || err)
+          });
+          await sleep(100);
+          return `${item.caseNumber}: Error (${String(err?.message || err)})`;
+        } finally {
+          appendDebug('batch_case_progress', {
+            index: i + 1,
+            total: requested.length,
+            caseNumber: item.caseNumber
+          });
+        }
+      },
+      (done, total) => setStatus(`Processed ${done}/${total} case number(s) (concurrency ${conc})...`)
+    );
     setStatus(`Resolving ${requested.length} case number(s)...`);
 
     for (let i = 0; i < requested.length; i++) {
@@ -483,4 +558,8 @@
   });
 
   $input.addEventListener('input', saveDrafts);
+  $concurrency.addEventListener('input', () => {
+    $concurrency.value = String(normalizeConcurrency($concurrency.value));
+    saveDrafts();
+  });
 })();
