@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Case.net Upcoming Court Date Batch Lookup (Standalone)
 // @namespace    icbincn-standalone
-// @version      1.0.3
+// @version      1.0.4
 // @description  Standalone Case.net batch case-number lookup for upcoming court dates. Does not modify ICBiNCn UI.
 // @match        https://www.courts.mo.gov/*
 // @grant        GM_addStyle
@@ -57,6 +57,26 @@
       out.push(parsed);
     }
     return out;
+  }
+
+  function extractCourtIdsFromText(text) {
+    const out = new Set();
+    const src = String(text || '');
+    const add = (v) => {
+      const ct = norm(v || '').toUpperCase();
+      if (/^CT[0-9A-Z]+$/.test(ct)) out.add(ct);
+    };
+
+    const patterns = [
+      /(?:inputVO\.courtId|courtId|courtCode|[?&]l)=([A-Z]{2}[0-9A-Z]+)/gi,
+      /(?:inputVO\.courtId|courtId)\s*[:=]\s*['"]([A-Z]{2}[0-9A-Z]+)['"]/gi,
+      /name=["']inputVO\.courtId["'][^>]*value=["']([A-Z]{2}[0-9A-Z]+)["']/gi
+    ];
+    for (const re of patterns) {
+      let m;
+      while ((m = re.exec(src))) add(m[1]);
+    }
+    return [...out];
   }
 
   async function findCaseCandidatesByCaseNumber(caseNumber) {
@@ -232,7 +252,9 @@
       contentType: ct,
       responsePreview: trimmed.slice(0, 240)
     });
-    throw new Error(`${path} non-JSON response`);
+    const err = new Error(`${path} non-JSON response`);
+    err.meta = { path, contentType: ct, responseText: txt };
+    throw err;
   }
 
   function getUpcomingCourtDate(docketList) {
@@ -281,17 +303,21 @@
       const msg = String(err?.message || err);
       const shouldTryCaseNoSearch = /newHeaderData\.do non-JSON response/i.test(msg);
       if (!shouldTryCaseNoSearch) throw err;
+      const htmlCourtIds = extractCourtIdsFromText(err?.meta?.responseText || '');
       appendDebug('header_retry_via_case_number_search', {
         caseNumber,
         attemptedCourtId: courtId || '',
-        reason: msg
+        reason: msg,
+        htmlCourtIds
       });
-      const candidates = await findCaseCandidatesByCaseNumber(caseNumber);
-      const uniqueCourtIds = [...new Set(candidates.map((c) => norm(c?.courtId || '').toUpperCase()).filter(Boolean))];
+      const candidates = await findCaseCandidatesByCaseNumber(caseNumber).catch(() => []);
+      const caseNoSearchCourtIds = [...new Set(candidates.map((c) => norm(c?.courtId || '').toUpperCase()).filter(Boolean))];
+      const uniqueCourtIds = [...new Set([...htmlCourtIds, ...caseNoSearchCourtIds])];
       appendDebug('header_retry_candidates', {
         caseNumber,
         candidateCount: candidates.length,
-        uniqueCourtIds
+        uniqueCourtIds,
+        sourceCounts: { html: htmlCourtIds.length, caseNoSearch: caseNoSearchCourtIds.length }
       });
       if (uniqueCourtIds.length !== 1) throw err;
       header = await postJson('/casenet/cases/newHeaderData.do', mkHeaderPayload(uniqueCourtIds[0]));
