@@ -1,0 +1,255 @@
+// ==UserScript==
+// @name         Case.net Upcoming Court Date Batch Lookup (Standalone)
+// @namespace    icbincn-standalone
+// @version      1.0.0
+// @description  Standalone Case.net batch case-number lookup for upcoming court dates. Does not modify ICBiNCn UI.
+// @match        https://www.courts.mo.gov/*
+// @grant        GM_addStyle
+// @grant        GM_setClipboard
+// ==/UserScript==
+
+(function () {
+  'use strict';
+
+  const PANEL_ID = 'cnUpcomingBatchPanelStandalone';
+  const STORAGE_INPUT = 'cn_upcoming_batch_input_v1';
+  const STORAGE_OUTPUT = 'cn_upcoming_batch_output_v1';
+
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  const norm = (s) => String(s || '').replace(/\s+/g, ' ').trim();
+
+  GM_addStyle(`
+    #${PANEL_ID}{position:fixed;right:12px;bottom:12px;z-index:9999999;width:460px;max-height:70vh;background:#f8fafc;border:1px solid #cbd5e1;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.25);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;display:flex;flex-direction:column;overflow:hidden}
+    #${PANEL_ID} .hd{padding:10px 12px;background:#e2e8f0;border-bottom:1px solid #cbd5e1;font-weight:800;font-size:13px}
+    #${PANEL_ID} .bd{padding:10px;overflow:auto;display:flex;flex-direction:column;gap:8px}
+    #${PANEL_ID} .ft{padding:10px;background:#e2e8f0;border-top:1px solid #cbd5e1;font-size:12px;color:#334155;white-space:pre-wrap}
+    #${PANEL_ID} textarea{width:100%;min-height:96px;max-height:200px;resize:vertical;border:1px solid #94a3b8;border-radius:8px;padding:8px;font-size:12px;background:#fff}
+    #${PANEL_ID} .row{display:flex;gap:8px;flex-wrap:wrap}
+    #${PANEL_ID} button{border:1px solid #64748b;background:#fff;color:#0f172a;border-radius:8px;padding:7px 10px;font-size:12px;font-weight:700;cursor:pointer}
+    #${PANEL_ID} button.run{background:#166534;color:#fff;border-color:#14532d}
+    #${PANEL_ID} button.copy{background:#1d4ed8;color:#fff;border-color:#1e3a8a}
+  `);
+
+  const panel = document.createElement('div');
+  panel.id = PANEL_ID;
+  panel.innerHTML = `
+    <div class="hd">Case.net Upcoming Court Date Batch Lookup (Standalone)</div>
+    <div class="bd">
+      <label style="font-size:12px;font-weight:700;color:#334155">Case Numbers (newline-separated)</label>
+      <textarea id="cnStandaloneInput" placeholder="18SL-CR01234\n704581692"></textarea>
+      <div class="row">
+        <button class="run" id="cnStandaloneRun">Find Upcoming Dates</button>
+        <button id="cnStandaloneClear">Clear</button>
+        <button class="copy" id="cnStandaloneCopy">Copy Results</button>
+      </div>
+      <label style="font-size:12px;font-weight:700;color:#334155">Results</label>
+      <textarea id="cnStandaloneOutput" readonly placeholder="Results will appear here"></textarea>
+    </div>
+    <div class="ft" id="cnStandaloneStatus">Ready.</div>
+  `;
+  (document.body || document.documentElement).appendChild(panel);
+
+  const $input = panel.querySelector('#cnStandaloneInput');
+  const $output = panel.querySelector('#cnStandaloneOutput');
+  const $status = panel.querySelector('#cnStandaloneStatus');
+
+  $input.value = localStorage.getItem(STORAGE_INPUT) || '';
+  $output.value = localStorage.getItem(STORAGE_OUTPUT) || '';
+
+  function setStatus(msg) {
+    $status.textContent = msg;
+  }
+
+  function saveDrafts() {
+    localStorage.setItem(STORAGE_INPUT, $input.value || '');
+    localStorage.setItem(STORAGE_OUTPUT, $output.value || '');
+  }
+
+  function parseCaseFromUrl(rawUrl) {
+    try {
+      const u = new URL(rawUrl, location.origin);
+      const p = u.searchParams;
+      const caseNumber = norm(p.get('caseNumber') || p.get('inputVO.caseNumber') || p.get('cn') || p.get('ci'));
+      const courtId = norm(p.get('courtId') || p.get('inputVO.courtId') || p.get('courtCode') || p.get('l'));
+      if (!caseNumber || !courtId) return null;
+      return { caseNumber, courtId, caseKey: `${caseNumber}|${courtId}` };
+    } catch {
+      return null;
+    }
+  }
+
+  function parseInput(text) {
+    const seen = new Set();
+    const rows = [];
+    for (const line of String(text || '').split(/\r?\n/)) {
+      const s = norm(line);
+      if (!s) continue;
+      const m = s.match(/^([A-Z0-9-]+)\s*(?:[|,/]|\s+COURT\s*ID\s*:?)\s*([A-Z0-9]+)$/i);
+      const caseNumber = norm((m ? m[1] : s)).toUpperCase();
+      const courtId = norm(m ? m[2] : '').toUpperCase();
+      const key = `${caseNumber}|${courtId}`;
+      if (!caseNumber || seen.has(key)) continue;
+      seen.add(key);
+      rows.push({ caseNumber, courtId });
+    }
+    return rows;
+  }
+
+  function extractCandidatesFromHtml(htmlText) {
+    const doc = new DOMParser().parseFromString(String(htmlText || ''), 'text/html');
+    const links = [...doc.querySelectorAll('a[href*="caseNumber="],a[href*="inputVO.caseNumber="],a[href*="ci="]')];
+    const seen = new Set();
+    const out = [];
+    for (const a of links) {
+      const parsed = parseCaseFromUrl(a.href || '');
+      if (!parsed?.caseKey || seen.has(parsed.caseKey)) continue;
+      seen.add(parsed.caseKey);
+      out.push(parsed);
+    }
+    return out;
+  }
+
+  async function caseNoSearch(caseNumber) {
+    const url = new URL('/casenet/caseNoSearch.do', location.origin);
+    const body = new URLSearchParams();
+    body.set('caseNumber', caseNumber);
+    body.set('inputVO.caseNumber', caseNumber);
+    body.set('newSearch', 'Y');
+
+    const resp = await fetch(url.toString(), {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+      body: body.toString()
+    });
+    const txt = await resp.text();
+    if (!resp.ok) throw new Error(`caseNoSearch HTTP ${resp.status}`);
+    return extractCandidatesFromHtml(txt);
+  }
+
+  async function postJson(path, bodyObj, qs = '') {
+    const url = new URL(path, location.origin);
+    if (qs) url.search = qs;
+    const body = new URLSearchParams();
+    for (const [k, v] of Object.entries(bodyObj || {})) body.set(k, String(v ?? ''));
+    const resp = await fetch(url.toString(), {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8', 'Accept': 'application/json' },
+      body: body.toString()
+    });
+    const txt = await resp.text();
+    if (!resp.ok) throw new Error(`${path} HTTP ${resp.status}`);
+    try { return JSON.parse(txt); } catch { throw new Error(`${path} non-JSON response`); }
+  }
+
+  function getUpcomingCourtDate(docketList) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const all = [];
+
+    for (const entry of docketList || []) {
+      for (const s of (entry?.associatedDocketScheduledInfo || [])) {
+        const d = norm(s?.associatedDate || '');
+        if (!/^\d{2}\/\d{2}\/\d{4}$/.test(d)) continue;
+        const [mm, dd, yyyy] = d.split('/').map(Number);
+        const dt = new Date(yyyy, mm - 1, dd);
+        dt.setHours(0, 0, 0, 0);
+        all.push({
+          dt,
+          d,
+          time: norm(s?.associatedTime || ''),
+          judge: norm(s?.associatedName || ''),
+          locationText: norm(s?.associatedText || '')
+        });
+      }
+    }
+
+    all.sort((a, b) => a.dt - b.dt);
+    const next = all.find((x) => x.dt.getTime() >= today.getTime());
+    if (!next) return 'No Upcoming Court Date Found';
+    return [next.d, next.time || '- - -', next.judge || '- - -', next.locationText || '- - -'].join(' ; ');
+  }
+
+  async function scrapeUpcomingDate({ caseNumber, courtId }) {
+    await postJson('/casenet/cases/newHeaderData.do', {
+      caseNumber,
+      courtId,
+      isTicket: '',
+      locnCode: '',
+      isCriminal: '',
+      diposed: '',
+      pleaAndPayInd: ''
+    });
+
+    const docket = await postJson(
+      '/casenet/cases/docketEntriesSearch.do',
+      { caseNumber, courtId, isTicket: '', tabName: 'Docket' },
+      'displayOption=A&sortOption=D&hasChange=false'
+    );
+
+    return getUpcomingCourtDate(docket?.docketTabModelList || []);
+  }
+
+  async function runBatch() {
+    const requested = parseInput($input.value);
+    if (!requested.length) {
+      setStatus('Enter at least one case number.');
+      return;
+    }
+
+    const lines = [];
+    setStatus(`Resolving ${requested.length} case number(s)...`);
+
+    for (let i = 0; i < requested.length; i++) {
+      const item = requested[i];
+      setStatus(`Processing ${i + 1}/${requested.length}: ${item.caseNumber}`);
+      try {
+        let resolved = null;
+
+        if (item.courtId) {
+          resolved = { caseNumber: item.caseNumber, courtId: item.courtId };
+        } else {
+          const candidates = await caseNoSearch(item.caseNumber);
+          if (!candidates.length) {
+            lines.push(`${item.caseNumber}: Case Not Found`);
+            continue;
+          }
+          if (candidates.length > 1) {
+            lines.push(`${item.caseNumber}: Multiple Cases Found (add Court ID to resolve)`);
+            continue;
+          }
+          resolved = { caseNumber: candidates[0].caseNumber, courtId: candidates[0].courtId };
+        }
+
+        const upcoming = await scrapeUpcomingDate(resolved);
+        lines.push(`${item.caseNumber}: ${upcoming}`);
+      } catch (err) {
+        lines.push(`${item.caseNumber}: Error (${String(err?.message || err)})`);
+      }
+      await sleep(100);
+    }
+
+    $output.value = lines.join('\n');
+    saveDrafts();
+    setStatus(`Done. ${lines.length} result(s).`);
+  }
+
+  panel.querySelector('#cnStandaloneRun').addEventListener('click', () => {
+    runBatch().catch((e) => setStatus(`Error: ${String(e?.message || e)}`));
+  });
+
+  panel.querySelector('#cnStandaloneClear').addEventListener('click', () => {
+    $input.value = '';
+    $output.value = '';
+    saveDrafts();
+    setStatus('Cleared.');
+  });
+
+  panel.querySelector('#cnStandaloneCopy').addEventListener('click', () => {
+    GM_setClipboard($output.value || '', 'text');
+    setStatus('Results copied to clipboard.');
+  });
+
+  $input.addEventListener('input', saveDrafts);
+})();
