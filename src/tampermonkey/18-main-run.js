@@ -129,8 +129,9 @@
                                                                                                                     if (!seenCaseKeys.has(caseKey)) resolved.push({caseKey,caseNumber,courtId:item.courtId,url:''});
                                                                                                                     continue;}
                                                                                                  const candidates = await findCaseCandidatesByCaseNumber(caseNumber);
-                                                                                                 if (!candidates.length) {unresolved.push(caseNumber);
-                                                                                                                         dbg('case_batch_resolve_none',{caseNumber});
+                                                                                                 if (!candidates.length) {const directKey = caseNumber.toUpperCase();
+                                                                                                                         if (!seenCaseKeys.has(directKey)) resolved.push({caseKey: directKey,caseNumber,courtId:'',url:''});
+                                                                                                                         dbg('case_batch_resolve_direct',{caseNumber,reason:'no_candidates'});
                                                                                                                          continue;}
                                                                                                  const uniqueByKey = [];
                                                                                                  const seenKeys = new Set();
@@ -138,8 +139,9 @@
                                                                                                                             if (seenKeys.has(c.caseKey)) continue;
                                                                                                                             seenKeys.add(c.caseKey);
                                                                                                                             uniqueByKey.push(c);}
-                                                                                                 if (uniqueByKey.length > 1) {unresolved.push(caseNumber);
-                                                                                                                               dbg('case_batch_resolve_ambiguous',{caseNumber,count:uniqueByKey.length,courtIds: uniqueByKey.map((c) => c.courtId).slice(0,12)});
+                                                                                                 if (uniqueByKey.length > 1) {const directKey = caseNumber.toUpperCase();
+                                                                                                                               if (!seenCaseKeys.has(directKey)) resolved.push({caseKey: directKey,caseNumber,courtId:'',url:''});
+                                                                                                                               dbg('case_batch_resolve_direct',{caseNumber,reason:'ambiguous',count:uniqueByKey.length,courtIds: uniqueByKey.map((c) => c.courtId).slice(0,12)});
                                                                                                                                continue;}
                                                                                                  const choice = uniqueByKey[0];
                                                                                                  if (!choice?.caseKey) {unresolved.push(caseNumber);
