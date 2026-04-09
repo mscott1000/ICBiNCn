@@ -91,13 +91,47 @@
     try {
       const u = new URL(rawUrl, location.origin);
       const p = u.searchParams;
-      const caseNumber = norm(p.get('caseNumber') || p.get('inputVO.caseNumber') || p.get('cn') || p.get('ci'));
-      const courtId = norm(p.get('courtId') || p.get('inputVO.courtId') || p.get('courtCode') || p.get('l'));
+      const caseNumber = norm(p.get('caseNumber') || p.get('inputVO.caseNumber') || p.get('cn') || p.get('ci') || p.get('caseNum'));
+      const courtId = norm(p.get('courtId') || p.get('inputVO.courtId') || p.get('courtCode') || p.get('l') || p.get('ct'));
       if (!caseNumber || !courtId) return null;
       return { caseNumber, courtId, caseKey: `${caseNumber}|${courtId}` };
     } catch {
       return null;
     }
+  }
+
+  function buildCaseNoSearchBody(caseNumber) {
+    const body = new URLSearchParams();
+    const form = document.querySelector('form[action*="caseNoSearch.do"]') || document.querySelector('form');
+    const named = form ? [...form.querySelectorAll('input[name],select[name],textarea[name]')] : [];
+
+    for (const el of named) {
+      const name = norm(el.getAttribute('name') || '');
+      if (!name || el.disabled) continue;
+      const tag = (el.tagName || '').toLowerCase();
+      const type = norm(el.getAttribute('type') || '').toLowerCase();
+
+      if (type === 'checkbox' || type === 'radio') {
+        if (!el.checked) continue;
+        body.set(name, norm(el.value || 'on'));
+        continue;
+      }
+
+      if (tag === 'select' && el.multiple) {
+        body.delete(name);
+        for (const opt of [...el.options]) {
+          if (opt.selected) body.append(name, norm(opt.value || ''));
+        }
+        continue;
+      }
+
+      body.set(name, norm(el.value || ''));
+    }
+
+    body.set('caseNumber', caseNumber);
+    body.set('inputVO.caseNumber', caseNumber);
+    body.set('newSearch', 'Y');
+    return { body, formFieldCount: named.length, formFieldNames: named.map((el) => norm(el.name)).filter(Boolean) };
   }
 
   function parseInput(text) {
@@ -119,24 +153,47 @@
 
   function extractCandidatesFromHtml(htmlText) {
     const doc = new DOMParser().parseFromString(String(htmlText || ''), 'text/html');
-    const links = [...doc.querySelectorAll('a[href*="caseNumber="],a[href*="inputVO.caseNumber="],a[href*="ci="]')];
+    const links = [...doc.querySelectorAll('a[href],a[onclick],button[onclick]')];
     const seen = new Set();
     const out = [];
-    for (const a of links) {
-      const parsed = parseCaseFromUrl(a.href || '');
-      if (!parsed?.caseKey || seen.has(parsed.caseKey)) continue;
+
+    const addParsed = (parsed) => {
+      if (!parsed?.caseKey || seen.has(parsed.caseKey)) return;
       seen.add(parsed.caseKey);
       out.push(parsed);
+    };
+
+    const parseParamMatch = (rawValue) => {
+      const s = decodeURIComponent(String(rawValue || '').replace(/\+/g, ' '));
+      const caseMatch = s.match(/(?:inputVO\.caseNumber|caseNumber|ci|cn|caseNum)\s*(?:=|:)\s*['"]?([A-Z0-9-]+)/i);
+      const courtMatch = s.match(/(?:inputVO\.courtId|courtId|courtCode|l|ct)\s*(?:=|:)\s*['"]?([A-Z0-9]+)/i);
+      const caseNumber = norm(caseMatch?.[1] || '').toUpperCase();
+      const courtId = norm(courtMatch?.[1] || '').toUpperCase();
+      if (!caseNumber || !courtId) return null;
+      return { caseNumber, courtId, caseKey: `${caseNumber}|${courtId}` };
+    };
+
+    for (const el of links) {
+      addParsed(parseCaseFromUrl(el.getAttribute('href') || ''));
+      addParsed(parseParamMatch(el.getAttribute('onclick') || ''));
+      addParsed(parseParamMatch(el.getAttribute('data-href') || ''));
+      addParsed(parseParamMatch(el.getAttribute('data-url') || ''));
+    }
+
+    for (const script of [...doc.querySelectorAll('script')]) {
+      addParsed(parseParamMatch(script.textContent || ''));
     }
     return out;
   }
 
   async function caseNoSearch(caseNumber) {
     const url = new URL('/casenet/caseNoSearch.do', location.origin);
-    const body = new URLSearchParams();
-    body.set('caseNumber', caseNumber);
-    body.set('inputVO.caseNumber', caseNumber);
-    body.set('newSearch', 'Y');
+    const { body, formFieldCount, formFieldNames } = buildCaseNoSearchBody(caseNumber);
+    appendDebug('case_no_search_contract', {
+      caseNumber,
+      formFieldCount,
+      sampleFields: formFieldNames.slice(0, 20)
+    });
 
     const resp = await fetch(url.toString(), {
       method: 'POST',
@@ -149,7 +206,8 @@
       caseNumber,
       httpStatus: resp.status,
       ok: !!resp.ok,
-      responseLength: txt.length
+      responseLength: txt.length,
+      bodyFieldCount: [...body.keys()].length
     });
     if (!resp.ok) throw new Error(`caseNoSearch HTTP ${resp.status}`);
     return extractCandidatesFromHtml(txt);
