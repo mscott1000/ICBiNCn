@@ -14,6 +14,7 @@
   const PANEL_ID = 'cnUpcomingBatchPanelStandalone';
   const STORAGE_INPUT = 'cn_upcoming_batch_input_v1';
   const STORAGE_OUTPUT = 'cn_upcoming_batch_output_v1';
+  const STORAGE_DEBUG = 'cn_upcoming_batch_debug_v1';
 
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   const norm = (s) => String(s || '').replace(/\s+/g, ' ').trim();
@@ -24,6 +25,7 @@
     #${PANEL_ID} .bd{padding:10px;overflow:auto;display:flex;flex-direction:column;gap:8px}
     #${PANEL_ID} .ft{padding:10px;background:#e2e8f0;border-top:1px solid #cbd5e1;font-size:12px;color:#334155;white-space:pre-wrap}
     #${PANEL_ID} textarea{width:100%;min-height:96px;max-height:200px;resize:vertical;border:1px solid #94a3b8;border-radius:8px;padding:8px;font-size:12px;background:#fff}
+    #${PANEL_ID} textarea.debug{min-height:80px;max-height:180px;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:11px}
     #${PANEL_ID} .row{display:flex;gap:8px;flex-wrap:wrap}
     #${PANEL_ID} button{border:1px solid #64748b;background:#fff;color:#0f172a;border-radius:8px;padding:7px 10px;font-size:12px;font-weight:700;cursor:pointer}
     #${PANEL_ID} button.run{background:#166534;color:#fff;border-color:#14532d}
@@ -44,6 +46,12 @@
       </div>
       <label style="font-size:12px;font-weight:700;color:#334155">Results</label>
       <textarea id="cnStandaloneOutput" readonly placeholder="Results will appear here"></textarea>
+      <div class="row">
+        <label style="font-size:12px;font-weight:700;color:#334155;flex:1;align-self:center;">Debug Log</label>
+        <button id="cnStandaloneCopyDebug">Copy Debug</button>
+        <button id="cnStandaloneClearDebug">Clear Debug</button>
+      </div>
+      <textarea class="debug" id="cnStandaloneDebug" readonly placeholder="Debug rows will appear here"></textarea>
     </div>
     <div class="ft" id="cnStandaloneStatus">Ready.</div>
   `;
@@ -51,10 +59,12 @@
 
   const $input = panel.querySelector('#cnStandaloneInput');
   const $output = panel.querySelector('#cnStandaloneOutput');
+  const $debug = panel.querySelector('#cnStandaloneDebug');
   const $status = panel.querySelector('#cnStandaloneStatus');
 
   $input.value = localStorage.getItem(STORAGE_INPUT) || '';
   $output.value = localStorage.getItem(STORAGE_OUTPUT) || '';
+  $debug.value = localStorage.getItem(STORAGE_DEBUG) || '';
 
   function setStatus(msg) {
     $status.textContent = msg;
@@ -63,6 +73,18 @@
   function saveDrafts() {
     localStorage.setItem(STORAGE_INPUT, $input.value || '');
     localStorage.setItem(STORAGE_OUTPUT, $output.value || '');
+    localStorage.setItem(STORAGE_DEBUG, $debug.value || '');
+  }
+
+  function appendDebug(event, details = {}) {
+    const row = {
+      at: new Date().toISOString(),
+      event: norm(event),
+      ...details
+    };
+    const line = JSON.stringify(row);
+    $debug.value = $debug.value ? `${$debug.value}\n${line}` : line;
+    saveDrafts();
   }
 
   function parseCaseFromUrl(rawUrl) {
@@ -123,6 +145,12 @@
       body: body.toString()
     });
     const txt = await resp.text();
+    appendDebug('case_no_search_response', {
+      caseNumber,
+      httpStatus: resp.status,
+      ok: !!resp.ok,
+      responseLength: txt.length
+    });
     if (!resp.ok) throw new Error(`caseNoSearch HTTP ${resp.status}`);
     return extractCandidatesFromHtml(txt);
   }
@@ -139,6 +167,14 @@
       body: body.toString()
     });
     const txt = await resp.text();
+    appendDebug('json_post_response', {
+      path,
+      httpStatus: resp.status,
+      ok: !!resp.ok,
+      bodyKeys: Object.keys(bodyObj || {}),
+      query: qs || '',
+      responseLength: txt.length
+    });
     if (!resp.ok) throw new Error(`${path} HTTP ${resp.status}`);
     try { return JSON.parse(txt); } catch { throw new Error(`${path} non-JSON response`); }
   }
@@ -199,6 +235,10 @@
     }
 
     const lines = [];
+    appendDebug('batch_start', {
+      requestedCount: requested.length,
+      hasOutput: !!norm($output.value || '')
+    });
     setStatus(`Resolving ${requested.length} case number(s)...`);
 
     for (let i = 0; i < requested.length; i++) {
@@ -209,28 +249,51 @@
 
         if (item.courtId) {
           resolved = { caseNumber: item.caseNumber, courtId: item.courtId };
+          appendDebug('batch_use_supplied_court_id', {
+            caseNumber: item.caseNumber,
+            courtId: item.courtId
+          });
         } else {
           const candidates = await caseNoSearch(item.caseNumber);
+          appendDebug('batch_candidates_found', {
+            caseNumber: item.caseNumber,
+            candidateCount: candidates.length,
+            sampleCourtIds: candidates.map((c) => c.courtId).slice(0, 10)
+          });
           if (!candidates.length) {
             lines.push(`${item.caseNumber}: Case Not Found`);
+            appendDebug('batch_case_not_found', { caseNumber: item.caseNumber });
             continue;
           }
           if (candidates.length > 1) {
             lines.push(`${item.caseNumber}: Multiple Cases Found (add Court ID to resolve)`);
+            appendDebug('batch_case_ambiguous', { caseNumber: item.caseNumber });
             continue;
           }
           resolved = { caseNumber: candidates[0].caseNumber, courtId: candidates[0].courtId };
+          appendDebug('batch_case_resolved', resolved);
         }
 
         const upcoming = await scrapeUpcomingDate(resolved);
         lines.push(`${item.caseNumber}: ${upcoming}`);
+        appendDebug('batch_case_complete', {
+          requestedCaseNumber: item.caseNumber,
+          resolvedCaseNumber: resolved.caseNumber,
+          courtId: resolved.courtId,
+          result: upcoming
+        });
       } catch (err) {
         lines.push(`${item.caseNumber}: Error (${String(err?.message || err)})`);
+        appendDebug('batch_case_error', {
+          caseNumber: item.caseNumber,
+          message: String(err?.message || err)
+        });
       }
       await sleep(100);
     }
 
     $output.value = lines.join('\n');
+    appendDebug('batch_done', { resultCount: lines.length });
     saveDrafts();
     setStatus(`Done. ${lines.length} result(s).`);
   }
@@ -249,6 +312,17 @@
   panel.querySelector('#cnStandaloneCopy').addEventListener('click', () => {
     GM_setClipboard($output.value || '', 'text');
     setStatus('Results copied to clipboard.');
+  });
+
+  panel.querySelector('#cnStandaloneCopyDebug').addEventListener('click', () => {
+    GM_setClipboard($debug.value || '(no debug rows)', 'text');
+    setStatus('Debug copied to clipboard.');
+  });
+
+  panel.querySelector('#cnStandaloneClearDebug').addEventListener('click', () => {
+    $debug.value = '';
+    saveDrafts();
+    setStatus('Debug cleared.');
   });
 
   $input.addEventListener('input', saveDrafts);
