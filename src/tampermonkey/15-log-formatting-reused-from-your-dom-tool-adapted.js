@@ -140,11 +140,16 @@ ST. CHARLES COUNTY CIRCUIT - (636) 949-3080
 ST. CHARLES COUNTY MUNICIPAL - (314) 949-1833
 ST. FRANCOIS CIRCUIT - (573) 756-5755
 ST. JOHN MUNICIPAL - (314) 427-8700 EXT. 6
-ST. LOUIS COUNTY CIRCUIT, DIVISION 20 - (314) 615-1520 {Judge Matthew Hearne}
-ST. LOUIS COUNTY CIRCUIT, DIVISION 22 - (314) 615-1522 {Judge Megan Julian}
-ST. LOUIS COUNTY CIRCUIT, DIVISION 32 - (314) 615-1532 {Judge Julia Lasater}
-ST. LOUIS COUNTY CIRCUIT, DIVISION 33 - (314) 615-1533 {Judge Nicolette Klapp}
-ST. LOUIS COUNTY CIRCUIT, DIVISION 39 - (314) 615-1539 {Judge Kelly Snyder}
+ST. LOUIS COUNTY CIRCUIT, DIV 20 - Judge MATTHEW HEARNE
+Court Clerk: (314) 615-1520
+ST. LOUIS COUNTY CIRCUIT, DIV 22 - Judge MEGAN JULIAN
+Court Clerk: (314) 615-1522
+ST. LOUIS COUNTY CIRCUIT, DIV 32 - Judge JULIA PUSATERI LASATER
+Court Clerk: (314) 615-1532
+ST. LOUIS COUNTY CIRCUIT, DIV 33 - Judge NICOLETTE KLAPP
+Court Clerk: (314) 615-1533
+ST. LOUIS COUNTY CIRCUIT, DIV 39 - Judge KELLY SNYDER
+Court Clerk: (314) 615-1539
 ST. LOUIS COUNTY MUNICIPAL - FRESH START FRIDAY
 ST. GENEVIEVE MUNICIPAL - (573)883-2705
 ST. GEORGE (OPERATES IN ST. LOUIS COUNTY MUNICIPAL) - FRESH START FRIDAY
@@ -185,9 +190,9 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
 
   function normalizeJudgeName(v) {const raw = municipalityKey(v);
                                   if (!raw) return '';
-                                  const extracted = (() => {const afterAssigned = raw.match(/ASSIGNED\s*([A-Z,\s]+)/);
+                                  const extracted = (() => {const afterAssigned = raw.match(/ASSIGNED\s*([A-Z,.\s]+)/);
                                                              if (afterAssigned?.[1]) return afterAssigned[1];
-                                                             const commissionerMatch = raw.match(/JUDGE\/COMMISSIONER\s*ASSIGNED\s*([A-Z,\s]+)/);
+                                                             const commissionerMatch = raw.match(/JUDGE\/COMMISSIONER\s*ASSIGNED\s*([A-Z,.\s]+)/);
                                                              if (commissionerMatch?.[1]) return commissionerMatch[1];
                                                              return raw;})();
                                   const withoutNoise = extracted.replace(/\bDATE\s+FILED\b[\s\S]*$/,'')
@@ -195,41 +200,69 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
                                                                .replace(/\bCASE\s+TYPE\b[\s\S]*$/,'')
                                                                .replace(/JUDGE\/COMMISSIONER\s*ASSIGNED/,'')
                                                                .replace(/^JUDGE\s+/,'');
-                                  const scrubbed = withoutNoise.replace(/[^A-Z,\s]/g,' ').replace(/\s+/g,' ').trim();
-                                  const commaMatch = scrubbed.match(/^([A-Z]+)\s*,\s*([A-Z]+)(?:\s+[A-Z]+)?/);
-                                  if (commaMatch) return `${commaMatch[2]} ${commaMatch[1]}`.trim();
-                                  const tokens = scrubbed.replace(/,/g,' ')
-                                                        .split(/\s+/)
-                                                        .filter(Boolean)
-                                                        .filter((tok) => tok.length > 1 && !/^(JR|SR|II|III|IV|V)$/.test(tok));
-                                  if (!tokens.length) return '';
-                                  if (tokens.length >= 2) return `${tokens[0]} ${tokens[tokens.length - 1]}`;
-                                  return tokens[0];}
+                                  const scrubbed = withoutNoise.replace(/[^A-Z,.\s]/g,' ').replace(/\s+/g,' ').trim();
+                                  if (!scrubbed) return '';
+                                  const withoutSuffix = scrubbed.replace(/\b(JR|SR|II|III|IV|V)\b/g,' ').replace(/\s+/g,' ').trim();
+                                  const commaMatch = withoutSuffix.match(/^([^,]+),\s*(.+)$/);
+                                  if (commaMatch) {const last = norm(commaMatch[1]);
+                                                   const rest = norm(commaMatch[2]);
+                                                   return municipalityKey(`${rest} ${last}`);}
+                                  return municipalityKey(withoutSuffix.replace(/,/g,' '));}
+
+  function formatJudgeDisplayName(v) {const normalized = normalizeJudgeName(v);
+                                      if (!normalized) return '';
+                                      return normalized;}
+
+  function shouldIncludeJudgeDetails(jurisdiction) {const key = municipalityKey(jurisdiction);
+                                                    if (!key) return false;
+                                                    if (key.includes('CIRCUIT')) return true;
+                                                    if (key.includes('CITY OF ST. LOUIS MUNICIPAL') || key.includes('CITY OF ST LOUIS MUNICIPAL')) return true;
+                                                    if (key === 'CITY OF ST. LOUIS' || key === 'CITY OF ST LOUIS') return true;
+                                                    if (key.includes('ST. LOUIS COUNTY') || key.includes('ST LOUIS COUNTY')) return true;
+                                                    return false;}
+
+
 
 
   function parseMunicipalityLine(line) {const trimmed = String(line || '').trim();
                                       if (!trimmed) return null;
-                                      const judgeMatch = trimmed.match(/\{\s*Judge\s+([^}]+)\}\s*$/i);
-                                      const judgeTag = judgeMatch ? norm(judgeMatch[1]) : '';
-                                      const lineWithoutTag = judgeMatch ? trimmed.slice(0,judgeMatch.index).trim() : trimmed;
-                                      const base = lineWithoutTag.split(' - ')[0].trim();
+                                      const baseAndJudgeMatch = trimmed.match(/^(.*?)\s*-\s*Judge\s+(.+)$/i);
+                                      const baseLine = baseAndJudgeMatch ? norm(baseAndJudgeMatch[1]) : trimmed;
+                                      const judgeTag = baseAndJudgeMatch ? formatJudgeDisplayName(baseAndJudgeMatch[2]) : '';
+                                      const clerkMatch = baseLine.match(/^(.*?)(?:\s+-\s+)?Court\s+Clerk:\s*(.+)$/i);
+                                      const base = clerkMatch ? norm(clerkMatch[1]) : baseLine.split(' - ')[0].trim();
+                                      const clerk = clerkMatch ? norm(clerkMatch[2]) : '';
                                       const key = municipalityKey(base);
                                       if (!key) return null;
+                                      const display = judgeTag ? `${base} - Judge ${judgeTag}` : baseLine;
+                                      const displayWithClerk = clerk ? `${display}
+Court Clerk: ${clerk}` : display;
+                                      const divisionMatch = base.match(/\bDIV(?:ISION)?\s+(\d+[A-Z]?)\b/i);
                                       return {raw: trimmed,
-                                              display: lineWithoutTag,
-                                              displayWithJudge: judgeTag ? `${lineWithoutTag} {Judge ${judgeTag}}` : lineWithoutTag,
+                                              display: displayWithClerk,
+                                              displayWithJudge: displayWithClerk,
                                               key,
                                               looseKey: municipalityLooseKey(base),
                                               matchKey: municipalityMatchKey(base),
-                                              judgeKey: judgeTag ? normalizeJudgeName(judgeTag) : ''};}
+                                              judgeKey: judgeTag ? normalizeJudgeName(judgeTag) : '',
+                                              judgeDisplay: judgeTag,
+                                              clerk,
+                                              division: divisionMatch ? divisionMatch[1] : '',
+                                              courtBase: norm(base.replace(/,\s*DIV(?:ISION)?\s+\d+[A-Z]?\b/i,'')).trim()};}
 
-  const MUNICIPALITY_CONTACTS = (() => {const map = new Map();
-                                        const lines = MUNICIPALITY_CONTACTS_RAW.split('\n').map((l) => l.trim()).filter(Boolean);
-                                        for (const line of lines) {const parsed = parseMunicipalityLine(line);
-                                                                   if (!parsed) continue;
-                                                                   if (!map.has(parsed.key)) map.set(parsed.key,[]);
-                                                                   map.get(parsed.key).push(parsed);}
-                                        return map;})();
+  function parseMunicipalityContacts(raw) {const map = new Map();
+                                           const lines = raw.split('\n').map((l) => l.trim()).filter(Boolean);
+                                           const merged = [];
+                                           for (const line of lines) {if (/^Court\s+Clerk:/i.test(line) && merged.length) merged[merged.length - 1] = `${merged[merged.length - 1]} - ${line}`;
+                                                                     else merged.push(line);}
+                                           for (const line of merged) {const parsed = parseMunicipalityLine(line);
+                                                                       if (!parsed) continue;
+                                                                       if (!map.has(parsed.key)) map.set(parsed.key,[]);
+                                                                       map.get(parsed.key).push(parsed);} 
+                                           return map;}
+
+
+  const MUNICIPALITY_CONTACTS = parseMunicipalityContacts(MUNICIPALITY_CONTACTS_RAW);
 
   function getMunicipalityHeaderForSummary(jurisdiction,judgeName = '') {const key = municipalityKey(jurisdiction);
                                                                         if (!key) return '';
@@ -246,13 +279,13 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
                                                                                                                                                                  if (!entryLoose) continue;
                                                                                                                                                                  if (entryLoose === looseKey || entryLoose.startsWith(`${looseKey} `) || looseKey.startsWith(`${entryLoose} `) || (matchKey && entryMatch && (entryMatch === matchKey || entryMatch.startsWith(`${matchKey} `) || matchKey.startsWith(`${entryMatch} `)))) {if (!pool.includes(entry)) pool.push(entry);}}}}
                                                                         const judgeKey = normalizeJudgeName(judgeName);
-                                                                        if (!pool.length) return judgeKey ? `${key} - {Judge ${judgeKey}}` : '';
+                                                                        if (!pool.length) return judgeKey && shouldIncludeJudgeDetails(jurisdiction) ? `${key} - Judge ${formatJudgeDisplayName(judgeKey)}` : key;
                                                                         if (judgeKey) {const matched = pool.find((x) => x.judgeKey && x.judgeKey === judgeKey);
                                                                                        if (matched) return matched.displayWithJudge || matched.display;}
                                                                         if (pool.length === 1) return pool[0].displayWithJudge || pool[0].display;
                                                                         if (looseKey) {const operatingMatch = pool.find((x) => (x.looseKey || '').startsWith(`${looseKey} `) && /\bOPERATES IN\b/i.test(x.display));
                                                                                       if (operatingMatch) return operatingMatch.displayWithJudge || operatingMatch.display;}
-                                                                        if (judgeKey) return `${key} - {Judge ${judgeKey}}`;
+                                                                        if (judgeKey && shouldIncludeJudgeDetails(jurisdiction)) return `${key} - Judge ${formatJudgeDisplayName(judgeKey)}`;
                                                                         return pool[0].displayWithJudge || pool[0].display;}
 
 
@@ -323,15 +356,33 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
 
                                   const sections = [];
                                   let hasFreshStartFridaySection = false;
-                                  for (const {jurisdiction,entries} of sortedJurisdictions) {const jurisdictionKey = municipalityKey(jurisdiction);
-                                                                                              const isStlCountyCircuit = jurisdictionKey.includes('ST LOUIS COUNTY') && jurisdictionKey.includes('CIRCUIT');
+                                  for (const {jurisdiction,entries} of sortedJurisdictions) {const includeJudgeDetails = shouldIncludeJudgeDetails(jurisdiction);
                                                                                               const grouped = new Map();
-                                                                                              if (isStlCountyCircuit) {for (const entry of entries) {const header = getMunicipalityHeaderForSummary(jurisdiction,entry?.judge || '') || jurisdiction.toUpperCase();
+                                                                                              if (includeJudgeDetails) {for (const entry of entries) {const header = getMunicipalityHeaderForSummary(jurisdiction,entry?.judge || '') || jurisdiction.toUpperCase();
                                                                                                                                                      if (!grouped.has(header)) grouped.set(header,[]);
                                                                                                                                                      grouped.get(header).push(entry);}}
-                                                                                              else {const jurisdictionJudge = entries.find((x) => norm(x?.judge || '') && norm(x?.judge || '') !== '- - -')?.judge || '';
-                                                                                                    const header = getMunicipalityHeaderForSummary(jurisdiction,jurisdictionJudge) || jurisdiction.toUpperCase();
+                                                                                              else {const header = getMunicipalityHeaderForSummary(jurisdiction,'') || jurisdiction.toUpperCase();
                                                                                                     grouped.set(header,entries);}
+
+                                                                                              if (includeJudgeDetails && grouped.size > 1 && municipalityKey(jurisdiction).includes('CIRCUIT')) {sections.push(jurisdiction.toUpperCase());
+                                                                                                                                                                                       for (const [header,headerEntries] of grouped.entries()) {const sortedEntries = headerEntries.map((entry,idx) => ({entry,idx}))
+                                                                                                                                                                                    .sort((a,b) => {const priorityDiff = getSummaryStatusPriority(a.entry) - getSummaryStatusPriority(b.entry);
+                                                                                                                                                                                                    if (priorityDiff) return priorityDiff;
+                                                                                                                                                                                                    return a.idx - b.idx;})
+                                                                                                                                                                                    .map(({entry}) => entry);
+                                                                                                                                                                                                 const division = (header.match(/\bDIV(?:ISION)?\s+\d+[A-Z]?\b/i) || ['Division - - -'])[0].replace(/\bDIV\b/i,'Division');
+                                                                                                                                                                                                 const judge = formatJudgeDisplayName(sortedEntries[0]?.judge || '') || '- - -';
+                                                                                                                                                                                                 const clerkMatch = header.match(/Court\s+Clerk:\s*([^\n]+)/i);
+                                                                                                                                                                                                 const clerk = clerkMatch ? norm(clerkMatch[1]) : '- - -';
+                                                                                                                                                                                                 sections.push(`${division}, Judge ${judge} - Court Clerk: ${clerk}`);
+                                                                                                                                                                                                 for (const e of sortedEntries) {const caseNo = getCaseNumberForSummary(e);
+                                                                                                                                                                                                                           const charge = norm(e?.chargeDescription || '') || 'No Charges Found';
+                                                                                                                                                                                                                           const warrantLabel = getWarrantLabelForSummary(e);
+                                                                                                                                                                                                                           sections.push(`${caseNo}: ${charge} - ${warrantLabel}`);}}
+                                                                                                                                                                                       sections.push('');
+                                                                                                                                                                                       sections.push('');
+                                                                                              continue;}
+
                                                                                               for (const [header,headerEntries] of grouped.entries()) {const sortedEntries = headerEntries.map((entry,idx) => ({entry,idx}))
                                                                                                                                                    .sort((a,b) => {const priorityDiff = getSummaryStatusPriority(a.entry) - getSummaryStatusPriority(b.entry);
                                                                                                                                                                    if (priorityDiff) return priorityDiff;
