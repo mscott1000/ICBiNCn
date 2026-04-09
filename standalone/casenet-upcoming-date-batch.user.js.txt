@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Case.net Upcoming Court Date Batch Lookup (Standalone)
 // @namespace    icbincn-standalone
-// @version      1.0.0
+// @version      1.0.1
 // @description  Standalone Case.net batch case-number lookup for upcoming court dates. Does not modify ICBiNCn UI.
 // @match        https://www.courts.mo.gov/*
 // @grant        GM_addStyle
@@ -92,7 +92,7 @@
       const u = new URL(rawUrl, location.origin);
       const p = u.searchParams;
       const caseNumber = norm(p.get('caseNumber') || p.get('inputVO.caseNumber') || p.get('cn') || p.get('ci') || p.get('caseNum'));
-      const courtId = norm(p.get('courtId') || p.get('inputVO.courtId') || p.get('courtCode') || p.get('l') || p.get('ct'));
+      const courtId = norm(p.get('courtId') || p.get('inputVO.courtId') || p.get('courtCode'));
       if (!caseNumber || !courtId) return null;
       return { caseNumber, courtId, caseKey: `${caseNumber}|${courtId}` };
     } catch {
@@ -172,10 +172,10 @@
         // Some inline script/onClick payloads contain stray '%' characters.
         // Keep the raw source so parsing can still proceed.
       }
-      const caseMatch = s.match(/(?:inputVO\.caseNumber|caseNumber|ci|cn|caseNum)\s*(?:=|:)\s*['"]?([A-Z0-9-]+)/i);
-      const courtMatch = s.match(/(?:inputVO\.courtId|courtId|courtCode|l|ct)\s*(?:=|:)\s*['"]?([A-Z0-9]+)/i);
-      const caseNumber = norm(caseMatch?.[1] || '').toUpperCase();
-      const courtId = norm(courtMatch?.[1] || '').toUpperCase();
+      const caseMatch = s.match(/(?:^|[?&,(\s'"])((?:inputVO\.caseNumber|caseNumber|caseNum|cn|ci))\s*(?:=|:)\s*['"]?([A-Z0-9-]+)/i);
+      const courtMatch = s.match(/(?:^|[?&,(\s'"])((?:inputVO\.courtId|courtId|courtCode))\s*(?:=|:)\s*['"]?([A-Z0-9]+)/i);
+      const caseNumber = norm(caseMatch?.[3] || '').toUpperCase();
+      const courtId = norm(courtMatch?.[3] || '').toUpperCase();
       if (!caseNumber || !courtId) return null;
       return { caseNumber, courtId, caseKey: `${caseNumber}|${courtId}` };
     };
@@ -187,9 +187,6 @@
       addParsed(parseParamMatch(el.getAttribute('data-url') || ''));
     }
 
-    for (const script of [...doc.querySelectorAll('script')]) {
-      addParsed(parseParamMatch(script.textContent || ''));
-    }
     return out;
   }
 
