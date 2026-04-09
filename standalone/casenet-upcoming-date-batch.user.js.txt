@@ -16,6 +16,7 @@
   const STORAGE_OUTPUT = 'cn_upcoming_batch_output_v1';
   const STORAGE_DEBUG = 'cn_upcoming_batch_debug_v1';
   const STORAGE_CONCURRENCY = 'cn_upcoming_batch_concurrency_v1';
+  const STORAGE_STOP_REASON = 'cn_upcoming_batch_stop_reason_v1';
 
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   const norm = (s) => String(s || '').replace(/\s+/g, ' ').trim();
@@ -23,6 +24,8 @@
   const COURT_ID_SWEEP_MAX = 250;
   const DEFAULT_CONCURRENCY = 1;
   const MAX_CONCURRENCY = 10;
+  let stopRequested = false;
+  let activeRun = null;
 
   function normalizeCourtId(courtId) {
     const raw = norm(courtId || '').toUpperCase();
@@ -425,7 +428,6 @@
     $runBtn.disabled = true;
     $stopBtn.disabled = false;
 
-    const lines = [];
     appendDebug('batch_start', {
       requestedCount: requested.length,
       hasOutput: !!norm($output.value || ''),
@@ -439,7 +441,7 @@
       async (item, i) => {
         try {
           const seed = { caseNumber: item.caseNumber, courtId: normalizeCourtId(item.courtId || DEFAULT_COURT_ID) };
-          const scraped = await scrapeUpcomingDate(seed);
+          const scraped = await scrapeUpcomingDate(seed, activeRun?.controller?.signal);
           const upcoming = scraped?.upcoming || 'No Upcoming Court Date Found';
           appendDebug('batch_case_complete', {
             requestedCaseNumber: item.caseNumber,
@@ -467,39 +469,6 @@
       },
       (done, total) => setStatus(`Processed ${done}/${total} case number(s) (concurrency ${conc})...`)
     );
-    setStatus(`Resolving ${requested.length} case number(s)...`);
-
-    for (let i = 0; i < requested.length; i++) {
-      ensureNotStopped();
-      const item = requested[i];
-      setStatus(`Processing ${i + 1}/${requested.length}: ${item.caseNumber}`);
-      try {
-        const seed = { caseNumber: item.caseNumber, courtId: normalizeCourtId(item.courtId || DEFAULT_COURT_ID) };
-        const scraped = await scrapeUpcomingDate(seed, activeRun?.controller?.signal);
-        const upcoming = scraped?.upcoming || 'No Upcoming Court Date Found';
-        lines.push(`${item.caseNumber}: ${upcoming}`);
-        appendDebug('batch_case_complete', {
-          requestedCaseNumber: item.caseNumber,
-          resolvedCaseNumber: item.caseNumber,
-          courtId: scraped?.resolvedCourtId || seed.courtId,
-          resolvedHeaderUrl: scraped?.resolvedHeaderUrl || buildCaseHeaderUrl(item.caseNumber, seed.courtId),
-          result: upcoming
-        });
-      } catch (err) {
-        if (String(err?.name || '').toLowerCase() === 'aborterror' || /stopped by user/i.test(String(err?.message || err))) {
-          appendDebug('batch_stopped', { index: i, caseNumber: item.caseNumber });
-          break;
-        }
-        lines.push(`${item.caseNumber}: Error (${String(err?.message || err)})`);
-        appendDebug('batch_case_error', {
-          caseNumber: item.caseNumber,
-          message: String(err?.message || err)
-        });
-      }
-      try {
-        await sleep(100);
-      } catch {}
-    }
 
     $output.value = lines.join('\n');
     appendDebug('batch_done', { resultCount: lines.length });
