@@ -60,7 +60,19 @@
                                                                                  entry._foundYears = (match.years || []).join(', ');
                                                                                  return entry;}
                                                                  entry.attorney = extractAttorney(party);
-                                                                 const docket = await postFormJsonRetry_tryCourtIds('/casenet/cases/docketEntriesSearch.do',{caseNumber,courtId: resolvedCourtId,isTicket:'',tabName:'Docket',},{qs:'displayOption=A&sortOption=D&hasChange=false'});
+                                                                 let docket;
+                                                                 try {docket = await postFormJsonRetry_tryCourtIds('/casenet/cases/docketEntriesSearch.do',{caseNumber,courtId: resolvedCourtId,isTicket:'',tabName:'Docket',},{qs:'displayOption=A&sortOption=D&hasChange=false'});}
+                                                                 catch (e) {const unavailableNeedles = ['location unavailable',
+                                                                                                       'court location is currently unavailable',
+                                                                                                       'casenet home page'];
+                                                                            const preview = String(e?.preview || '').toLowerCase();
+                                                                            const msg = String(e?.message || '').toLowerCase();
+                                                                            const isDocketUnavailable = unavailableNeedles.some((needle) => preview.includes(needle) || msg.includes(needle));
+                                                                            if (!isDocketUnavailable) throw e;
+                                                                            entry.nextDocketDate = 'Case DOcket Unavailable';
+                                                                            entry._skipReason = 'docket_unavailable';
+                                                                            dbg('skip_docket_unavailable',{caseKey: entry.caseKey,caseNumber,courtId: resolvedCourtId,msg:String(e?.message || e)});
+                                                                            return entry;}
                                                                  const docketList = docket?.docketTabModelList || [];
                                                                  const hit = findFirstWarrantOrSummons(docketList);
                                                                  const f = countFtas(docketList);
