@@ -19,6 +19,15 @@
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   const norm = (s) => String(s || '').replace(/\s+/g, ' ').trim();
   const DEFAULT_COURT_ID = 'CT21';
+  const COURT_ID_SWEEP_MAX = 250;
+
+  function normalizeCourtId(courtId) {
+    const raw = norm(courtId || '').toUpperCase();
+    if (!raw) return '';
+    if (/^CT[0-9A-Z]+$/.test(raw)) return raw;
+    if (/^\d+$/.test(raw)) return `CT${raw}`;
+    return raw;
+  }
 
   function normalizeUrl(u) {
     try {
@@ -190,27 +199,9 @@
   function buildCaseHeaderUrl(caseNumber, courtId) {
     const url = new URL('/casenet/cases/newHeader.do', location.origin);
     url.searchParams.set('inputVO.caseNumber', caseNumber);
-    url.searchParams.set('inputVO.courtId', courtId || DEFAULT_COURT_ID);
+    url.searchParams.set('inputVO.courtId', normalizeCourtId(courtId || DEFAULT_COURT_ID));
     url.searchParams.set('inputVO.isTicket', 'false');
     return url.toString();
-  }
-
-  async function probeCaseHeader(caseNumber, courtId) {
-    const headerUrl = buildCaseHeaderUrl(caseNumber, courtId || DEFAULT_COURT_ID);
-    const resp = await fetch(headerUrl, { credentials: 'include' });
-    const text = await resp.text();
-    const missingCase = /case could not be found|no case records|unable to locate/i.test(text);
-    appendDebug('case_header_probe', {
-      caseNumber,
-      courtId: courtId || DEFAULT_COURT_ID,
-      httpStatus: resp.status,
-      ok: !!resp.ok,
-      responseLength: text.length,
-      missingCase
-    });
-    if (!resp.ok) throw new Error(`newHeader HTTP ${resp.status}`);
-    if (missingCase) throw new Error('Case not found via direct newHeader lookup');
-    return { caseNumber, courtId: (courtId || DEFAULT_COURT_ID).toUpperCase() };
   }
 
   async function postJson(path, bodyObj, qs = '') {
@@ -285,10 +276,28 @@
     return [next.d, next.time || '- - -', next.judge || '- - -', next.locationText || '- - -'].join(' ; ');
   }
 
+  function buildCourtIdAttemptOrder(initialCourtId, discoveredCourtIds = []) {
+    const out = [];
+    const seen = new Set();
+    const push = (v) => {
+      const ct = normalizeCourtId(v);
+      if (!ct || seen.has(ct)) return;
+      seen.add(ct);
+      out.push(ct);
+    };
+
+    push(initialCourtId);
+    push(DEFAULT_COURT_ID);
+    push('CT22');
+    for (const ct of discoveredCourtIds || []) push(ct);
+    for (let i = 1; i <= COURT_ID_SWEEP_MAX; i++) push(`CT${i}`);
+    return out;
+  }
+
   async function scrapeUpcomingDate({ caseNumber, courtId }) {
     const mkHeaderPayload = (ct) => ({
       caseNumber,
-      courtId: ct || '',
+      courtId: normalizeCourtId(ct) || '',
       isTicket: '',
       locnCode: '',
       isCriminal: '',
@@ -296,35 +305,43 @@
       pleaAndPayInd: ''
     });
 
-    let header;
-    try {
-      header = await postJson('/casenet/cases/newHeaderData.do', mkHeaderPayload(courtId || ''));
-    } catch (err) {
-      const msg = String(err?.message || err);
-      const shouldTryCaseNoSearch = /newHeaderData\.do non-JSON response/i.test(msg);
-      if (!shouldTryCaseNoSearch) throw err;
-      const htmlCourtIds = extractCourtIdsFromText(err?.meta?.responseText || '');
-      appendDebug('header_retry_via_case_number_search', {
-        caseNumber,
-        attemptedCourtId: courtId || '',
-        reason: msg,
-        htmlCourtIds
-      });
-      const candidates = await findCaseCandidatesByCaseNumber(caseNumber).catch(() => []);
-      const caseNoSearchCourtIds = [...new Set(candidates.map((c) => norm(c?.courtId || '').toUpperCase()).filter(Boolean))];
-      const uniqueCourtIds = [...new Set([...htmlCourtIds, ...caseNoSearchCourtIds])];
-      appendDebug('header_retry_candidates', {
-        caseNumber,
-        candidateCount: candidates.length,
-        uniqueCourtIds,
-        sourceCounts: { html: htmlCourtIds.length, caseNoSearch: caseNoSearchCourtIds.length }
-      });
-      if (uniqueCourtIds.length !== 1) throw err;
-      header = await postJson('/casenet/cases/newHeaderData.do', mkHeaderPayload(uniqueCourtIds[0]));
-    }
+    const candidates = await findCaseCandidatesByCaseNumber(caseNumber).catch(() => []);
+    const caseNoSearchCourtIds = [...new Set(candidates.map((c) => normalizeCourtId(c?.courtId || '')).filter(Boolean))];
+    const attemptOrder = buildCourtIdAttemptOrder(courtId, caseNoSearchCourtIds);
+    appendDebug('header_resolve_attempt_order', {
+      caseNumber,
+      suppliedCourtId: normalizeCourtId(courtId || ''),
+      candidateCount: candidates.length,
+      caseNoSearchCourtIds,
+      attemptCount: attemptOrder.length,
+      firstAttempts: attemptOrder.slice(0, 20)
+    });
 
-    const resolvedCourtId = norm(header?.courtId || courtId || '').toUpperCase();
+    let header;
+    let lastErr = null;
+    for (const ct of attemptOrder) {
+      try {
+        header = await postJson('/casenet/cases/newHeaderData.do', mkHeaderPayload(ct));
+        appendDebug('header_resolve_success', { caseNumber, attemptedCourtId: ct });
+        break;
+      } catch (err) {
+        lastErr = err;
+        const msg = String(err?.message || err);
+        if (!/newHeaderData\.do non-JSON response/i.test(msg)) continue;
+        const htmlCourtIds = extractCourtIdsFromText(err?.meta?.responseText || '');
+        const merged = [...new Set([...caseNoSearchCourtIds, ...htmlCourtIds])];
+        if (merged.length) {
+          const extra = buildCourtIdAttemptOrder('', merged).filter((id) => !attemptOrder.includes(id));
+          attemptOrder.push(...extra);
+        }
+      }
+    }
+    if (!header) throw lastErr || new Error('Unable to resolve header data');
+
+    const resolvedCourtId = normalizeCourtId(header?.courtId || courtId || '');
     if (!resolvedCourtId) throw new Error('Unable to resolve courtId from header data');
+    const resolvedHeaderUrl = buildCaseHeaderUrl(caseNumber, resolvedCourtId);
+    appendDebug('header_resolved', { caseNumber, resolvedCourtId, resolvedHeaderUrl });
 
     const docket = await postJson(
       '/casenet/cases/docketEntriesSearch.do',
@@ -332,7 +349,11 @@
       'displayOption=A&sortOption=D&hasChange=false'
     );
 
-    return getUpcomingCourtDate(docket?.docketTabModelList || []);
+    return {
+      upcoming: getUpcomingCourtDate(docket?.docketTabModelList || []),
+      resolvedCourtId,
+      resolvedHeaderUrl
+    };
   }
 
   async function runBatch() {
@@ -353,28 +374,15 @@
       const item = requested[i];
       setStatus(`Processing ${i + 1}/${requested.length}: ${item.caseNumber}`);
       try {
-        let resolved = { caseNumber: item.caseNumber, courtId: item.courtId || DEFAULT_COURT_ID };
-
-        if (item.courtId) {
-          appendDebug('batch_use_supplied_court_id', {
-            caseNumber: item.caseNumber,
-            courtId: item.courtId
-          });
-        } else {
-          appendDebug('batch_use_default_court_id', {
-            caseNumber: item.caseNumber,
-            courtId: DEFAULT_COURT_ID
-          });
-        }
-        resolved = await probeCaseHeader(resolved.caseNumber, resolved.courtId);
-        appendDebug('batch_case_resolved', resolved);
-
-        const upcoming = await scrapeUpcomingDate(resolved);
+        const seed = { caseNumber: item.caseNumber, courtId: normalizeCourtId(item.courtId || DEFAULT_COURT_ID) };
+        const scraped = await scrapeUpcomingDate(seed);
+        const upcoming = scraped?.upcoming || 'No Upcoming Court Date Found';
         lines.push(`${item.caseNumber}: ${upcoming}`);
         appendDebug('batch_case_complete', {
           requestedCaseNumber: item.caseNumber,
-          resolvedCaseNumber: resolved.caseNumber,
-          courtId: resolved.courtId,
+          resolvedCaseNumber: item.caseNumber,
+          courtId: scraped?.resolvedCourtId || seed.courtId,
+          resolvedHeaderUrl: scraped?.resolvedHeaderUrl || buildCaseHeaderUrl(item.caseNumber, seed.courtId),
           result: upcoming
         });
       } catch (err) {
