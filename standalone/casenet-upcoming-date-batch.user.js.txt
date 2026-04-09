@@ -91,7 +91,12 @@
     return [...out];
   }
 
-  async function findCaseCandidatesByCaseNumber(caseNumber) {
+  function ensureNotStopped() {
+    if (stopRequested) throw new Error('Stopped by user');
+  }
+
+  async function findCaseCandidatesByCaseNumber(caseNumber, signal) {
+    ensureNotStopped();
     const url = new URL('/casenet/caseNoSearch.do', location.origin);
     const body = new URLSearchParams();
     body.set('caseNumber', caseNumber);
@@ -101,7 +106,8 @@
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
-      body: body.toString()
+      body: body.toString(),
+      signal
     });
     const txt = await resp.text();
     appendDebug('case_number_search_response', {
@@ -125,6 +131,8 @@
     #${PANEL_ID} button{border:1px solid #64748b;background:#fff;color:#0f172a;border-radius:8px;padding:7px 10px;font-size:12px;font-weight:700;cursor:pointer}
     #${PANEL_ID} button.run{background:#166534;color:#fff;border-color:#14532d}
     #${PANEL_ID} button.copy{background:#1d4ed8;color:#fff;border-color:#1e3a8a}
+    #${PANEL_ID} button.stop{background:#b91c1c;color:#fff;border-color:#7f1d1d}
+    #${PANEL_ID} button:disabled{opacity:.55;cursor:not-allowed}
   `);
 
   const panel = document.createElement('div');
@@ -140,6 +148,7 @@
       </div>
       <div class="row">
         <button class="run" id="cnStandaloneRun">Find Upcoming Dates</button>
+        <button class="stop" id="cnStandaloneStop" disabled>Stop</button>
         <button id="cnStandaloneClear">Clear</button>
         <button class="copy" id="cnStandaloneCopy">Copy Results</button>
       </div>
@@ -161,6 +170,8 @@
   const $debug = panel.querySelector('#cnStandaloneDebug');
   const $status = panel.querySelector('#cnStandaloneStatus');
   const $concurrency = panel.querySelector('#cnStandaloneConcurrency');
+  const $runBtn = panel.querySelector('#cnStandaloneRun');
+  const $stopBtn = panel.querySelector('#cnStandaloneStop');
 
   $input.value = localStorage.getItem(STORAGE_INPUT) || '';
   $output.value = localStorage.getItem(STORAGE_OUTPUT) || '';
@@ -221,7 +232,8 @@
     return url.toString();
   }
 
-  async function postJson(path, bodyObj, qs = '') {
+  async function postJson(path, bodyObj, qs = '', signal) {
+    ensureNotStopped();
     const url = new URL(path, location.origin);
     if (qs) url.search = qs;
     const body = new URLSearchParams();
@@ -234,7 +246,8 @@
         'Accept': 'application/json,text/javascript, */*; q=0.01',
         'X-Requested-With': 'XMLHttpRequest'
       },
-      body: body.toString()
+      body: body.toString(),
+      signal
     });
     const txt = await resp.text();
     const ct = String(resp.headers.get('content-type') || '').toLowerCase();
@@ -311,7 +324,8 @@
     return out;
   }
 
-  async function scrapeUpcomingDate({ caseNumber, courtId }) {
+  async function scrapeUpcomingDate({ caseNumber, courtId }, signal) {
+    ensureNotStopped();
     const mkHeaderPayload = (ct) => ({
       caseNumber,
       courtId: normalizeCourtId(ct) || '',
@@ -322,7 +336,7 @@
       pleaAndPayInd: ''
     });
 
-    const candidates = await findCaseCandidatesByCaseNumber(caseNumber).catch(() => []);
+    const candidates = await findCaseCandidatesByCaseNumber(caseNumber, signal).catch(() => []);
     const caseNoSearchCourtIds = [...new Set(candidates.map((c) => normalizeCourtId(c?.courtId || '')).filter(Boolean))];
     const attemptOrder = buildCourtIdAttemptOrder(courtId, caseNoSearchCourtIds);
     appendDebug('header_resolve_attempt_order', {
@@ -337,8 +351,9 @@
     let header;
     let lastErr = null;
     for (const ct of attemptOrder) {
+      ensureNotStopped();
       try {
-        header = await postJson('/casenet/cases/newHeaderData.do', mkHeaderPayload(ct));
+        header = await postJson('/casenet/cases/newHeaderData.do', mkHeaderPayload(ct), '', signal);
         appendDebug('header_resolve_success', { caseNumber, attemptedCourtId: ct });
         break;
       } catch (err) {
@@ -363,7 +378,8 @@
     const docket = await postJson(
       '/casenet/cases/docketEntriesSearch.do',
       { caseNumber, courtId: resolvedCourtId, isTicket: '', tabName: 'Docket' },
-      'displayOption=A&sortOption=D&hasChange=false'
+      'displayOption=A&sortOption=D&hasChange=false',
+      signal
     );
 
     return {
@@ -404,6 +420,12 @@
 
     const conc = normalizeConcurrency($concurrency.value);
     $concurrency.value = String(conc);
+    stopRequested = false;
+    activeRun = { controller: new AbortController() };
+    $runBtn.disabled = true;
+    $stopBtn.disabled = false;
+
+    const lines = [];
     appendDebug('batch_start', {
       requestedCount: requested.length,
       hasOutput: !!norm($output.value || ''),
@@ -445,15 +467,71 @@
       },
       (done, total) => setStatus(`Processed ${done}/${total} case number(s) (concurrency ${conc})...`)
     );
+    setStatus(`Resolving ${requested.length} case number(s)...`);
+
+    for (let i = 0; i < requested.length; i++) {
+      ensureNotStopped();
+      const item = requested[i];
+      setStatus(`Processing ${i + 1}/${requested.length}: ${item.caseNumber}`);
+      try {
+        const seed = { caseNumber: item.caseNumber, courtId: normalizeCourtId(item.courtId || DEFAULT_COURT_ID) };
+        const scraped = await scrapeUpcomingDate(seed, activeRun?.controller?.signal);
+        const upcoming = scraped?.upcoming || 'No Upcoming Court Date Found';
+        lines.push(`${item.caseNumber}: ${upcoming}`);
+        appendDebug('batch_case_complete', {
+          requestedCaseNumber: item.caseNumber,
+          resolvedCaseNumber: item.caseNumber,
+          courtId: scraped?.resolvedCourtId || seed.courtId,
+          resolvedHeaderUrl: scraped?.resolvedHeaderUrl || buildCaseHeaderUrl(item.caseNumber, seed.courtId),
+          result: upcoming
+        });
+      } catch (err) {
+        if (String(err?.name || '').toLowerCase() === 'aborterror' || /stopped by user/i.test(String(err?.message || err))) {
+          appendDebug('batch_stopped', { index: i, caseNumber: item.caseNumber });
+          break;
+        }
+        lines.push(`${item.caseNumber}: Error (${String(err?.message || err)})`);
+        appendDebug('batch_case_error', {
+          caseNumber: item.caseNumber,
+          message: String(err?.message || err)
+        });
+      }
+      try {
+        await sleep(100);
+      } catch {}
+    }
 
     $output.value = lines.join('\n');
     appendDebug('batch_done', { resultCount: lines.length });
     saveDrafts();
-    setStatus(`Done. ${lines.length} result(s).`);
+    if (stopRequested) {
+      setStatus(`Stopped. ${lines.length} result(s) collected.`);
+      localStorage.setItem(STORAGE_STOP_REASON, 'Stopped by user');
+    } else {
+      setStatus(`Done. ${lines.length} result(s).`);
+      localStorage.removeItem(STORAGE_STOP_REASON);
+    }
+    activeRun = null;
+    $runBtn.disabled = false;
+    $stopBtn.disabled = true;
   }
 
-  panel.querySelector('#cnStandaloneRun').addEventListener('click', () => {
-    runBatch().catch((e) => setStatus(`Error: ${String(e?.message || e)}`));
+  $runBtn.addEventListener('click', () => {
+    runBatch().catch((e) => {
+      setStatus(`Error: ${String(e?.message || e)}`);
+      activeRun = null;
+      $runBtn.disabled = false;
+      $stopBtn.disabled = true;
+    });
+  });
+
+  $stopBtn.addEventListener('click', () => {
+    if (!activeRun) return;
+    stopRequested = true;
+    activeRun.controller.abort();
+    appendDebug('stop_requested', {});
+    setStatus('Stopping...');
+    $stopBtn.disabled = true;
   });
 
   panel.querySelector('#cnStandaloneClear').addEventListener('click', () => {
