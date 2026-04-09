@@ -164,7 +164,14 @@
     };
 
     const parseParamMatch = (rawValue) => {
-      const s = decodeURIComponent(String(rawValue || '').replace(/\+/g, ' '));
+      const source = String(rawValue || '').replace(/\+/g, ' ');
+      let s = source;
+      try {
+        s = decodeURIComponent(source);
+      } catch {
+        // Some inline script/onClick payloads contain stray '%' characters.
+        // Keep the raw source so parsing can still proceed.
+      }
       const caseMatch = s.match(/(?:inputVO\.caseNumber|caseNumber|ci|cn|caseNum)\s*(?:=|:)\s*['"]?([A-Z0-9-]+)/i);
       const courtMatch = s.match(/(?:inputVO\.courtId|courtId|courtCode|l|ct)\s*(?:=|:)\s*['"]?([A-Z0-9]+)/i);
       const caseNumber = norm(caseMatch?.[1] || '').toUpperCase();
