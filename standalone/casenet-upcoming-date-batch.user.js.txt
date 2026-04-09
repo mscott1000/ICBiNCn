@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Case.net Upcoming Court Date Batch Lookup (Standalone)
 // @namespace    icbincn-standalone
-// @version      1.0.1
+// @version      1.0.2
 // @description  Standalone Case.net batch case-number lookup for upcoming court dates. Does not modify ICBiNCn UI.
 // @match        https://www.courts.mo.gov/*
 // @grant        GM_addStyle
@@ -18,7 +18,7 @@
 
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   const norm = (s) => String(s || '').replace(/\s+/g, ' ').trim();
-  let caseNoSearchDefaultsPromise = null;
+  const DEFAULT_COURT_ID = 'CT21';
 
   GM_addStyle(`
     #${PANEL_ID}{position:fixed;right:12px;bottom:12px;z-index:9999999;width:460px;max-height:70vh;background:#f8fafc;border:1px solid #cbd5e1;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.25);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;display:flex;flex-direction:column;overflow:hidden}
@@ -88,110 +88,6 @@
     saveDrafts();
   }
 
-  function parseCaseFromUrl(rawUrl) {
-    try {
-      const u = new URL(rawUrl, location.origin);
-      const p = u.searchParams;
-      const caseNumber = norm(p.get('caseNumber') || p.get('inputVO.caseNumber') || p.get('cn') || p.get('ci') || p.get('caseNum'));
-      const courtId = norm(p.get('courtId') || p.get('inputVO.courtId') || p.get('courtCode'));
-      if (!caseNumber || !courtId) return null;
-      return { caseNumber, courtId, caseKey: `${caseNumber}|${courtId}` };
-    } catch {
-      return null;
-    }
-  }
-
-  async function getCaseNoSearchDefaultsFromServer() {
-    if (caseNoSearchDefaultsPromise) return caseNoSearchDefaultsPromise;
-    caseNoSearchDefaultsPromise = (async () => {
-      const url = new URL('/casenet/caseNoSearch.do', location.origin);
-      const resp = await fetch(url.toString(), { credentials: 'include' });
-      const html = await resp.text();
-      if (!resp.ok) throw new Error(`caseNoSearch form preload HTTP ${resp.status}`);
-      const doc = new DOMParser().parseFromString(String(html || ''), 'text/html');
-      const form = doc.querySelector('form[action*="caseNoSearch.do"]') || doc.querySelector('form');
-      const named = form ? [...form.querySelectorAll('input[name],select[name],textarea[name]')] : [];
-      const defaults = [];
-
-      for (const el of named) {
-        const name = norm(el.getAttribute('name') || '');
-        if (!name || el.disabled) continue;
-        const tag = (el.tagName || '').toLowerCase();
-        const type = norm(el.getAttribute('type') || '').toLowerCase();
-
-        if (type === 'checkbox' || type === 'radio') {
-          if (!el.checked) continue;
-          defaults.push([name, norm(el.value || 'on')]);
-          continue;
-        }
-
-        if (tag === 'select' && el.multiple) {
-          for (const opt of [...el.options]) if (opt.selected) defaults.push([name, norm(opt.value || '')]);
-          continue;
-        }
-
-        defaults.push([name, norm(el.value || '')]);
-      }
-
-      return { defaults, formFieldCount: named.length, formFieldNames: named.map((el) => norm(el.name)).filter(Boolean) };
-    })();
-    return caseNoSearchDefaultsPromise;
-  }
-
-  async function buildCaseNoSearchBody(caseNumber) {
-    const body = new URLSearchParams();
-    const form = document.querySelector('form[action*="caseNoSearch.do"]') || document.querySelector('form');
-    const named = form ? [...form.querySelectorAll('input[name],select[name],textarea[name]')] : [];
-    let usedServerDefaults = false;
-
-    const applyNamed = (list) => {
-      for (const el of list) {
-        const name = norm(el.getAttribute('name') || '');
-        if (!name || el.disabled) continue;
-        const tag = (el.tagName || '').toLowerCase();
-        const type = norm(el.getAttribute('type') || '').toLowerCase();
-
-        if (type === 'checkbox' || type === 'radio') {
-          if (!el.checked) continue;
-          body.set(name, norm(el.value || 'on'));
-          continue;
-        }
-
-        if (tag === 'select' && el.multiple) {
-          body.delete(name);
-          for (const opt of [...el.options]) {
-            if (opt.selected) body.append(name, norm(opt.value || ''));
-          }
-          continue;
-        }
-
-        body.set(name, norm(el.value || ''));
-      }
-    };
-
-    if (named.length) {
-      applyNamed(named);
-    } else {
-      const preload = await getCaseNoSearchDefaultsFromServer();
-      for (const [k, v] of preload.defaults) body.append(k, v);
-      usedServerDefaults = true;
-      appendDebug('case_no_search_preload_defaults', {
-        formFieldCount: preload.formFieldCount,
-        sampleFields: preload.formFieldNames.slice(0, 20)
-      });
-    }
-
-    body.set('caseNumber', caseNumber);
-    body.set('inputVO.caseNumber', caseNumber);
-    body.set('newSearch', 'Y');
-    return {
-      body,
-      formFieldCount: named.length,
-      formFieldNames: named.map((el) => norm(el.name)).filter(Boolean),
-      usedServerDefaults
-    };
-  }
-
   function parseInput(text) {
     const seen = new Set();
     const rows = [];
@@ -209,71 +105,30 @@
     return rows;
   }
 
-  function extractCandidatesFromHtml(htmlText) {
-    const doc = new DOMParser().parseFromString(String(htmlText || ''), 'text/html');
-    const links = [...doc.querySelectorAll('a[href],a[onclick],button[onclick]')];
-    const seen = new Set();
-    const out = [];
-
-    const addParsed = (parsed) => {
-      if (!parsed?.caseKey || seen.has(parsed.caseKey)) return;
-      seen.add(parsed.caseKey);
-      out.push(parsed);
-    };
-
-    const parseParamMatch = (rawValue) => {
-      const source = String(rawValue || '').replace(/\+/g, ' ');
-      let s = source;
-      try {
-        s = decodeURIComponent(source);
-      } catch {
-        // Some inline script/onClick payloads contain stray '%' characters.
-        // Keep the raw source so parsing can still proceed.
-      }
-      const caseMatch = s.match(/(?:^|[?&,(\s'"])((?:inputVO\.caseNumber|caseNumber|caseNum|cn|ci))\s*(?:=|:)\s*['"]?([A-Z0-9-]+)/i);
-      const courtMatch = s.match(/(?:^|[?&,(\s'"])((?:inputVO\.courtId|courtId|courtCode))\s*(?:=|:)\s*['"]?([A-Z0-9]+)/i);
-      const caseNumber = norm(caseMatch?.[3] || '').toUpperCase();
-      const courtId = norm(courtMatch?.[3] || '').toUpperCase();
-      if (!caseNumber || !courtId) return null;
-      return { caseNumber, courtId, caseKey: `${caseNumber}|${courtId}` };
-    };
-
-    for (const el of links) {
-      addParsed(parseCaseFromUrl(el.getAttribute('href') || ''));
-      addParsed(parseParamMatch(el.getAttribute('onclick') || ''));
-      addParsed(parseParamMatch(el.getAttribute('data-href') || ''));
-      addParsed(parseParamMatch(el.getAttribute('data-url') || ''));
-    }
-
-    return out;
+  function buildCaseHeaderUrl(caseNumber, courtId) {
+    const url = new URL('/casenet/cases/newHeader.do', location.origin);
+    url.searchParams.set('inputVO.caseNumber', caseNumber);
+    url.searchParams.set('inputVO.courtId', courtId || DEFAULT_COURT_ID);
+    url.searchParams.set('inputVO.isTicket', 'false');
+    return url.toString();
   }
 
-  async function caseNoSearch(caseNumber) {
-    const url = new URL('/casenet/caseNoSearch.do', location.origin);
-    const { body, formFieldCount, formFieldNames, usedServerDefaults } = await buildCaseNoSearchBody(caseNumber);
-    appendDebug('case_no_search_contract', {
+  async function probeCaseHeader(caseNumber, courtId) {
+    const headerUrl = buildCaseHeaderUrl(caseNumber, courtId || DEFAULT_COURT_ID);
+    const resp = await fetch(headerUrl, { credentials: 'include' });
+    const text = await resp.text();
+    const missingCase = /case could not be found|no case records|unable to locate/i.test(text);
+    appendDebug('case_header_probe', {
       caseNumber,
-      formFieldCount,
-      sampleFields: formFieldNames.slice(0, 20),
-      usedServerDefaults: !!usedServerDefaults
-    });
-
-    const resp = await fetch(url.toString(), {
-      method: 'POST',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
-      body: body.toString()
-    });
-    const txt = await resp.text();
-    appendDebug('case_no_search_response', {
-      caseNumber,
+      courtId: courtId || DEFAULT_COURT_ID,
       httpStatus: resp.status,
       ok: !!resp.ok,
-      responseLength: txt.length,
-      bodyFieldCount: [...body.keys()].length
+      responseLength: text.length,
+      missingCase
     });
-    if (!resp.ok) throw new Error(`caseNoSearch HTTP ${resp.status}`);
-    return extractCandidatesFromHtml(txt);
+    if (!resp.ok) throw new Error(`newHeader HTTP ${resp.status}`);
+    if (missingCase) throw new Error('Case not found via direct newHeader lookup');
+    return { caseNumber, courtId: (courtId || DEFAULT_COURT_ID).toUpperCase() };
   }
 
   async function postJson(path, bodyObj, qs = '') {
@@ -386,7 +241,7 @@
       const item = requested[i];
       setStatus(`Processing ${i + 1}/${requested.length}: ${item.caseNumber}`);
       try {
-        let resolved = { caseNumber: item.caseNumber, courtId: item.courtId || '' };
+        let resolved = { caseNumber: item.caseNumber, courtId: item.courtId || DEFAULT_COURT_ID };
 
         if (item.courtId) {
           appendDebug('batch_use_supplied_court_id', {
@@ -394,21 +249,13 @@
             courtId: item.courtId
           });
         } else {
-          const candidates = await caseNoSearch(item.caseNumber);
-          appendDebug('batch_candidates_found', {
+          appendDebug('batch_use_default_court_id', {
             caseNumber: item.caseNumber,
-            candidateCount: candidates.length,
-            sampleCourtIds: candidates.map((c) => c.courtId).slice(0, 10)
+            courtId: DEFAULT_COURT_ID
           });
-          if (!candidates.length) {
-            appendDebug('batch_case_resolve_direct', { caseNumber: item.caseNumber, reason: 'no_candidates' });
-          } else if (candidates.length > 1) {
-            appendDebug('batch_case_resolve_direct', { caseNumber: item.caseNumber, reason: 'ambiguous' });
-          } else {
-            resolved = { caseNumber: candidates[0].caseNumber, courtId: candidates[0].courtId };
-            appendDebug('batch_case_resolved', resolved);
-          }
         }
+        resolved = await probeCaseHeader(resolved.caseNumber, resolved.courtId);
+        appendDebug('batch_case_resolved', resolved);
 
         const upcoming = await scrapeUpcomingDate(resolved);
         lines.push(`${item.caseNumber}: ${upcoming}`);
