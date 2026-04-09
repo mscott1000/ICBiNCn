@@ -1216,6 +1216,24 @@ Court Clerk: ${clerk}` : display;
                                                                                                                                                                                        sections.push('');
                                                                                               continue;}
 
+                                                                                              if (includeJudgeDetails && grouped.size > 1) {sections.push(jurisdiction.toUpperCase());
+                                                                                                                                              for (const [,headerEntries] of grouped.entries()) {const sortedEntries = headerEntries.map((entry,idx) => ({entry,idx}))
+                                                                                                                                                                                                             .sort((a,b) => {const priorityDiff = getSummaryStatusPriority(a.entry) - getSummaryStatusPriority(b.entry);
+                                                                                                                                                                                                                             if (priorityDiff) return priorityDiff;
+                                                                                                                                                                                                                             return a.idx - b.idx;})
+                                                                                                                                                                                                             .map(({entry}) => entry);
+                                                                                                                                                                                             const judge = formatJudgeDisplayName(sortedEntries[0]?.judge || '');
+                                                                                                                                                                                             sections.push('- - -');
+                                                                                                                                                                                             sections.push(`Judge ${judge}`);
+                                                                                                                                                                                             for (const e of sortedEntries) {const caseNo = getCaseNumberForSummary(e);
+                                                                                                                                                                                                                       const charge = norm(e?.chargeDescription || '') || 'No Charges Found';
+                                                                                                                                                                                                                       const warrantLabel = getWarrantLabelForSummary(e);
+                                                                                                                                                                                                                       sections.push(`${caseNo}: ${charge} - ${warrantLabel}`);}}
+                                                                                                                                              sections.push('- - -');
+                                                                                                                                              sections.push('');
+                                                                                                                                              sections.push('');
+                                                                                              continue;}
+
                                                                                               for (const [header,headerEntries] of grouped.entries()) {const sortedEntries = headerEntries.map((entry,idx) => ({entry,idx}))
                                                                                                                                                    .sort((a,b) => {const priorityDiff = getSummaryStatusPriority(a.entry) - getSummaryStatusPriority(b.entry);
                                                                                                                                                                    if (priorityDiff) return priorityDiff;
