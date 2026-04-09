@@ -18,6 +18,7 @@
 
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   const norm = (s) => String(s || '').replace(/\s+/g, ' ').trim();
+  let caseNoSearchDefaultsPromise = null;
 
   GM_addStyle(`
     #${PANEL_ID}{position:fixed;right:12px;bottom:12px;z-index:9999999;width:460px;max-height:70vh;background:#f8fafc;border:1px solid #cbd5e1;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.25);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;display:flex;flex-direction:column;overflow:hidden}
@@ -100,38 +101,95 @@
     }
   }
 
-  function buildCaseNoSearchBody(caseNumber) {
+  async function getCaseNoSearchDefaultsFromServer() {
+    if (caseNoSearchDefaultsPromise) return caseNoSearchDefaultsPromise;
+    caseNoSearchDefaultsPromise = (async () => {
+      const url = new URL('/casenet/caseNoSearch.do', location.origin);
+      const resp = await fetch(url.toString(), { credentials: 'include' });
+      const html = await resp.text();
+      if (!resp.ok) throw new Error(`caseNoSearch form preload HTTP ${resp.status}`);
+      const doc = new DOMParser().parseFromString(String(html || ''), 'text/html');
+      const form = doc.querySelector('form[action*="caseNoSearch.do"]') || doc.querySelector('form');
+      const named = form ? [...form.querySelectorAll('input[name],select[name],textarea[name]')] : [];
+      const defaults = [];
+
+      for (const el of named) {
+        const name = norm(el.getAttribute('name') || '');
+        if (!name || el.disabled) continue;
+        const tag = (el.tagName || '').toLowerCase();
+        const type = norm(el.getAttribute('type') || '').toLowerCase();
+
+        if (type === 'checkbox' || type === 'radio') {
+          if (!el.checked) continue;
+          defaults.push([name, norm(el.value || 'on')]);
+          continue;
+        }
+
+        if (tag === 'select' && el.multiple) {
+          for (const opt of [...el.options]) if (opt.selected) defaults.push([name, norm(opt.value || '')]);
+          continue;
+        }
+
+        defaults.push([name, norm(el.value || '')]);
+      }
+
+      return { defaults, formFieldCount: named.length, formFieldNames: named.map((el) => norm(el.name)).filter(Boolean) };
+    })();
+    return caseNoSearchDefaultsPromise;
+  }
+
+  async function buildCaseNoSearchBody(caseNumber) {
     const body = new URLSearchParams();
     const form = document.querySelector('form[action*="caseNoSearch.do"]') || document.querySelector('form');
     const named = form ? [...form.querySelectorAll('input[name],select[name],textarea[name]')] : [];
+    let usedServerDefaults = false;
 
-    for (const el of named) {
-      const name = norm(el.getAttribute('name') || '');
-      if (!name || el.disabled) continue;
-      const tag = (el.tagName || '').toLowerCase();
-      const type = norm(el.getAttribute('type') || '').toLowerCase();
+    const applyNamed = (list) => {
+      for (const el of list) {
+        const name = norm(el.getAttribute('name') || '');
+        if (!name || el.disabled) continue;
+        const tag = (el.tagName || '').toLowerCase();
+        const type = norm(el.getAttribute('type') || '').toLowerCase();
 
-      if (type === 'checkbox' || type === 'radio') {
-        if (!el.checked) continue;
-        body.set(name, norm(el.value || 'on'));
-        continue;
-      }
-
-      if (tag === 'select' && el.multiple) {
-        body.delete(name);
-        for (const opt of [...el.options]) {
-          if (opt.selected) body.append(name, norm(opt.value || ''));
+        if (type === 'checkbox' || type === 'radio') {
+          if (!el.checked) continue;
+          body.set(name, norm(el.value || 'on'));
+          continue;
         }
-        continue;
-      }
 
-      body.set(name, norm(el.value || ''));
+        if (tag === 'select' && el.multiple) {
+          body.delete(name);
+          for (const opt of [...el.options]) {
+            if (opt.selected) body.append(name, norm(opt.value || ''));
+          }
+          continue;
+        }
+
+        body.set(name, norm(el.value || ''));
+      }
+    };
+
+    if (named.length) {
+      applyNamed(named);
+    } else {
+      const preload = await getCaseNoSearchDefaultsFromServer();
+      for (const [k, v] of preload.defaults) body.append(k, v);
+      usedServerDefaults = true;
+      appendDebug('case_no_search_preload_defaults', {
+        formFieldCount: preload.formFieldCount,
+        sampleFields: preload.formFieldNames.slice(0, 20)
+      });
     }
 
     body.set('caseNumber', caseNumber);
     body.set('inputVO.caseNumber', caseNumber);
     body.set('newSearch', 'Y');
-    return { body, formFieldCount: named.length, formFieldNames: named.map((el) => norm(el.name)).filter(Boolean) };
+    return {
+      body,
+      formFieldCount: named.length,
+      formFieldNames: named.map((el) => norm(el.name)).filter(Boolean),
+      usedServerDefaults
+    };
   }
 
   function parseInput(text) {
@@ -192,11 +250,12 @@
 
   async function caseNoSearch(caseNumber) {
     const url = new URL('/casenet/caseNoSearch.do', location.origin);
-    const { body, formFieldCount, formFieldNames } = buildCaseNoSearchBody(caseNumber);
+    const { body, formFieldCount, formFieldNames, usedServerDefaults } = await buildCaseNoSearchBody(caseNumber);
     appendDebug('case_no_search_contract', {
       caseNumber,
       formFieldCount,
-      sampleFields: formFieldNames.slice(0, 20)
+      sampleFields: formFieldNames.slice(0, 20),
+      usedServerDefaults: !!usedServerDefaults
     });
 
     const resp = await fetch(url.toString(), {
@@ -225,20 +284,38 @@
     const resp = await fetch(url.toString(), {
       method: 'POST',
       credentials: 'include',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8', 'Accept': 'application/json' },
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+        'Accept': 'application/json,text/javascript, */*; q=0.01',
+        'X-Requested-With': 'XMLHttpRequest'
+      },
       body: body.toString()
     });
     const txt = await resp.text();
+    const ct = String(resp.headers.get('content-type') || '').toLowerCase();
     appendDebug('json_post_response', {
       path,
       httpStatus: resp.status,
       ok: !!resp.ok,
       bodyKeys: Object.keys(bodyObj || {}),
       query: qs || '',
-      responseLength: txt.length
+      responseLength: txt.length,
+      contentType: ct,
+      redirected: !!resp.redirected
     });
     if (!resp.ok) throw new Error(`${path} HTTP ${resp.status}`);
-    try { return JSON.parse(txt); } catch { throw new Error(`${path} non-JSON response`); }
+    try { return JSON.parse(txt); } catch {}
+    const trimmed = String(txt || '').trim();
+    const jsonStart = Math.max(trimmed.indexOf('{'), trimmed.indexOf('['));
+    if (jsonStart >= 0) {
+      try { return JSON.parse(trimmed.slice(jsonStart)); } catch {}
+    }
+    appendDebug('json_post_parse_failed', {
+      path,
+      contentType: ct,
+      responsePreview: trimmed.slice(0, 240)
+    });
+    throw new Error(`${path} non-JSON response`);
   }
 
   function getUpcomingCourtDate(docketList) {
