@@ -55,10 +55,11 @@
                                                                  entry.yob = addrYob.yob;
                                                                  entry.yobRaw = addrYob.yobRaw || entry.yob;
                                                                  const match = yobMatchesExpected(expectedYob4,entry.yobRaw);
-                                                                 if (!match.ok) {entry._skipReason = 'yob_mismatch';
-                                                                                 entry._expectedYob = expectedYob4;
-                                                                                 entry._foundYears = (match.years || []).join(', ');
-                                                                                 return entry;}
+                                                                 const foundYears = (match?.years || []).filter((y) => /^\d{4}$/.test(String(y || '')));
+                                                                 if (!match.ok && foundYears.length) {entry._skipReason = 'yob_mismatch';
+                                                                                                      entry._expectedYob = expectedYob4;
+                                                                                                      entry._foundYears = foundYears.join(', ');
+                                                                                                      return entry;}
                                                                  entry.attorney = extractAttorney(party);
                                                                  let docket;
                                                                  try {docket = await postFormJsonRetry_tryCourtIds('/casenet/cases/docketEntriesSearch.do',{caseNumber,courtId: resolvedCourtId,isTicket:'',tabName:'Docket',},{qs:'displayOption=A&sortOption=D&hasChange=false'});}
