@@ -309,7 +309,7 @@ Court Clerk: ${clerk}` : display;
                                         if (upcoming && upcoming !== '- - -') return 'upcoming';
                                         const ws = norm(String(e?.warrantSummary || '')).toLowerCase();
                                         if (!ws || ws === '- - -') return 'nonwarrant';
-                                        if (ws.includes('warrant served')) return 'nonwarrant';
+                                        if (/\brecall\w*\b|\bserv\w*\b/.test(ws)) return 'nonwarrant';
                                         if (ws.includes('warrant')) return 'warrant';
                                         return 'nonwarrant';}
 
