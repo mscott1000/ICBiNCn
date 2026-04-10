@@ -1,6 +1,13 @@
 /************************************************************
    * Buttons
    ************************************************************/
+  function buildNameSearchPasses(params) {const caseTypePasses = ['criminal','traffic'];
+                                   const middleRaw = norm(params?.middle || '');
+                                   const middleVariants = middleRaw ? [middleRaw] : ['','A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z'];
+                                   const out = [];
+                                   for (const caseType of caseTypePasses) {for (const middle of middleVariants) out.push({caseType,middle,label: middle ? `${caseType} / ${middle}` : `${caseType} / (blank)`});}
+                                   return out;}
+
   dock.addEventListener('click',async (e) => {const id = e?.target?.id;
                                              if (id === 'moJsonNameSearch') {const params = {first: norm(document.getElementById('moNsFirst')?.value || ''),
                                                                                            middle: norm(document.getElementById('moNsMiddle')?.value || ''),
@@ -9,7 +16,8 @@
                                                                             setStop(false);
                                                                             setRun(false);
                                                                             saveDraft({...params});
-                                                                            saveNameState({active:true,passIndex:0,passes:['criminal','traffic'],step:'go_search',params,});
+                                                                            const passes = buildNameSearchPasses(params);
+                                                                            saveNameState({active:true,passIndex:0,passes,step:'go_search',params,});
                                                                             uiStatus('Searching…');
                                                                             dbg('namesearch_start',{params});
                                                                             if (!isNameSearchPage()) {location.href = canonicalNameSearchUrl();}
@@ -112,7 +120,10 @@
                                  if (st.navPendingUntil && Date.now() < Number(st.navPendingUntil)) return;
                                  if (isRun()) return;
                                  if (isStop()) return;
-                                 const passKey = (st.passes || [])[st.passIndex || 0];
+                                 const pass = (st.passes || [])[st.passIndex || 0];
+                                 const passKey = typeof pass === 'string' ? pass : pass?.caseType;
+                                 const passMiddle = typeof pass === 'string' ? (st.params?.middle || '') : (pass?.middle || '');
+                                 const passLabel = typeof pass === 'string' ? passKey : (pass?.label || passKey);
                                  if (!passKey) {dbg('namesearch_done',{});
                                                 clearNameState();
                                                 uiStatus('Done.');
@@ -123,9 +134,9 @@
                                                                                                         dbg('namesearch_resubmit',{passKey,ageMs:age});
                                                                                                         st.step = 'go_search';
                                                                                                         saveNameState(st);}
-                                                          uiStatus(`Searching ${st.passIndex + 1}/2 (${passKey})…`);
-                                                          dbg('namesearch_submit',{passKey});
-                                                          fillNameSearchForm(st.params || {},passKey);
+                                                          uiStatus(`Searching ${st.passIndex + 1}/${(st.passes || []).length} (${passLabel})…`);
+                                                          dbg('namesearch_submit',{passKey,passMiddle});
+                                                          fillNameSearchForm({...st.params,middle: passMiddle},passKey);
                                                           const ok = submitNameSearchForm();
                                                           if (!ok) {uiStatus('Search failed, refresh page and retry');
                                                                     dbg('namesearch_submit_failed',{passKey});
@@ -137,7 +148,7 @@
                                  if (isNameSearchResultsPage()) {setShowEntriesTo100();
                                                                 const dockYob = document.getElementById('moNsYob');
                                                                 if (dockYob) dockYob.value = st.params?.yob || '';
-                                                                uiStatus(`Ready (${passKey})…`);
+                                                                uiStatus(`Ready (${passLabel})…`);
                                                                 dbg('namesearch_pull_begin',{passKey});
                                                                 try {await pullJsonFromResultsPage();}
                                                                 catch (e) {dbg('namesearch_pull_fatal',{passKey,msg:String(e?.message || e)});
