@@ -288,8 +288,8 @@
                                      const courtId = sp.get('courtId') || sp.get('inputVO.courtId') || sp.get('courtCode') || sp.get('l') || '';
                                      const cn = String(caseNumber || '').trim();
                                      const ct = String(courtId || '').trim();
-                                     if (!cn || !ct) return null;
-                                     const caseKey = `${cn.toUpperCase()}|${ct.toUpperCase()}`;
+                                     if (!cn) return null;
+                                     const caseKey = ct ? `${cn.toUpperCase()}|${ct.toUpperCase()}` : cn.toUpperCase();
                                      return {caseKey,caseNumber:cn,courtId:ct,url:normalizeUrl(url.toString())};}
                               catch {return null;}}
 
