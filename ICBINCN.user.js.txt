@@ -1210,9 +1210,14 @@ Court Clerk: ${clerk}` : display;
                                       if (!Number.isFinite(numeric) || numeric === 0) return '';
                                       return `, ${numeric.toFixed(2)} fine`;}
 
+  function getAttorneySuffixForSummary(e) {const attorney = norm(String(e?.attorney || ''));
+                                          if (!attorney || attorney === '- - -') return '';
+                                          return `, attorney ${attorney}`;}
+
   function getSummaryLineStatus(e) {const warrantLabel = getWarrantLabelForSummary(e);
                                    const fineSuffix = getFineSuffixForSummary(e);
-                                   return `${warrantLabel}${fineSuffix}`;}
+                                   const attorneySuffix = getAttorneySuffixForSummary(e);
+                                   return `${warrantLabel}${fineSuffix}${attorneySuffix}`;}
 
   function parseUpcomingCourtDate(e) {const raw = norm(e?.nextDocketDate || '');
                                      if (!raw || raw === '- - -') return '';
