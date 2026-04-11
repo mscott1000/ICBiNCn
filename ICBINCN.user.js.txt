@@ -1232,6 +1232,79 @@ Court Clerk: ${clerk}` : display;
                                                                     else score += 1;}
                                           return score;}
 
+  function isEligibleSummaryJurisdiction(jurisdiction) {const key = municipalityMatchKey(jurisdiction);
+                                                        if (!key) return false;
+                                                        if (key.includes('ST LOUIS COUNTY MUNICIPAL')) return false;
+                                                        if (key.includes('FLORISSANT')) return true;
+                                                        if (key.includes('UNIVERSITY CITY')) return true;
+                                                        if (key.includes('KIRKWOOD')) return true;
+                                                        if (key.includes('MANCHESTER')) return true;
+                                                        if (key.includes('CITY OF ST LOUIS')) return true;
+                                                        if (key.includes('ST LOUIS COUNTY')) return true;
+                                                        return false;}
+
+  function buildJurisdictionSummarySections(sortedJurisdictions) {const sections = [];
+                                                                  let hasFreshStartFridaySection = false;
+                                                                  for (const {jurisdiction,entries} of sortedJurisdictions) {const includeJudgeDetails = shouldIncludeJudgeDetails(jurisdiction);
+                                                                                                                              const grouped = new Map();
+                                                                                                                              if (includeJudgeDetails) {for (const entry of entries) {const header = getMunicipalityHeaderForSummary(jurisdiction,entry?.judge || '') || jurisdiction.toUpperCase();
+                                                                                                                                                                                     if (!grouped.has(header)) grouped.set(header,[]);
+                                                                                                                                                                                     grouped.get(header).push(entry);}}
+                                                                                                                              else {const header = getMunicipalityHeaderForSummary(jurisdiction,'') || jurisdiction.toUpperCase();
+                                                                                                                                    grouped.set(header,entries);}
+
+                                                                                                                              if (includeJudgeDetails && grouped.size > 1 && municipalityKey(jurisdiction).includes('CIRCUIT')) {sections.push(jurisdiction.toUpperCase());
+                                                                                                                                                                                               for (const [header,headerEntries] of grouped.entries()) {const sortedEntries = headerEntries.map((entry,idx) => ({entry,idx}))
+                                                                                                                                                                                            .sort((a,b) => {const priorityDiff = getSummaryStatusPriority(a.entry) - getSummaryStatusPriority(b.entry);
+                                                                                                                                                                                                            if (priorityDiff) return priorityDiff;
+                                                                                                                                                                                                            return a.idx - b.idx;})
+                                                                                                                                                                                            .map(({entry}) => entry);
+                                                                                                                                                                                                         const division = (header.match(/\bDIV(?:ISION)?\s+\d+[A-Z]?\b/i) || ['Division - - -'])[0].replace(/\bDIV\b/i,'Division');
+                                                                                                                                                                                                         const judge = formatJudgeDisplayName(sortedEntries[0]?.judge || '') || '- - -';
+                                                                                                                                                                                                         const clerkMatch = header.match(/Court\s+Clerk:\s*([^\n]+)/i);
+                                                                                                                                                                                                         const clerk = clerkMatch ? norm(clerkMatch[1]) : '- - -';
+                                                                                                                                                                                                         sections.push(`${division}, Judge ${judge} - Court Clerk: ${clerk}`);
+                                                                                                                                                                                                         for (const e of sortedEntries) {const caseNo = getCaseNumberForSummary(e);
+                                                                                                                                                                                                                                   const charge = norm(e?.chargeDescription || '') || 'No Charges Found';
+                                                                                                                                                                                                                                   const lineStatus = getSummaryLineStatus(e);
+                                                                                                                                                                                                                                   sections.push(`${caseNo}: ${charge} - ${lineStatus}`);}}
+                                                                                                                                                                                               sections.push('');
+                                                                                                                                                                                               sections.push('');
+                                                                                                                              continue;}
+
+                                                                                                                              if (includeJudgeDetails && grouped.size > 1) {sections.push(jurisdiction.toUpperCase());
+                                                                                                                                                                              for (const [,headerEntries] of grouped.entries()) {const sortedEntries = headerEntries.map((entry,idx) => ({entry,idx}))
+                                                                                                                                                                                                                             .sort((a,b) => {const priorityDiff = getSummaryStatusPriority(a.entry) - getSummaryStatusPriority(b.entry);
+                                                                                                                                                                                                                                             if (priorityDiff) return priorityDiff;
+                                                                                                                                                                                                                                             return a.idx - b.idx;})
+                                                                                                                                                                                                                             .map(({entry}) => entry);
+                                                                                                                                                                                                             const judge = formatJudgeDisplayName(sortedEntries[0]?.judge || '');
+                                                                                                                                                                                                             sections.push('- - -');
+                                                                                                                                                                                                             sections.push(`Judge ${judge}`);
+                                                                                                                                                                                                             for (const e of sortedEntries) {const caseNo = getCaseNumberForSummary(e);
+                                                                                                                                                                                                                                       const charge = norm(e?.chargeDescription || '') || 'No Charges Found';
+                                                                                                                                                                                                                                       const lineStatus = getSummaryLineStatus(e);
+                                                                                                                                                                                                                                       sections.push(`${caseNo}: ${charge} - ${lineStatus}`);}}
+                                                                                                                                                                              sections.push('- - -');
+                                                                                                                                                                              sections.push('');
+                                                                                                                                                                              sections.push('');
+                                                                                                                              continue;}
+
+                                                                                                                              for (const [header,headerEntries] of grouped.entries()) {const sortedEntries = headerEntries.map((entry,idx) => ({entry,idx}))
+                                                                                                                                                                                   .sort((a,b) => {const priorityDiff = getSummaryStatusPriority(a.entry) - getSummaryStatusPriority(b.entry);
+                                                                                                                                                                                                   if (priorityDiff) return priorityDiff;
+                                                                                                                                                                                                   return a.idx - b.idx;})
+                                                                                                                                                                                   .map(({entry}) => entry);
+                                                                                                                                                                                sections.push(header);
+                                                                                                                                                                                for (const e of sortedEntries) {const caseNo = getCaseNumberForSummary(e);
+                                                                                                                                                                                                          const charge = norm(e?.chargeDescription || '') || 'No Charges Found';
+                                                                                                                                                                                                          const lineStatus = getSummaryLineStatus(e);
+                                                                                                                                                                                                          sections.push(`${caseNo}: ${charge} - ${lineStatus}`);}
+                                                                                                                                                                                if (header.includes('FRESH START FRIDAY')) hasFreshStartFridaySection = true;
+                                                                                                                                                                                sections.push('');
+                                                                                                                                                                                sections.push('');}}
+                                                                  return {sections,hasFreshStartFridaySection};}
+
   function buildSummaryCopyText() {const log = loadLog();
                                   const expected = norm(document.getElementById('moNsYob')?.value || '');
                                   const filteredLog = log.filter((e) => {const m = yobMatchesExpected(expected,e?.yobRaw || e?.yob || '');
@@ -1247,67 +1320,16 @@ Court Clerk: ${clerk}` : display;
                                                                    .sort((a,b) => {const scoreDiff = b.score - a.score;
                                                                                    if (scoreDiff) return scoreDiff;
                                                                                    return a.idx - b.idx;});
-
-                                  const sections = [];
-                                  let hasFreshStartFridaySection = false;
-                                  for (const {jurisdiction,entries} of sortedJurisdictions) {const includeJudgeDetails = shouldIncludeJudgeDetails(jurisdiction);
-                                                                                              const grouped = new Map();
-                                                                                              if (includeJudgeDetails) {for (const entry of entries) {const header = getMunicipalityHeaderForSummary(jurisdiction,entry?.judge || '') || jurisdiction.toUpperCase();
-                                                                                                                                                     if (!grouped.has(header)) grouped.set(header,[]);
-                                                                                                                                                     grouped.get(header).push(entry);}}
-                                                                                              else {const header = getMunicipalityHeaderForSummary(jurisdiction,'') || jurisdiction.toUpperCase();
-                                                                                                    grouped.set(header,entries);}
-
-                                                                                              if (includeJudgeDetails && grouped.size > 1 && municipalityKey(jurisdiction).includes('CIRCUIT')) {sections.push(jurisdiction.toUpperCase());
-                                                                                                                                                                                       for (const [header,headerEntries] of grouped.entries()) {const sortedEntries = headerEntries.map((entry,idx) => ({entry,idx}))
-                                                                                                                                                                                    .sort((a,b) => {const priorityDiff = getSummaryStatusPriority(a.entry) - getSummaryStatusPriority(b.entry);
-                                                                                                                                                                                                    if (priorityDiff) return priorityDiff;
-                                                                                                                                                                                                    return a.idx - b.idx;})
-                                                                                                                                                                                    .map(({entry}) => entry);
-                                                                                                                                                                                                 const division = (header.match(/\bDIV(?:ISION)?\s+\d+[A-Z]?\b/i) || ['Division - - -'])[0].replace(/\bDIV\b/i,'Division');
-                                                                                                                                                                                                 const judge = formatJudgeDisplayName(sortedEntries[0]?.judge || '') || '- - -';
-                                                                                                                                                                                                 const clerkMatch = header.match(/Court\s+Clerk:\s*([^\n]+)/i);
-                                                                                                                                                                                                 const clerk = clerkMatch ? norm(clerkMatch[1]) : '- - -';
-                                                                                                                                                                                                 sections.push(`${division}, Judge ${judge} - Court Clerk: ${clerk}`);
-                                                                                                                                                                                                 for (const e of sortedEntries) {const caseNo = getCaseNumberForSummary(e);
-                                                                                                                                                                                                                           const charge = norm(e?.chargeDescription || '') || 'No Charges Found';
-                                                                                                                                                                                                                           const lineStatus = getSummaryLineStatus(e);
-                                                                                                                                                                                                                           sections.push(`${caseNo}: ${charge} - ${lineStatus}`);}}
-                                                                                                                                                                                       sections.push('');
-                                                                                                                                                                                       sections.push('');
-                                                                                              continue;}
-
-                                                                                              if (includeJudgeDetails && grouped.size > 1) {sections.push(jurisdiction.toUpperCase());
-                                                                                                                                              for (const [,headerEntries] of grouped.entries()) {const sortedEntries = headerEntries.map((entry,idx) => ({entry,idx}))
-                                                                                                                                                                                                             .sort((a,b) => {const priorityDiff = getSummaryStatusPriority(a.entry) - getSummaryStatusPriority(b.entry);
-                                                                                                                                                                                                                             if (priorityDiff) return priorityDiff;
-                                                                                                                                                                                                                             return a.idx - b.idx;})
-                                                                                                                                                                                                             .map(({entry}) => entry);
-                                                                                                                                                                                             const judge = formatJudgeDisplayName(sortedEntries[0]?.judge || '');
-                                                                                                                                                                                             sections.push('- - -');
-                                                                                                                                                                                             sections.push(`Judge ${judge}`);
-                                                                                                                                                                                             for (const e of sortedEntries) {const caseNo = getCaseNumberForSummary(e);
-                                                                                                                                                                                                                       const charge = norm(e?.chargeDescription || '') || 'No Charges Found';
-                                                                                                                                                                                                                       const lineStatus = getSummaryLineStatus(e);
-                                                                                                                                                                                                                       sections.push(`${caseNo}: ${charge} - ${lineStatus}`);}}
-                                                                                                                                              sections.push('- - -');
-                                                                                                                                              sections.push('');
-                                                                                                                                              sections.push('');
-                                                                                              continue;}
-
-                                                                                              for (const [header,headerEntries] of grouped.entries()) {const sortedEntries = headerEntries.map((entry,idx) => ({entry,idx}))
-                                                                                                                                                   .sort((a,b) => {const priorityDiff = getSummaryStatusPriority(a.entry) - getSummaryStatusPriority(b.entry);
-                                                                                                                                                                   if (priorityDiff) return priorityDiff;
-                                                                                                                                                                   return a.idx - b.idx;})
-                                                                                                                                                   .map(({entry}) => entry);
-                                                                                                                                                sections.push(header);
-                                                                                                                                                for (const e of sortedEntries) {const caseNo = getCaseNumberForSummary(e);
-                                                                                                                                                                          const charge = norm(e?.chargeDescription || '') || 'No Charges Found';
-                                                                                                                                                                          const lineStatus = getSummaryLineStatus(e);
-                                                                                                                                                                          sections.push(`${caseNo}: ${charge} - ${lineStatus}`);}
-                                                                                                                                                if (header.includes('FRESH START FRIDAY')) hasFreshStartFridaySection = true;
-                                                                                                                                                sections.push('');
-                                                                                                                                                sections.push('');}}
+                                  const eligibleJurisdictions = [];
+                                  const ineligibleJurisdictions = [];
+                                  for (const jurisdictionEntry of sortedJurisdictions) {if (isEligibleSummaryJurisdiction(jurisdictionEntry.jurisdiction)) eligibleJurisdictions.push(jurisdictionEntry);
+                                                                                         else ineligibleJurisdictions.push(jurisdictionEntry);}
+                                  const {sections: eligibleSections,hasFreshStartFridaySection: eligibleHasFreshStartFridaySection} = buildJurisdictionSummarySections(eligibleJurisdictions);
+                                  const {sections: ineligibleSections,hasFreshStartFridaySection: ineligibleHasFreshStartFridaySection} = buildJurisdictionSummarySections(ineligibleJurisdictions);
+                                  const sections = [...eligibleSections];
+                                  if (eligibleSections.length && ineligibleSections.length) sections.push('');
+                                  sections.push(...ineligibleSections);
+                                  const hasFreshStartFridaySection = eligibleHasFreshStartFridaySection || ineligibleHasFreshStartFridaySection;
 
                                   if (hasFreshStartFridaySection) {sections.push(FRESH_START_FRIDAY_TEXT);
                                                                    sections.push('');
