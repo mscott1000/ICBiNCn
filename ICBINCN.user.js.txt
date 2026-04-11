@@ -568,8 +568,34 @@
 /************************************************************
    * Party parsing (JSON)
    ************************************************************/
-  function extractDefendantAddressYob(partyResp) {const list = partyResp?.partyDetailsList || [];
-                                                 const def = list.find((x) => String(x?.descCode || '').toUpperCase() === 'DFT' || /defendant/i.test(String(x?.desc || '')));
+  function splitNameTokens(name) {return norm(name || '').toUpperCase().replace(/[^A-Z\s]/g,' ').split(/\s+/).filter(Boolean);}
+
+  function getPreferredDefendantRecord(partyResp,targetName = null) {const list = partyResp?.partyDetailsList || [];
+                                                                     const defendants = list.filter((x) => String(x?.descCode || '').toUpperCase() === 'DFT' || /defendant/i.test(String(x?.desc || '')));
+                                                                     if (!defendants.length) return null;
+                                                                     const first = norm(targetName?.first || '').toUpperCase();
+                                                                     const last = norm(targetName?.last || '').toUpperCase();
+                                                                     const middle = norm(targetName?.middle || '').toUpperCase();
+                                                                     if (!first || !last) return defendants[0];
+                                                                     const middleProvided = /^[A-Z]$/.test(middle);
+                                                                     const targetMiddleInitial = middleProvided ? middle : '';
+                                                                     const scored = defendants.map((def) => {const full = norm(def?.formattedPartyName || def?.partyName || def?.name || '');
+                                                                                                             const parts = splitNameTokens(full);
+                                                                                                             const firstToken = parts[0] || '';
+                                                                                                             const lastToken = parts[parts.length - 1] || '';
+                                                                                                             const middleTokens = parts.slice(1,-1);
+                                                                                                             const middleInitial = middleTokens.length ? String(middleTokens[0] || '').charAt(0) : '';
+                                                                                                             let score = 0;
+                                                                                                             if (firstToken === first) score += 3;
+                                                                                                             if (lastToken === last) score += 3;
+                                                                                                             if (middleProvided && middleInitial === targetMiddleInitial) score += 2;
+                                                                                                             if (!middleProvided && firstToken === first && lastToken === last) score += 2;
+                                                                                                             return {def,score};});
+                                                                     scored.sort((a,b) => b.score - a.score);
+                                                                     if ((scored[0]?.score || 0) > 0) return scored[0].def;
+                                                                     return defendants[0];}
+
+  function extractDefendantAddressYob(partyResp,targetName = null) {const def = getPreferredDefendantRecord(partyResp,targetName);
                                                  const address = norm(def?.formattedPartyAddress || '') || '- - -';
                                                  const yob = norm(def?.formattedBirthDate || '') || '- - -';
                                                  return {address,yob,yobRaw:yob};}
@@ -748,7 +774,7 @@ async function trackTick() {const st = loadTrackState();
 /************************************************************
    * Build entry via API for one case
    ************************************************************/
-  async function scrapeCaseViaApi({caseKey,caseNumber,courtId},expectedYob4 = '') {let resolvedCourtId = norm(courtId || '').toUpperCase();
+  async function scrapeCaseViaApi({caseKey,caseNumber,courtId},expectedYob4 = '',targetName = null) {let resolvedCourtId = norm(courtId || '').toUpperCase();
                                                                  const resolvedCaseKey = resolvedCourtId ? `${caseNumber}|${resolvedCourtId}` : (caseKey || caseNumber);
                                                                  const entry = {caseKey: resolvedCaseKey,
                                                                                                   caseTitle:'',
@@ -797,12 +823,13 @@ async function trackTick() {const st = loadTrackState();
                                                                                                       dbg('skip_blank_title',{caseKey: entry.caseKey,caseNumber,courtId: resolvedCourtId});
                                                                                                       return entry;}
                                                                  const party = await postFormJsonRetry_tryCourtIds('/casenet/cases/party.do',{caseNumber,courtId: resolvedCourtId,isTicket:'',});
-                                                                 const addrYob = extractDefendantAddressYob(party);
+                                                                 const addrYob = extractDefendantAddressYob(party,targetName);
                                                                  entry.address = addrYob.address;
                                                                  entry.yob = addrYob.yob;
                                                                  entry.yobRaw = addrYob.yobRaw || entry.yob;
                                                                  const match = yobMatchesExpected(expectedYob4,entry.yobRaw);
                                                                  const foundYears = (match?.years || []).filter((y) => /^\d{4}$/.test(String(y || '')));
+                                                                 if (!foundYears.length) {dbg('yob_not_meaningful_keep_case',{caseKey: entry.caseKey,caseNumber,courtId: resolvedCourtId,yobRaw: entry.yobRaw || ''});}
                                                                  if (!match.ok && foundYears.length) {entry._skipReason = 'yob_mismatch';
                                                                                                       entry._expectedYob = expectedYob4;
                                                                                                       entry._foundYears = foundYears.join(', ');
@@ -1714,7 +1741,7 @@ helpPanel.innerHTML = `
 
 "X" - Minimizes the tool. If you want to turn the tool off temporarily, click "Manage Extensions" and toggle Tampermonkey off.
 
-"Search" - Searches. The year is used to sort - the tool searches all name results (up to 1000) then drops mismatched Years of Birth. If you enter a very common first-last name pair, it will search them all and then give up - this is on purpose, I don't want to brick your work laptop. Enter a middle initial maybe.
+"Search" - Searches. The year is used to sort - the tool searches all name results and then drops mismatched Years of Birth. If Middle Initial is blank, the tool now sweeps blank + A-Z middle initials so broad searches include names with and without a middle initial.
 
 "Clear Entries" - from the section with the button.
 
@@ -2016,7 +2043,8 @@ function render() {const log = loadLog();
                                                                return;}
                                            setShowEntriesTo100();
                                            const ns = loadNameState();
-                                           const yobExpected = norm(ns?.params?.yob || document.getElementById('moNsYob')?.value || '');
+                                           const searchParams = ns?.params || {};
+                                           const yobExpected = norm(searchParams?.yob || document.getElementById('moNsYob')?.value || '');
                                            const conc = DEFAULT_CONCURRENCY;
                                            clearLastHtml();
                                            saveJson(KEY_NET_STATS,{byPath:{}});
@@ -2051,7 +2079,7 @@ function render() {const log = loadLog();
                                                 let yobMismatchCount = 0;
                                                 const {results,errors} = await runPool(todo,conc,async (item) => {if (isStop()) return null;
                                                                                                                  await sleep(80);
-                                                                                                                 const out = await scrapeCaseViaApi(item,yobExpected);
+                                                                                                                 const out = await scrapeCaseViaApi(item,yobExpected,searchParams);
                                                                                                                  if (out && out._skipReason === 'yob_mismatch') {yobMismatchCount += 1;
                                                                                                                                                                  return null;}
                                                                                                                  if (out && out._skipReason === 'paid_in_full') return out;
@@ -2079,6 +2107,13 @@ function render() {const log = loadLog();
 /************************************************************
    * Buttons
    ************************************************************/
+  function buildNameSearchPasses(params) {const caseTypePasses = ['criminal','traffic'];
+                                   const middleRaw = norm(params?.middle || '');
+                                   const middleVariants = middleRaw ? [middleRaw] : ['','A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z'];
+                                   const out = [];
+                                   for (const caseType of caseTypePasses) {for (const middle of middleVariants) out.push({caseType,middle,label: middle ? `${caseType} / ${middle}` : `${caseType} / (blank)`});}
+                                   return out;}
+
   dock.addEventListener('click',async (e) => {const id = e?.target?.id;
                                              if (id === 'moJsonNameSearch') {const params = {first: norm(document.getElementById('moNsFirst')?.value || ''),
                                                                                            middle: norm(document.getElementById('moNsMiddle')?.value || ''),
@@ -2087,7 +2122,8 @@ function render() {const log = loadLog();
                                                                             setStop(false);
                                                                             setRun(false);
                                                                             saveDraft({...params});
-                                                                            saveNameState({active:true,passIndex:0,passes:['criminal','traffic'],step:'go_search',params,});
+                                                                            const passes = buildNameSearchPasses(params);
+                                                                            saveNameState({active:true,passIndex:0,passes,step:'go_search',params,});
                                                                             uiStatus('Searching…');
                                                                             dbg('namesearch_start',{params});
                                                                             if (!isNameSearchPage()) {location.href = canonicalNameSearchUrl();}
@@ -2190,7 +2226,10 @@ function render() {const log = loadLog();
                                  if (st.navPendingUntil && Date.now() < Number(st.navPendingUntil)) return;
                                  if (isRun()) return;
                                  if (isStop()) return;
-                                 const passKey = (st.passes || [])[st.passIndex || 0];
+                                 const pass = (st.passes || [])[st.passIndex || 0];
+                                 const passKey = typeof pass === 'string' ? pass : pass?.caseType;
+                                 const passMiddle = typeof pass === 'string' ? (st.params?.middle || '') : (pass?.middle || '');
+                                 const passLabel = typeof pass === 'string' ? passKey : (pass?.label || passKey);
                                  if (!passKey) {dbg('namesearch_done',{});
                                                 clearNameState();
                                                 uiStatus('Done.');
@@ -2201,9 +2240,9 @@ function render() {const log = loadLog();
                                                                                                         dbg('namesearch_resubmit',{passKey,ageMs:age});
                                                                                                         st.step = 'go_search';
                                                                                                         saveNameState(st);}
-                                                          uiStatus(`Searching ${st.passIndex + 1}/2 (${passKey})…`);
-                                                          dbg('namesearch_submit',{passKey});
-                                                          fillNameSearchForm(st.params || {},passKey);
+                                                          uiStatus(`Searching ${st.passIndex + 1}/${(st.passes || []).length} (${passLabel})…`);
+                                                          dbg('namesearch_submit',{passKey,passMiddle});
+                                                          fillNameSearchForm({...st.params,middle: passMiddle},passKey);
                                                           const ok = submitNameSearchForm();
                                                           if (!ok) {uiStatus('Search failed, refresh page and retry');
                                                                     dbg('namesearch_submit_failed',{passKey});
@@ -2215,7 +2254,7 @@ function render() {const log = loadLog();
                                  if (isNameSearchResultsPage()) {setShowEntriesTo100();
                                                                 const dockYob = document.getElementById('moNsYob');
                                                                 if (dockYob) dockYob.value = st.params?.yob || '';
-                                                                uiStatus(`Ready (${passKey})…`);
+                                                                uiStatus(`Ready (${passLabel})…`);
                                                                 dbg('namesearch_pull_begin',{passKey});
                                                                 try {await pullJsonFromResultsPage();}
                                                                 catch (e) {dbg('namesearch_pull_fatal',{passKey,msg:String(e?.message || e)});

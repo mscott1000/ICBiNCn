@@ -1,7 +1,7 @@
 /************************************************************
    * Build entry via API for one case
    ************************************************************/
-  async function scrapeCaseViaApi({caseKey,caseNumber,courtId},expectedYob4 = '') {let resolvedCourtId = norm(courtId || '').toUpperCase();
+  async function scrapeCaseViaApi({caseKey,caseNumber,courtId},expectedYob4 = '',targetName = null) {let resolvedCourtId = norm(courtId || '').toUpperCase();
                                                                  const resolvedCaseKey = resolvedCourtId ? `${caseNumber}|${resolvedCourtId}` : (caseKey || caseNumber);
                                                                  const entry = {caseKey: resolvedCaseKey,
                                                                                                   caseTitle:'',
@@ -50,12 +50,13 @@
                                                                                                       dbg('skip_blank_title',{caseKey: entry.caseKey,caseNumber,courtId: resolvedCourtId});
                                                                                                       return entry;}
                                                                  const party = await postFormJsonRetry_tryCourtIds('/casenet/cases/party.do',{caseNumber,courtId: resolvedCourtId,isTicket:'',});
-                                                                 const addrYob = extractDefendantAddressYob(party);
+                                                                 const addrYob = extractDefendantAddressYob(party,targetName);
                                                                  entry.address = addrYob.address;
                                                                  entry.yob = addrYob.yob;
                                                                  entry.yobRaw = addrYob.yobRaw || entry.yob;
                                                                  const match = yobMatchesExpected(expectedYob4,entry.yobRaw);
                                                                  const foundYears = (match?.years || []).filter((y) => /^\d{4}$/.test(String(y || '')));
+                                                                 if (!foundYears.length) {dbg('yob_not_meaningful_keep_case',{caseKey: entry.caseKey,caseNumber,courtId: resolvedCourtId,yobRaw: entry.yobRaw || ''});}
                                                                  if (!match.ok && foundYears.length) {entry._skipReason = 'yob_mismatch';
                                                                                                       entry._expectedYob = expectedYob4;
                                                                                                       entry._foundYears = foundYears.join(', ');
