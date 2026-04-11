@@ -328,9 +328,22 @@ Court Clerk: ${clerk}` : display;
                                       if (!Number.isFinite(numeric) || numeric === 0) return '';
                                       return `, ${numeric.toFixed(2)} fine`;}
 
-  function getAttorneySuffixForSummary(e) {const attorney = norm(String(e?.attorney || ''));
-                                          if (!attorney || attorney === '- - -') return '';
-                                          return `, attorney ${attorney}`;}
+  function normalizeAttorneyForSummary(attorneyRaw) {const attorney = norm(String(attorneyRaw || ''));
+                                                    if (!attorney || attorney === '- - -') return '';
+                                                    const nameOnly = attorney.split(/\s+-\s+/)[0].trim();
+                                                    if (!nameOnly) return '';
+                                                    const stripped = nameOnly.replace(/^attorney\s+/i,'').trim();
+                                                    const commaMatch = stripped.match(/^([^,]+),\s*(.+)$/);
+                                                    if (commaMatch) {const last = norm(commaMatch[1]);
+                                                                     const first = norm(commaMatch[2].split(/\s+/)[0]);
+                                                                     if (first && last) return `attorney ${first} ${last}`;}
+                                                    const parts = stripped.split(/\s+/).filter(Boolean);
+                                                    if (parts.length >= 2) return `attorney ${parts[0]} ${parts[parts.length - 1]}`;
+                                                    return '';}
+
+  function getAttorneySuffixForSummary(e) {const normalizedAttorney = normalizeAttorneyForSummary(e?.attorney);
+                                          if (!normalizedAttorney) return '';
+                                          return `, ${normalizedAttorney}`;}
 
   function getSummaryLineStatus(e) {const warrantLabel = getWarrantLabelForSummary(e);
                                    const fineSuffix = getFineSuffixForSummary(e);
