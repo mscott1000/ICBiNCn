@@ -903,28 +903,35 @@ async function trackTick() {const st = loadTrackState();
                                     `CaseNet:\n${e.caseUrl || ''}\n`,'','','');
                          return lines.join('\n');}
 
-  function classifyCaseTitle(titleRaw) {const t = (titleRaw || '').toUpperCase();
-                                       if (t.includes('CITY OF ST.LOUIS') || t.includes('CITY OF ST. LOUIS')) return 'REFER';
-                                       const urgentNeedles = ['FLORISSANT','ST V ','UNIVERSITY CITY','KIRKWOOD','MANCHESTER','WEBSTER GROVES'];
-                                       if (urgentNeedles.some((n) => t.includes(n))) return 'URGENT';
-                                       return 'LESS';}
-
   function buildGroupedCopyText() {const log = loadLog();
                                   const expected = norm(document.getElementById('moNsYob')?.value || '');
                                   const filteredLog = log.filter((e) => {const m = yobMatchesExpected(expected,e?.yobRaw || e?.yob || '');
                                                                          return m.ok;});
-                                  const urgent = [];
-                                  const refer = [];
-                                  const less = [];
-                                  for (const e of filteredLog) {const bucket = classifyCaseTitle(e.caseTitle);
-                                                               if (bucket === 'REFER') refer.push(e);
-                                                               else if (bucket === 'URGENT') urgent.push(e);
-                                                               else less.push(e);}
-                                  function block(entries) {if (!entries.length) return '';
-                                                           return entries.map((e,idx) => `===== Case ${idx + 1} =====
-${formatEntry(e)}
-`).join('\n');}
-                                  return [block(urgent),'','',block(refer),'','',block(less)].join('\n').trim();}
+                                  const byJurisdiction = new Map();
+                                  for (const e of filteredLog) {const jurisdiction = norm(e?.location || '') || '- - -';
+                                                                if (!byJurisdiction.has(jurisdiction)) byJurisdiction.set(jurisdiction,[]);
+                                                                byJurisdiction.get(jurisdiction).push(e);}
+                                  const sortedJurisdictions = Array.from(byJurisdiction.entries())
+                                                                   .map(([jurisdiction,entries],idx) => ({jurisdiction,entries,idx,score: getJurisdictionScore(entries)}))
+                                                                   .sort((a,b) => {const scoreDiff = b.score - a.score;
+                                                                                   if (scoreDiff) return scoreDiff;
+                                                                                   return a.idx - b.idx;});
+                                  const eligibleJurisdictions = [];
+                                  const ineligibleJurisdictions = [];
+                                  for (const jurisdictionEntry of sortedJurisdictions) {if (isEligibleSummaryJurisdiction(jurisdictionEntry.jurisdiction)) eligibleJurisdictions.push(jurisdictionEntry);
+                                                                                         else ineligibleJurisdictions.push(jurisdictionEntry);}
+                                  const orderedEntries = [];
+                                  function appendEntries(jurisdictions) {for (const {entries} of jurisdictions) {const sortedEntries = entries.map((entry,idx) => ({entry,idx}))
+                                                                                                                               .sort((a,b) => {const judgeA = normalizeJudgeName(a.entry?.judge || '');
+                                                                                                                                               const judgeB = normalizeJudgeName(b.entry?.judge || '');
+                                                                                                                                               const judgeDiff = judgeA.localeCompare(judgeB);
+                                                                                                                                               if (judgeDiff) return judgeDiff;
+                                                                                                                                               return a.idx - b.idx;})
+                                                                                                                               .map(({entry}) => entry);
+                                                                                 orderedEntries.push(...sortedEntries);}}
+                                  appendEntries(eligibleJurisdictions);
+                                  appendEntries(ineligibleJurisdictions);
+                                  return orderedEntries.map((e) => formatEntry(e)).join('\n').trim();}
 
 
 
