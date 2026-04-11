@@ -190,7 +190,8 @@
                                                                return;}
                                            setShowEntriesTo100();
                                            const ns = loadNameState();
-                                           const yobExpected = norm(ns?.params?.yob || document.getElementById('moNsYob')?.value || '');
+                                           const searchParams = ns?.params || {};
+                                           const yobExpected = norm(searchParams?.yob || document.getElementById('moNsYob')?.value || '');
                                            const conc = DEFAULT_CONCURRENCY;
                                            clearLastHtml();
                                            saveJson(KEY_NET_STATS,{byPath:{}});
@@ -225,7 +226,7 @@
                                                 let yobMismatchCount = 0;
                                                 const {results,errors} = await runPool(todo,conc,async (item) => {if (isStop()) return null;
                                                                                                                  await sleep(80);
-                                                                                                                 const out = await scrapeCaseViaApi(item,yobExpected);
+                                                                                                                 const out = await scrapeCaseViaApi(item,yobExpected,searchParams);
                                                                                                                  if (out && out._skipReason === 'yob_mismatch') {yobMismatchCount += 1;
                                                                                                                                                                  return null;}
                                                                                                                  if (out && out._skipReason === 'paid_in_full') return out;

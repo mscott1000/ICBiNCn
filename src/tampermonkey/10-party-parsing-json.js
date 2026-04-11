@@ -1,8 +1,34 @@
 /************************************************************
    * Party parsing (JSON)
    ************************************************************/
-  function extractDefendantAddressYob(partyResp) {const list = partyResp?.partyDetailsList || [];
-                                                 const def = list.find((x) => String(x?.descCode || '').toUpperCase() === 'DFT' || /defendant/i.test(String(x?.desc || '')));
+  function splitNameTokens(name) {return norm(name || '').toUpperCase().replace(/[^A-Z\s]/g,' ').split(/\s+/).filter(Boolean);}
+
+  function getPreferredDefendantRecord(partyResp,targetName = null) {const list = partyResp?.partyDetailsList || [];
+                                                                     const defendants = list.filter((x) => String(x?.descCode || '').toUpperCase() === 'DFT' || /defendant/i.test(String(x?.desc || '')));
+                                                                     if (!defendants.length) return null;
+                                                                     const first = norm(targetName?.first || '').toUpperCase();
+                                                                     const last = norm(targetName?.last || '').toUpperCase();
+                                                                     const middle = norm(targetName?.middle || '').toUpperCase();
+                                                                     if (!first || !last) return defendants[0];
+                                                                     const middleProvided = /^[A-Z]$/.test(middle);
+                                                                     const targetMiddleInitial = middleProvided ? middle : '';
+                                                                     const scored = defendants.map((def) => {const full = norm(def?.formattedPartyName || def?.partyName || def?.name || '');
+                                                                                                             const parts = splitNameTokens(full);
+                                                                                                             const firstToken = parts[0] || '';
+                                                                                                             const lastToken = parts[parts.length - 1] || '';
+                                                                                                             const middleTokens = parts.slice(1,-1);
+                                                                                                             const middleInitial = middleTokens.length ? String(middleTokens[0] || '').charAt(0) : '';
+                                                                                                             let score = 0;
+                                                                                                             if (firstToken === first) score += 3;
+                                                                                                             if (lastToken === last) score += 3;
+                                                                                                             if (middleProvided && middleInitial === targetMiddleInitial) score += 2;
+                                                                                                             if (!middleProvided && firstToken === first && lastToken === last) score += 2;
+                                                                                                             return {def,score};});
+                                                                     scored.sort((a,b) => b.score - a.score);
+                                                                     if ((scored[0]?.score || 0) > 0) return scored[0].def;
+                                                                     return defendants[0];}
+
+  function extractDefendantAddressYob(partyResp,targetName = null) {const def = getPreferredDefendantRecord(partyResp,targetName);
                                                  const address = norm(def?.formattedPartyAddress || '') || '- - -';
                                                  const yob = norm(def?.formattedBirthDate || '') || '- - -';
                                                  return {address,yob,yobRaw:yob};}

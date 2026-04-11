@@ -3,7 +3,6 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 SOURCE_DIR = ROOT / 'src' / 'tampermonkey'
 OUTPUTS = [
-    ROOT / 'tampermonkey-version',
     ROOT / 'ICBINCN.user.js.txt',
 ]
 
