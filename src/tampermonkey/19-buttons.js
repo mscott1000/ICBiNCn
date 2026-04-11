@@ -3,10 +3,9 @@
    ************************************************************/
   function buildNameSearchPasses(params) {const caseTypePasses = ['criminal','traffic'];
                                    const middleRaw = norm(params?.middle || '');
-                                   const middleVariants = middleRaw ? [middleRaw] : ['','A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z'];
-                                   const out = [];
-                                   for (const caseType of caseTypePasses) {for (const middle of middleVariants) out.push({caseType,middle,label: middle ? `${caseType} / ${middle}` : `${caseType} / (blank)`});}
-                                   return out;}
+                                   return caseTypePasses.map((caseType) => ({caseType,
+                                                                            middle: middleRaw,
+                                                                            label: middleRaw ? `${caseType} / ${middleRaw}` : `${caseType} / all middle names`}));}
 
   dock.addEventListener('click',async (e) => {const id = e?.target?.id;
                                              if (id === 'moJsonNameSearch') {const params = {first: norm(document.getElementById('moNsFirst')?.value || ''),
