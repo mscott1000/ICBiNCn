@@ -383,7 +383,7 @@ helpPanel.innerHTML = `
 
 "X" - Minimizes the tool. If you want to turn the tool off temporarily, click "Manage Extensions" and toggle Tampermonkey off.
 
-"Search" - Searches. The year is used to sort - the tool searches all name results and then drops mismatched Years of Birth. If Middle Initial is blank, the tool now sweeps blank + A-Z middle initials so broad searches include names with and without a middle initial.
+"Search" - Searches. The year is used to sort - the tool searches all name results and then drops mismatched Years of Birth. If Middle Initial is blank, the search runs first/last only and still includes names with and without middle initials. If Middle Initial is filled in, it is used to narrow the first/last search.
 
 "Clear Entries" - from the section with the button.
 
