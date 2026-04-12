@@ -144,17 +144,27 @@
                                                           st.submittedAt = Date.now();
                                                           saveNameState(st);
                                                           return;}
-                                 if (isNameSearchResultsPage()) {setShowEntriesTo100();
+                                 if (isNameSearchResultsPage()) {if (st.step === 'pulling_results') {const age = Date.now() - Number(st.pullStartedAt || 0);
+                                                                                                      if (age < 120000) return;
+                                                                                                      dbg('namesearch_pull_stale_reset',{passKey,ageMs:age});
+                                                                                                      st.step = 'go_search';
+                                                                                                      st.pullStartedAt = 0;
+                                                                                                      saveNameState(st);}
+                                                                setShowEntriesTo100();
                                                                 const dockYob = document.getElementById('moNsYob');
                                                                 if (dockYob) dockYob.value = st.params?.yob || '';
                                                                 uiStatus(`Ready (${passLabel})…`);
                                                                 dbg('namesearch_pull_begin',{passKey});
+                                                                st.step = 'pulling_results';
+                                                                st.pullStartedAt = Date.now();
+                                                                saveNameState(st);
                                                                 try {await pullJsonFromResultsPage();}
                                                                 catch (e) {dbg('namesearch_pull_fatal',{passKey,msg:String(e?.message || e)});
                                                                            setRun(false);}
                                                                 dbg('namesearch_pull_done',{passKey});
                                                                 st.passIndex = (st.passIndex || 0) + 1;
                                                                 st.step = 'go_search';
+                                                                st.pullStartedAt = 0;
                                                                 st.navPendingUntil = Date.now() + 5000;
                                                                 saveNameState(st);
                                                                 location.href = canonicalNameSearchUrl();
