@@ -32,31 +32,142 @@
                                                 if (/warrant|capias|failure to appear/.test(blob) && !/recalled|served|withdrawn|canceled|cancelled/.test(blob)) return 'warrant';
                                                 return 'nonwarrant';}
 
-  function mapMuniRecordToEntry(rec,sourceLabel,caseNumberHint = '') {const caseNo = valueFromAny(rec,['caseNumber','caseNo','caseNum','citationNo','citationNumber','ticketNumber']) || norm(caseNumberHint).toUpperCase() || '- - -';
-                                                                       const location = valueFromAny(rec,['courtName','court','municipality','city','location']) || '- - -';
-                                                                       const chargeDescription = valueFromAny(rec,['chargeDescription','offenseDescription','offense','violationDescription','charge']) || '- - -';
+  function htmlDocFromText(txt) {return new DOMParser().parseFromString(String(txt || ''),'text/html');}
+
+  function findVerificationToken(docOrText) {const doc = typeof docOrText === 'string' ? htmlDocFromText(docOrText) : docOrText;
+                                            const input = doc?.querySelector('input[name="__RequestVerificationToken"]');
+                                            return norm(input?.value || input?.getAttribute('value') || '');}
+
+  function middleVariants(rawMiddle) {const mid = norm(rawMiddle || '');
+                                      const out = [];
+                                      const push = (v) => {const n = norm(v || '');
+                                                           if (!out.includes(n)) out.push(n);};
+                                      push(mid);
+                                      if (mid) push(mid.charAt(0));
+                                      push('');
+                                      return out;}
+
+  function parseMuniNameResultsHtml(htmlText) {const doc = htmlDocFromText(htmlText);
+                                               const out = [];
+                                               const tables = [...doc.querySelectorAll('table')];
+                                               for (const table of tables) {const headerCells = [...table.querySelectorAll('thead th')];
+                                                                            const headers = headerCells.map((th) => norm(th.textContent || '').toLowerCase()).filter(Boolean);
+                                                                            const rows = [...table.querySelectorAll('tbody tr, tr')];
+                                                                            for (const row of rows) {const tds = [...row.querySelectorAll('td')];
+                                                                                                    if (!tds.length) continue;
+                                                                                                    const buttonInput = row.querySelector('input[name="button"][value]');
+                                                                                                    const button = norm(buttonInput?.value || '');
+                                                                                                    if (!button || !/^fcv/i.test(button)) continue;
+                                                                                                    const cells = tds.map((td) => norm(td.textContent || ''));
+                                                                                                    const rec = {button};
+                                                                                                    if (headers.length) {for (let i = 0;i < headers.length;i++) rec[headers[i].replace(/[^a-z0-9]+/g,'_')] = cells[i] || '';
+                                                                                                                       rec.resultRowText = cells.join('   ');}
+                                                                                                    else {rec.resultRowText = cells.join('   ');
+                                                                                                          rec.defendantName = cells[0] || '';
+                                                                                                          rec.ticketNumber = cells[1] || '';
+                                                                                                          rec.courtName = cells[2] || '';
+                                                                                                          rec.chargeDescription = cells[3] || '';
+                                                                                                          rec.status = cells[cells.length - 1] || '';}
+                                                                                                    out.push(rec);}}
+                                               return out;}
+
+  function parseMuniFullCaseHtmlToCopyText(htmlText) {const doc = htmlDocFromText(htmlText);
+                                                     const lines = [];
+                                                     const container = doc.querySelector('#mcn-centercontent .container.body-content > div') || doc.body;
+                                                     for (const row of [...container.querySelectorAll('.divrow')]) {const spans = [...row.querySelectorAll('span')].map((s) => norm(s.textContent || '')).filter(Boolean);
+                                                                                                                     if (!spans.length) continue;
+                                                                                                                     const parts = [];
+                                                                                                                     for (let i = 0;i < spans.length;i++) {const token = spans[i];
+                                                                                                                                                            if (/:$/.test(token) && i + 1 < spans.length) {parts.push(`${token} ${spans[i + 1]}`);
+                                                                                                                                                                                                            i += 1;
+                                                                                                                                                                                                            continue;}
+                                                                                                                                                            parts.push(token);}
+                                                                                                                     lines.push(parts.join('   ').trim());}
+                                                     for (const tr of [...container.querySelectorAll('table tr')]) {const tds = [...tr.querySelectorAll('td')].map((td) => norm(td.textContent || '')).filter(Boolean);
+                                                                                                                    if (!tds.length) continue;
+                                                                                                                    if (tds.length === 1) lines.push(tds[0]);
+                                                                                                                    else lines.push(`${tds[0]} ${tds.slice(1).join(' ')}`.trim());}
+                                                     return lines.join('\n').replace(/\n{3,}/g,'\n\n').trim();}
+
+  async function searchMuniViaSubmitByName(params) {const first = norm(params?.first || '');
+                                                   const last = norm(params?.last || '');
+                                                   const yob = norm(params?.yob || '');
+                                                   if (!first || !last || !yob) return [];
+                                                   const homeResp = await gmHttpRequestText({method: 'GET',url: `${MUNI_BASE_URL}/`});
+                                                   const homeDoc = htmlDocFromText(homeResp.responseText);
+                                                   const token = findVerificationToken(homeDoc);
+                                                   if (!token) throw new Error('Municourt verification token not found');
+
+                                                   const records = [];
+                                                   const seen = new Set();
+                                                   for (const middle of middleVariants(params?.middle || '')) {const payload = new URLSearchParams();
+                                                                                                               payload.set('__RequestVerificationToken',token);
+                                                                                                               payload.set('SelectedSearchType','0');
+                                                                                                               payload.set('LastName',last);
+                                                                                                               payload.set('FirstName',first);
+                                                                                                               payload.set('MiddleName',middle);
+                                                                                                               payload.set('DobYear',yob);
+                                                                                                               payload.set('AgcyId','');
+                                                                                                               const resp = await gmHttpRequestText({method: 'POST',
+                                                                                                                                                     url: `${MUNI_BASE_URL}/Results/SubmitByName`,
+                                                                                                                                                     headers: {'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                                                                                                                                                               'Referer': `${MUNI_BASE_URL}/`},
+                                                                                                                                                     data: payload.toString()});
+                                                                                                               if (resp.status >= 400) continue;
+                                                                                                               const pageToken = findVerificationToken(resp.responseText) || token;
+                                                                                                               for (const rec of parseMuniNameResultsHtml(resp.responseText)) {const key = `${rec.button}|${rec.resultRowText || ''}`;
+                                                                                                                                                                                if (seen.has(key)) continue;
+                                                                                                                                                                                seen.add(key);
+                                                                                                                                                                                records.push({record: rec,source: resp.finalUrl || `${MUNI_BASE_URL}/Results/SubmitByName`,token: pageToken});}}
+                                                   return records;}
+
+  async function attachMuniFullCaseDetails(items) {const out = [];
+                                                  for (const item of items || []) {const rec = item?.record || {};
+                                                                                  const button = norm(rec?.button || '');
+                                                                                  const token = norm(item?.token || '');
+                                                                                  if (!button || !token) {out.push(item);
+                                                                                                           continue;}
+                                                                                  try {const payload = new URLSearchParams();
+                                                                                       payload.set('__RequestVerificationToken',token);
+                                                                                       payload.set('button',button);
+                                                                                       const resp = await gmHttpRequestText({method: 'POST',
+                                                                                                                             url: `${MUNI_BASE_URL}/Results/FullCaseView`,
+                                                                                                                             headers: {'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                                                                                                                                       'Referer': `${MUNI_BASE_URL}/Results/SubmitByName`},
+                                                                                                                             data: payload.toString()});
+                                                                                       rec.muniCaseDetailText = parseMuniFullCaseHtmlToCopyText(resp.responseText);
+                                                                                       rec.caseUrl = resp.finalUrl || `${MUNI_BASE_URL}/Results/FullCaseView`;
+                                                                                       out.push({...item,record: rec});}
+                                                                                  catch (e) {dbg('municourt_full_case_error',{button,msg: String(e?.message || e)});
+                                                                                              out.push(item);}}
+                                                  return out;}
+
+  function mapMuniRecordToEntry(rec,sourceLabel,caseNumberHint = '') {const caseNo = valueFromAny(rec,['ticketNumber','ticket_','caseNumber','case_','caseNo','caseNum','citationNo','citationNumber']) || norm(caseNumberHint).toUpperCase() || '- - -';
+                                                                       const location = valueFromAny(rec,['courtName','court_name','court','municipality','city','location']) || '- - -';
+                                                                       const chargeDescription = valueFromAny(rec,['chargeDescription','charge_description','offenseDescription','offense','violationDescription','charge']) || '- - -';
                                                                        const disposition = valueFromAny(rec,['disposition','caseDisposition','dispositionText']) || '- - -';
-                                                                       const caseTitle = valueFromAny(rec,['caseDesc','caseDescription','style','caption','defendantName']) || '- - -';
+                                                                       const caseTitle = valueFromAny(rec,['defendantName','defendant','caseDesc','caseDescription','style','caption']) || '- - -';
                                                                        const judge = valueFromAny(rec,['judge','judgeName']) || '- - -';
-                                                                       const nextDocketDate = valueFromAny(rec,['nextCourtDate','courtDate','upcomingCourtDate','nextDocketDate']) || '- - -';
+                                                                       const nextDocketDate = valueFromAny(rec,['current_court_date','nextCourtDate','courtDate','upcomingCourtDate','nextDocketDate']) || '- - -';
                                                                        const warrantRaw = valueFromAny(rec,['warrantStatus','warrantSummary','warrant']);
                                                                        const summaryRaw = valueFromAny(rec,['status','caseStatus']);
                                                                        const summaryStatus = mapMuniStatus(summaryRaw,warrantRaw);
                                                                        const caseUrl = valueFromAny(rec,['caseUrl','url']) || sourceLabel;
                                                                        const entryKeyBase = (caseNo || '- - -').toUpperCase();
+                                                                       const summaryRow = norm(rec?.resultRowText || `${caseTitle}   ${caseNo}   ${location}   ${chargeDescription}   ${summaryRaw || summaryStatus}`);
                                                                        return {caseKey: `${entryKeyBase}|MUNICOURT`,
                                                                                caseTitle,
                                                                                caseUrl,
                                                                                judge,
-                                                                               dateFiled: valueFromAny(rec,['dateFiled','filingDate']) || '- - -',
+                                                                               dateFiled: valueFromAny(rec,['case_filed_date','dateFiled','filingDate']) || '- - -',
                                                                                location,
                                                                                caseBalance: valueFromAny(rec,['caseBalance','balance','amountDue']) || '- - -',
                                                                                disposition,
                                                                                address: valueFromAny(rec,['address','defendantAddress']) || '- - -',
-                                                                               yob: valueFromAny(rec,['yob','birthYear','yearOfBirth']) || '- - -',
-                                                                               yobRaw: valueFromAny(rec,['yob','birthYear','yearOfBirth']) || '- - -',
+                                                                               yob: valueFromAny(rec,['birth_year','yob','birthYear','yearOfBirth']) || '- - -',
+                                                                               yobRaw: valueFromAny(rec,['birth_year','yob','birthYear','yearOfBirth']) || '- - -',
                                                                                attorney: valueFromAny(rec,['attorney','attorneyName']) || '- - -',
-                                                                               warrantSummary: warrantRaw || '- - -',
+                                                                               warrantSummary: warrantRaw || summaryRaw || '- - -',
                                                                                summaryStatus,
                                                                                initialAppearanceDate: valueFromAny(rec,['initialAppearanceDate']) || '',
                                                                                licenseHoldDate: valueFromAny(rec,['licenseHoldDate']) || '',
@@ -65,6 +176,8 @@
                                                                                chargeDescription,
                                                                                chargeType: valueFromAny(rec,['chargeType','offenseType']) || '- - -',
                                                                                chargeClass: valueFromAny(rec,['chargeClass','offenseClass']) || '- - -',
+                                                                               muniSummaryRow: summaryRow,
+                                                                               muniCaseDetailText: norm(rec?.muniCaseDetailText || ''),
                                                                                _source: 'municourt',};}
 
   function flattenLikelyCaseRecords(node) {const out = [];
@@ -122,7 +235,11 @@
                                                                                                                         catch (e) {dbg('municourt_query_failed',{url,msg:String(e?.message || e)});}}}
                                                      return records;}
 
-  async function searchMunicourtEntriesByName(params) {const candidates = await fetchMunicourtCandidates(params || {});
+  async function searchMunicourtEntriesByName(params) {let candidates = [];
+                                                      try {candidates = await searchMuniViaSubmitByName(params || {});
+                                                           candidates = await attachMuniFullCaseDetails(candidates);}
+                                                      catch (e) {dbg('municourt_submit_by_name_failed',{msg:String(e?.message || e)});}
+                                                      if (!candidates.length) candidates = await fetchMunicourtCandidates(params || {});
                                                       const entries = [];
                                                       const seen = new Set();
                                                       for (const c of candidates) {const entry = mapMuniRecordToEntry(c.record,c.source || MUNI_BASE_URL,'');
