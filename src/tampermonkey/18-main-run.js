@@ -166,11 +166,22 @@
                                                                                       if (nextLog.some((x) => x.caseKey === r.caseKey)) continue;
                                                                                       nextLog.push(r);}
                                                              saveLog(nextLog);
+                                                             let muniAdded = 0;
+                                                             try {uiStatus(`Resolved ${resolved.length}. Reading Municourt supplement...`);
+                                                                  render();
+                                                                  const muniEntries = await searchMunicourtEntriesByCaseNumbers(requested);
+                                                                  for (const m of muniEntries) {if (!m?.caseKey) continue;
+                                                                                              if (nextLog.some((x) => x.caseKey === m.caseKey)) continue;
+                                                                                              nextLog.push(m);
+                                                                                              muniAdded += 1;}
+                                                                  saveLog(nextLog);
+                                                                  if (muniAdded) dbg('municourt_case_batch_added',{count: muniAdded});}
+                                                             catch (e) {dbg('municourt_case_batch_error',{msg:String(e?.message || e)});} 
                                                              const okCount = results.filter(Boolean).length;
                                                              const errCount = (errors || []).length;
                                                              const unresolvedMsg = unresolved.length ? ` Unresolved case numbers: ${unresolved.length}.` : '';
                                                              if (isStop()) uiStatus('Stopped.');
-                                                             else uiStatus(`${okCount} cases added from case-number batch.${unresolvedMsg} Errors: ${errCount}.`);
+                                                             else uiStatus(`${okCount} Case.net cases + ${muniAdded} Municourt cases added from case-number batch.${unresolvedMsg} Errors: ${errCount}.`);
                                                              if (unresolved.length) dbg('case_batch_unresolved',{count:unresolved.length,items:unresolved.slice(0,40)});
                                                              if (errCount) dbg('case_batch_run_errors',{errors: errors.slice(0,12)});}
                                                         catch (e) {dbg('case_batch_fatal',{msg:String(e?.message || e),stack:String(e?.stack || '')});
@@ -240,12 +251,23 @@
                                                                          if (nextLog.some((x) => x.caseKey === r.caseKey)) continue;
                                                                          nextLog.push(r);}
                                                 saveLog(nextLog);
+                                                let muniAdded = 0;
+                                                try {uiStatus('Reading Municourt supplement...');
+                                                     render();
+                                                     const muniEntries = await searchMunicourtEntriesByName(searchParams || {});
+                                                     for (const m of muniEntries) {if (!m?.caseKey) continue;
+                                                                                 if (nextLog.some((x) => x.caseKey === m.caseKey)) continue;
+                                                                                 nextLog.push(m);
+                                                                                 muniAdded += 1;}
+                                                     saveLog(nextLog);
+                                                     if (muniAdded) dbg('municourt_name_search_added',{count: muniAdded});}
+                                                catch (e) {dbg('municourt_name_search_error',{msg:String(e?.message || e)});} 
                                                 const okCount = results.filter(Boolean).length;
                                                 const skipCount = results.filter((r) => r && r._skipReason === 'backend_jndi_error').length;
                                                 const errCount = (errors || []).length;
                                                 if (isStop()) {uiStatus('Stopped.');
                                                                dbg('run_stopped',{okCount,skipCount,errCount});}
-                                                else {uiStatus(`${okCount} cases added. YOB mismatches: ${yobMismatchCount}. Errors: ${errors.length}.`);}
+                                                else {uiStatus(`${okCount} Case.net cases + ${muniAdded} Municourt cases added. YOB mismatches: ${yobMismatchCount}. Errors: ${errors.length}.`);}
                                                 if (errCount) dbg('run_errors',{errors: errors.slice(0,12)});}
                                            catch (err) {dbg('fatal_pull',{msg: String(err?.message || err),stack: String(err?.stack || ''),});
                                                        uiStatus('*error*: ' + String(err?.message || err));}
