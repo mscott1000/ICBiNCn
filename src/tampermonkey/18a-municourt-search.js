@@ -2,6 +2,7 @@
    * Municourt supplemental search
    ************************************************************/
   const MUNI_BASE_URL = 'https://www.municourt.net';
+  const MUNI_NAME_SEARCH_URL = `${MUNI_BASE_URL}/?sel=0`;
 
   function gmHttpRequestText(details) {return new Promise((resolve,reject) => {if (typeof GM_xmlhttpRequest !== 'function') {reject(new Error('GM_xmlhttpRequest is unavailable'));
                                                                                 return;}
@@ -38,6 +39,10 @@
                                             const input = doc?.querySelector('input[name="__RequestVerificationToken"]');
                                             return norm(input?.value || input?.getAttribute('value') || '');}
 
+  function findRecaptchaResponse(docOrText) {const doc = typeof docOrText === 'string' ? htmlDocFromText(docOrText) : docOrText;
+                                            const input = doc?.querySelector('textarea[name="g-recaptcha-response"],input[name="g-recaptcha-response"]');
+                                            return norm(input?.value || input?.textContent || input?.getAttribute('value') || '');}
+
   function middleVariants(rawMiddle) {const mid = norm(rawMiddle || '');
                                       const out = [];
                                       const push = (v) => {const n = norm(v || '');
@@ -55,8 +60,8 @@
                                                                             const rows = [...table.querySelectorAll('tbody tr, tr')];
                                                                             for (const row of rows) {const tds = [...row.querySelectorAll('td')];
                                                                                                     if (!tds.length) continue;
-                                                                                                    const buttonInput = row.querySelector('input[name="button"][value]');
-                                                                                                    const button = norm(buttonInput?.value || '');
+                                                                                                    const buttonInput = row.querySelector('input[name="button"][value],button[name="button"][value]');
+                                                                                                    const button = norm(buttonInput?.value || buttonInput?.getAttribute('value') || '');
                                                                                                     if (!button || !/^fcv/i.test(button)) continue;
                                                                                                     const cells = tds.map((td) => norm(td.textContent || ''));
                                                                                                     const rec = {button};
@@ -93,10 +98,12 @@
                                                    const last = norm(params?.last || '');
                                                    const yob = norm(params?.yob || '');
                                                    if (!first || !last || !yob) return [];
-                                                   const homeResp = await gmHttpRequestText({method: 'GET',url: `${MUNI_BASE_URL}/`});
+                                                   const homeResp = await gmHttpRequestText({method: 'GET',url: MUNI_NAME_SEARCH_URL});
                                                    const homeDoc = htmlDocFromText(homeResp.responseText);
                                                    const token = findVerificationToken(homeDoc);
+                                                   const recaptchaResponse = findRecaptchaResponse(homeDoc);
                                                    if (!token) throw new Error('Municourt verification token not found');
+                                                   if (!recaptchaResponse) dbg('municourt_recaptcha_missing',{url: MUNI_NAME_SEARCH_URL});
 
                                                    const records = [];
                                                    const seen = new Set();
@@ -108,10 +115,12 @@
                                                                                                                payload.set('MiddleName',middle);
                                                                                                                payload.set('DobYear',yob);
                                                                                                                payload.set('AgcyId','');
+                                                                                                               if (recaptchaResponse) payload.set('g-recaptcha-response',recaptchaResponse);
                                                                                                                const resp = await gmHttpRequestText({method: 'POST',
                                                                                                                                                      url: `${MUNI_BASE_URL}/Results/SubmitByName`,
                                                                                                                                                      headers: {'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-                                                                                                                                                               'Referer': `${MUNI_BASE_URL}/`},
+                                                                                                                                                               'Origin': MUNI_BASE_URL,
+                                                                                                                                                               'Referer': MUNI_NAME_SEARCH_URL},
                                                                                                                                                      data: payload.toString()});
                                                                                                                if (resp.status >= 400) continue;
                                                                                                                const pageToken = findVerificationToken(resp.responseText) || token;
