@@ -343,6 +343,7 @@ dock.innerHTML = `
       <button class="moBtn" id="moJsonHelpBtn">Help</button>
       <div class="moBottomRow">
         <button class="moBtn" id="moJsonCopyDebug">Copy Debug</button>
+        <button class="moBtn" id="moJsonCopyCebug">Copy Cebug</button>
         <button class="moBtn" id="moJsonClearDebug">Clear Debug</button>
         <button class="moBtn" id="moJsonStop">Stop All</button>
         <button class="moBtn" id="moJsonClear">Clear Log</button>
@@ -369,7 +370,7 @@ helpPanel.innerHTML = `
   <div id="moJsonHelpBody">
 - Only one page of Case.net should be open while the tool is searching - multiple instances of the tool will try to read over each other's shoulder, and they will be bad at it.
 
-- It does not do Municourt, you still have to do that.
+- The name search now runs a final Municourt pass after Case.net passes finish.
 
 - Do NOT use an account logged into Case.net with a BAR number. I have no idea how the tool will interact with the website with that level of access, it seems like a privacy issue that I am not equipped to deal with professionally.
 

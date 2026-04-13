@@ -251,23 +251,12 @@
                                                                          if (nextLog.some((x) => x.caseKey === r.caseKey)) continue;
                                                                          nextLog.push(r);}
                                                 saveLog(nextLog);
-                                                let muniAdded = 0;
-                                                try {uiStatus('Reading Municourt supplement...');
-                                                     render();
-                                                     const muniEntries = await searchMunicourtEntriesByName(searchParams || {});
-                                                     for (const m of muniEntries) {if (!m?.caseKey) continue;
-                                                                                 if (nextLog.some((x) => x.caseKey === m.caseKey)) continue;
-                                                                                 nextLog.push(m);
-                                                                                 muniAdded += 1;}
-                                                     saveLog(nextLog);
-                                                     if (muniAdded) dbg('municourt_name_search_added',{count: muniAdded});}
-                                                catch (e) {dbg('municourt_name_search_error',{msg:String(e?.message || e)});} 
                                                 const okCount = results.filter(Boolean).length;
                                                 const skipCount = results.filter((r) => r && r._skipReason === 'backend_jndi_error').length;
                                                 const errCount = (errors || []).length;
                                                 if (isStop()) {uiStatus('Stopped.');
                                                                dbg('run_stopped',{okCount,skipCount,errCount});}
-                                                else {uiStatus(`${okCount} Case.net cases + ${muniAdded} Municourt cases added. YOB mismatches: ${yobMismatchCount}. Errors: ${errors.length}.`);}
+                                                else {uiStatus(`${okCount} Case.net cases added. YOB mismatches: ${yobMismatchCount}. Errors: ${errors.length}.`);}
                                                 if (errCount) dbg('run_errors',{errors: errors.slice(0,12)});}
                                            catch (err) {dbg('fatal_pull',{msg: String(err?.message || err),stack: String(err?.stack || ''),});
                                                        uiStatus('*error*: ' + String(err?.message || err));}
