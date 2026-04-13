@@ -1,64 +1,79 @@
-# Municourt HAR assessment (April 13, 2026)
+# Municourt HAR assessment (April 13, 2026, updated capture)
 
 ## Verdict
-The newly added HAR (`www.municourt.net.har`) is **not sufficient** to implement a reliable Municourt name-based pass (first name, last name, optional middle, year of birth).
+The updated HAR (`www.municourt.net.har`) is **closer**, but still **insufficient** to complete a robust Municourt **name-search pass** end-to-end.
 
-## What the HAR contains
-- Total requests in capture: **3**.
-- Hosts observed: `www.google.com` (2 reCAPTCHA requests), `www.municourt.net` (1 API request).
-- Municourt request captured:
+## What this updated HAR now gives us
+
+- Total requests in capture: **40**.
+- Name-search submission is now visible:
+  - `POST https://www.municourt.net/Results/SubmitByName`
+  - Form fields captured in request body include:
+    - `__RequestVerificationToken`
+    - `SelectedSearchType=0`
+    - `LastName`
+    - `FirstName`
+    - `MiddleName`
+    - `DobYear`
+    - `AgcyId`
+    - `g-recaptcha-response`
+- A follow-up full-case request is visible:
+  - `POST https://www.municourt.net/Results/FullCaseView`
+  - Includes `__RequestVerificationToken` and `button=fcv...`
+  - Response body text is present (HTML), so at least one detail-page shape can be reverse engineered.
+- A payment probe request is visible:
   - `POST https://www.municourt.net/api/v1/IPay/CaseIsPayable`
-  - Request body includes:
-    - `AgcyIdOri` (example: `MO095221J`)
-    - `CaseNumber` (example: `180294731-A`)
-    - `LastName` (example: `COHEN`)
-    - `id` (opaque token)
-- The HAR entry does **not** include the response body text for that API call (content metadata shows size/mime, but no payload text), so we cannot validate response schema.
+  - JSON request body includes `AgcyIdOri`, `CaseNumber`, `LastName`, and an opaque `id`.
 
-## Why that is insufficient for your goal
-Your intended flow is identity-driven search (first/last/middle + YOB), then retrieve eligible cases. The current capture only shows a **case-payment eligibility probe** (`CaseIsPayable`) that already assumes a known case number and agency/origin code.
+## What is still missing (blocking)
 
-Missing from the capture:
-1. The **name-search endpoint(s)** used after Submit By Name.
-2. Full request parameters for name search (including middle initial and birth year fields used by the UI).
-3. The response schema listing matching cases and required IDs.
-4. Any follow-up **case-detail endpoints** needed to enrich output.
-5. Any anti-automation requirements (reCAPTCHA token propagation, cookies/session dependencies, CSRF/header requirements).
+1. **SubmitByName response body is not present** in the HAR.
+   - We can see the request, but not the returned HTML/JSON that contains the result list and record identity values.
+2. **CaseIsPayable response body is not present** in the HAR.
+   - We cannot confirm the exact response schema (booleans, codes, payable status field names, or error states).
+3. **No explicit result-list extraction path is confirmed**.
+   - We need the exact fields from the name-search result page that map to per-case actions (e.g., `fcv...`, case number, agency/origin, internal IDs).
+4. **Captcha/session coupling is only partially observable**.
+   - The request includes captcha and anti-forgery token fields, but we still need to confirm replay/session requirements across a full run.
 
-## Mismatch with current implementation
-Current script logic in `18a-municourt-search.js` uses broad GET probing across guessed endpoints and query parameter names (`/Search`, `/CaseSearch`, `/CaseSearch/Results`, etc.). With the captured HAR indicating API-style POST calls plus reCAPTCHA activity, this likely explains why architectural flow works but zero Municourt records are returned.
+## Practical implication for implementation
 
-## What data is needed to add Municourt properly
-Capture a new HAR while running one successful manual search that returns known eligible cases, with **Preserve log** enabled and **Save all content** (request + response bodies):
+The updated HAR is enough to stop guessing the **search submit payload** (great progress), but not enough to implement the full pass confidently because we still cannot parse the canonical search-results payload reliably.
 
-1. **Search submission request**
-   - Exact URL/method.
-   - Headers.
-   - Full payload/form fields (first, last, middle, year of birth).
-   - Any captcha token field and where it comes from.
+## Step-by-step: how to capture the missing pieces correctly
 
-2. **Search results request/response**
-   - Endpoint and method.
-   - Full JSON/HTML payload returned.
-   - Case identity fields needed for downstream calls (case number, agency/origin code, internal IDs).
+Use these exact steps in Chrome/Edge DevTools to produce a decisive HAR:
 
-3. **Case detail / status calls** (for at least one returned case)
-   - Endpoint(s), methods, payloads, responses.
-   - Fields needed to derive your output columns (charge, status, warrant/payable indicators, dates, court, balance).
+1. Open DevTools → **Network**.
+2. Enable:
+   - **Preserve log**
+   - **Disable cache**
+   - (Optional but helpful) filter to `domain:municourt.net`.
+3. Start from a fresh tab/session for `https://www.municourt.net`.
+4. Perform one **known positive** name search (returns at least one case):
+   - Enter first/last/middle (if needed) and YOB.
+   - Complete captcha naturally.
+   - Submit and wait for results fully rendered.
+5. Click one result into **Full Case View** and let page finish loading.
+6. Trigger payable check path if UI does it (or click the related action once).
+7. In the Network table, click each key request and confirm **Preview/Response contains body text** for:
+   - `POST /Results/SubmitByName`
+   - Any request that returns the result list (if redirected or split)
+   - `POST /Results/FullCaseView`
+   - `POST /api/v1/IPay/CaseIsPayable`
+8. Export using **Save all as HAR with content**.
+9. Validate locally before sharing:
+   - HAR must include non-empty `response.content.text` for SubmitByName/result-list and CaseIsPayable.
+   - If those are empty, repeat capture (this is the current blocker).
+10. (Recommended) Repeat with one **known negative** name search (0 results) and export a second HAR with content.
 
-4. **Session/captcha bootstrap requests**
-   - Initial page loads that set cookies/tokens.
-   - reCAPTCHA solve/verification call chain and which token is ultimately attached to the search API request.
+## Minimum acceptance checklist for the next HAR
 
-5. **Negative + positive examples**
-   - One query that returns 0 cases and one query that returns cases, to distinguish filtering logic from transport issues.
+- [ ] `SubmitByName` request + response body present.
+- [ ] Result list response body present and parseable.
+- [ ] `FullCaseView` request + response body present.
+- [ ] `CaseIsPayable` request + response body present.
+- [ ] Tokens/cookies visible enough to map request dependencies.
+- [ ] At least one positive and one negative search example captured.
 
-## Practical implementation target once data is available
-A robust Municourt pass should be implemented as:
-- **Step A:** Open bootstrap/search page (obtain session cookies + hidden tokens).
-- **Step B:** Submit exact search request with user identity inputs.
-- **Step C:** Parse canonical result payload for matched cases.
-- **Step D:** For each case, call detail endpoints as needed and normalize into existing entry format.
-- **Step E:** Apply de-duplication and status mapping to current UI schema.
-
-Without those exact request/response shapes, any implementation would be speculative and likely miss real results again.
+Once those are present, implementation can switch from endpoint-guessing to deterministic parsing/mapping.
