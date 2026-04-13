@@ -64,6 +64,19 @@
                                                                            uiStatus('Debug Copied');
                                                                            render();
                                                                            return;}
+                                             if (id === 'moJsonCopyCebug') {const rows = loadDebug();
+                                                                           const diag = typeof getMuniDiag === 'function' ? (getMuniDiag() || null) : null;
+                                                                           const ns = loadNameState();
+                                                                           const cebug = {generatedAt: new Date().toISOString(),
+                                                                                          currentUrl: location.href,
+                                                                                          status: getStatus(),
+                                                                                          nameSearchState: ns,
+                                                                                          municourtDiag: diag,
+                                                                                          debugTail: rows.slice(-80),};
+                                                                           GM_setClipboard(JSON.stringify(cebug,null,2),'text');
+                                                                           uiStatus('Cebug Copied');
+                                                                           render();
+                                                                           return;}
                                              if (id === 'moJsonClearDebug') {saveDebug([]);
                                                                             clearLastHtml();
                                                                             uiStatus('Debug Cleared');
@@ -123,9 +136,21 @@
                                  const passKey = typeof pass === 'string' ? pass : pass?.caseType;
                                  const passMiddle = typeof pass === 'string' ? (st.params?.middle || '') : (pass?.middle || '');
                                  const passLabel = typeof pass === 'string' ? passKey : (pass?.label || passKey);
-                                 if (!passKey) {dbg('namesearch_done',{});
+                                 if (!passKey) {let muniAdded = 0;
+                                                try {uiStatus('Final pass complete. Reading Municourt...');
+                                                     render();
+                                                     const muniEntries = await searchMunicourtEntriesByName(st.params || {});
+                                                     const nextLog = loadLog();
+                                                     for (const m of muniEntries) {if (!m?.caseKey) continue;
+                                                                                 if (nextLog.some((x) => x.caseKey === m.caseKey)) continue;
+                                                                                 nextLog.push(m);
+                                                                                 muniAdded += 1;}
+                                                     saveLog(nextLog);
+                                                     dbg('namesearch_municourt_final_pass_done',{count: muniAdded});}
+                                                catch (e) {dbg('namesearch_municourt_final_pass_error',{msg:String(e?.message || e)});}
+                                                dbg('namesearch_done',{muniAdded});
                                                 clearNameState();
-                                                uiStatus('Done.');
+                                                uiStatus(`Done. Added ${muniAdded} Municourt case(s) on final pass.`);
                                                 render();
                                                 return;}
                                  if (isNameSearchPage()) {if (st.step === 'submitted_waiting_results') {const age = Date.now() - Number(st.submittedAt || 0);

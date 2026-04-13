@@ -3,6 +3,13 @@
    ************************************************************/
   const MUNI_BASE_URL = 'https://www.municourt.net';
   const MUNI_NAME_SEARCH_URL = `${MUNI_BASE_URL}/?sel=0`;
+  const MUNI_DIAG_KEY = '__municourt_diag_v1';
+
+  function setMuniDiag(diag = {}) {try {window[MUNI_DIAG_KEY] = {ts: new Date().toISOString(),...diag};}
+                                   catch {}}
+
+  function getMuniDiag() {try {return window[MUNI_DIAG_KEY] || null;}
+                          catch {return null;}}
 
   function gmHttpRequestText(details) {return new Promise((resolve,reject) => {if (typeof GM_xmlhttpRequest !== 'function') {reject(new Error('GM_xmlhttpRequest is unavailable'));
                                                                                 return;}
@@ -107,8 +114,11 @@
 
                                                    const records = [];
                                                    const seen = new Set();
-                                                   for (const middle of middleVariants(params?.middle || '')) {const payload = new URLSearchParams();
-                                                                                                               payload.set('__RequestVerificationToken',token);
+                                                   let rollingToken = token;
+                                                   const attemptedMiddles = [];
+                                                   for (const middle of middleVariants(params?.middle || '')) {attemptedMiddles.push(middle || '(blank)');
+                                                                                                               const payload = new URLSearchParams();
+                                                                                                               payload.set('__RequestVerificationToken',rollingToken);
                                                                                                                payload.set('SelectedSearchType','0');
                                                                                                                payload.set('LastName',last);
                                                                                                                payload.set('FirstName',first);
@@ -123,11 +133,20 @@
                                                                                                                                                                'Referer': MUNI_NAME_SEARCH_URL},
                                                                                                                                                      data: payload.toString()});
                                                                                                                if (resp.status >= 400) continue;
-                                                                                                               const pageToken = findVerificationToken(resp.responseText) || token;
+                                                                                                               const pageToken = findVerificationToken(resp.responseText) || rollingToken;
+                                                                                                               rollingToken = pageToken || rollingToken;
                                                                                                                for (const rec of parseMuniNameResultsHtml(resp.responseText)) {const key = `${rec.button}|${rec.resultRowText || ''}`;
                                                                                                                                                                                 if (seen.has(key)) continue;
                                                                                                                                                                                 seen.add(key);
                                                                                                                                                                                 records.push({record: rec,source: resp.finalUrl || `${MUNI_BASE_URL}/Results/SubmitByName`,token: pageToken});}}
+                                                   setMuniDiag({phase:'submit_by_name',
+                                                                first,
+                                                                middleInput: norm(params?.middle || ''),
+                                                                last,
+                                                                yob,
+                                                                attemptedMiddles,
+                                                                candidateCount: records.length,
+                                                                hadRecaptcha: !!recaptchaResponse});
                                                    return records;}
 
   async function attachMuniFullCaseDetails(items) {const out = [];
@@ -244,7 +263,8 @@
                                                                                                                         catch (e) {dbg('municourt_query_failed',{url,msg:String(e?.message || e)});}}}
                                                      return records;}
 
-  async function searchMunicourtEntriesByName(params) {let candidates = [];
+  async function searchMunicourtEntriesByName(params) {setMuniDiag({phase:'start',params: {...params}});
+                                                      let candidates = [];
                                                       try {candidates = await searchMuniViaSubmitByName(params || {});
                                                            candidates = await attachMuniFullCaseDetails(candidates);}
                                                       catch (e) {dbg('municourt_submit_by_name_failed',{msg:String(e?.message || e)});}
@@ -255,6 +275,11 @@
                                                                                  if (!entry.caseKey || seen.has(entry.caseKey)) continue;
                                                                                  seen.add(entry.caseKey);
                                                                                  entries.push(entry);}
+                                                      setMuniDiag({phase:'done',
+                                                                   params: {...params},
+                                                                   candidateCount: candidates.length,
+                                                                   entryCount: entries.length,
+                                                                   sampleCaseKeys: entries.slice(0,5).map((e) => e.caseKey)});
                                                       return entries;}
 
   async function searchMunicourtEntriesByCaseNumbers(batch) {const entries = [];

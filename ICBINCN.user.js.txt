@@ -1755,6 +1755,7 @@ dock.innerHTML = `
       <button class="moBtn" id="moJsonHelpBtn">Help</button>
       <div class="moBottomRow">
         <button class="moBtn" id="moJsonCopyDebug">Copy Debug</button>
+        <button class="moBtn" id="moJsonCopyCebug">Copy Cebug</button>
         <button class="moBtn" id="moJsonClearDebug">Clear Debug</button>
         <button class="moBtn" id="moJsonStop">Stop All</button>
         <button class="moBtn" id="moJsonClear">Clear Log</button>
@@ -1781,7 +1782,7 @@ helpPanel.innerHTML = `
   <div id="moJsonHelpBody">
 - Only one page of Case.net should be open while the tool is searching - multiple instances of the tool will try to read over each other's shoulder, and they will be bad at it.
 
-- It does not do Municourt, you still have to do that.
+- The name search now runs a final Municourt pass after Case.net passes finish.
 
 - Do NOT use an account logged into Case.net with a BAR number. I have no idea how the tool will interact with the website with that level of access, it seems like a privacy issue that I am not equipped to deal with professionally.
 
@@ -2160,23 +2161,12 @@ function render() {const log = loadLog();
                                                                          if (nextLog.some((x) => x.caseKey === r.caseKey)) continue;
                                                                          nextLog.push(r);}
                                                 saveLog(nextLog);
-                                                let muniAdded = 0;
-                                                try {uiStatus('Reading Municourt supplement...');
-                                                     render();
-                                                     const muniEntries = await searchMunicourtEntriesByName(searchParams || {});
-                                                     for (const m of muniEntries) {if (!m?.caseKey) continue;
-                                                                                 if (nextLog.some((x) => x.caseKey === m.caseKey)) continue;
-                                                                                 nextLog.push(m);
-                                                                                 muniAdded += 1;}
-                                                     saveLog(nextLog);
-                                                     if (muniAdded) dbg('municourt_name_search_added',{count: muniAdded});}
-                                                catch (e) {dbg('municourt_name_search_error',{msg:String(e?.message || e)});} 
                                                 const okCount = results.filter(Boolean).length;
                                                 const skipCount = results.filter((r) => r && r._skipReason === 'backend_jndi_error').length;
                                                 const errCount = (errors || []).length;
                                                 if (isStop()) {uiStatus('Stopped.');
                                                                dbg('run_stopped',{okCount,skipCount,errCount});}
-                                                else {uiStatus(`${okCount} Case.net cases + ${muniAdded} Municourt cases added. YOB mismatches: ${yobMismatchCount}. Errors: ${errors.length}.`);}
+                                                else {uiStatus(`${okCount} Case.net cases added. YOB mismatches: ${yobMismatchCount}. Errors: ${errors.length}.`);}
                                                 if (errCount) dbg('run_errors',{errors: errors.slice(0,12)});}
                                            catch (err) {dbg('fatal_pull',{msg: String(err?.message || err),stack: String(err?.stack || ''),});
                                                        uiStatus('*error*: ' + String(err?.message || err));}
@@ -2186,6 +2176,14 @@ function render() {const log = loadLog();
    * Municourt supplemental search
    ************************************************************/
   const MUNI_BASE_URL = 'https://www.municourt.net';
+  const MUNI_NAME_SEARCH_URL = `${MUNI_BASE_URL}/?sel=0`;
+  const MUNI_DIAG_KEY = '__municourt_diag_v1';
+
+  function setMuniDiag(diag = {}) {try {window[MUNI_DIAG_KEY] = {ts: new Date().toISOString(),...diag};}
+                                   catch {}}
+
+  function getMuniDiag() {try {return window[MUNI_DIAG_KEY] || null;}
+                          catch {return null;}}
 
   function gmHttpRequestText(details) {return new Promise((resolve,reject) => {if (typeof GM_xmlhttpRequest !== 'function') {reject(new Error('GM_xmlhttpRequest is unavailable'));
                                                                                 return;}
@@ -2222,6 +2220,10 @@ function render() {const log = loadLog();
                                             const input = doc?.querySelector('input[name="__RequestVerificationToken"]');
                                             return norm(input?.value || input?.getAttribute('value') || '');}
 
+  function findRecaptchaResponse(docOrText) {const doc = typeof docOrText === 'string' ? htmlDocFromText(docOrText) : docOrText;
+                                            const input = doc?.querySelector('textarea[name="g-recaptcha-response"],input[name="g-recaptcha-response"]');
+                                            return norm(input?.value || input?.textContent || input?.getAttribute('value') || '');}
+
   function middleVariants(rawMiddle) {const mid = norm(rawMiddle || '');
                                       const out = [];
                                       const push = (v) => {const n = norm(v || '');
@@ -2239,8 +2241,8 @@ function render() {const log = loadLog();
                                                                             const rows = [...table.querySelectorAll('tbody tr, tr')];
                                                                             for (const row of rows) {const tds = [...row.querySelectorAll('td')];
                                                                                                     if (!tds.length) continue;
-                                                                                                    const buttonInput = row.querySelector('input[name="button"][value]');
-                                                                                                    const button = norm(buttonInput?.value || '');
+                                                                                                    const buttonInput = row.querySelector('input[name="button"][value],button[name="button"][value]');
+                                                                                                    const button = norm(buttonInput?.value || buttonInput?.getAttribute('value') || '');
                                                                                                     if (!button || !/^fcv/i.test(button)) continue;
                                                                                                     const cells = tds.map((td) => norm(td.textContent || ''));
                                                                                                     const rec = {button};
@@ -2277,32 +2279,48 @@ function render() {const log = loadLog();
                                                    const last = norm(params?.last || '');
                                                    const yob = norm(params?.yob || '');
                                                    if (!first || !last || !yob) return [];
-                                                   const homeResp = await gmHttpRequestText({method: 'GET',url: `${MUNI_BASE_URL}/`});
+                                                   const homeResp = await gmHttpRequestText({method: 'GET',url: MUNI_NAME_SEARCH_URL});
                                                    const homeDoc = htmlDocFromText(homeResp.responseText);
                                                    const token = findVerificationToken(homeDoc);
+                                                   const recaptchaResponse = findRecaptchaResponse(homeDoc);
                                                    if (!token) throw new Error('Municourt verification token not found');
+                                                   if (!recaptchaResponse) dbg('municourt_recaptcha_missing',{url: MUNI_NAME_SEARCH_URL});
 
                                                    const records = [];
                                                    const seen = new Set();
-                                                   for (const middle of middleVariants(params?.middle || '')) {const payload = new URLSearchParams();
-                                                                                                               payload.set('__RequestVerificationToken',token);
+                                                   let rollingToken = token;
+                                                   const attemptedMiddles = [];
+                                                   for (const middle of middleVariants(params?.middle || '')) {attemptedMiddles.push(middle || '(blank)');
+                                                                                                               const payload = new URLSearchParams();
+                                                                                                               payload.set('__RequestVerificationToken',rollingToken);
                                                                                                                payload.set('SelectedSearchType','0');
                                                                                                                payload.set('LastName',last);
                                                                                                                payload.set('FirstName',first);
                                                                                                                payload.set('MiddleName',middle);
                                                                                                                payload.set('DobYear',yob);
                                                                                                                payload.set('AgcyId','');
+                                                                                                               if (recaptchaResponse) payload.set('g-recaptcha-response',recaptchaResponse);
                                                                                                                const resp = await gmHttpRequestText({method: 'POST',
                                                                                                                                                      url: `${MUNI_BASE_URL}/Results/SubmitByName`,
                                                                                                                                                      headers: {'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-                                                                                                                                                               'Referer': `${MUNI_BASE_URL}/`},
+                                                                                                                                                               'Origin': MUNI_BASE_URL,
+                                                                                                                                                               'Referer': MUNI_NAME_SEARCH_URL},
                                                                                                                                                      data: payload.toString()});
                                                                                                                if (resp.status >= 400) continue;
-                                                                                                               const pageToken = findVerificationToken(resp.responseText) || token;
+                                                                                                               const pageToken = findVerificationToken(resp.responseText) || rollingToken;
+                                                                                                               rollingToken = pageToken || rollingToken;
                                                                                                                for (const rec of parseMuniNameResultsHtml(resp.responseText)) {const key = `${rec.button}|${rec.resultRowText || ''}`;
                                                                                                                                                                                 if (seen.has(key)) continue;
                                                                                                                                                                                 seen.add(key);
                                                                                                                                                                                 records.push({record: rec,source: resp.finalUrl || `${MUNI_BASE_URL}/Results/SubmitByName`,token: pageToken});}}
+                                                   setMuniDiag({phase:'submit_by_name',
+                                                                first,
+                                                                middleInput: norm(params?.middle || ''),
+                                                                last,
+                                                                yob,
+                                                                attemptedMiddles,
+                                                                candidateCount: records.length,
+                                                                hadRecaptcha: !!recaptchaResponse});
                                                    return records;}
 
   async function attachMuniFullCaseDetails(items) {const out = [];
@@ -2419,7 +2437,8 @@ function render() {const log = loadLog();
                                                                                                                         catch (e) {dbg('municourt_query_failed',{url,msg:String(e?.message || e)});}}}
                                                      return records;}
 
-  async function searchMunicourtEntriesByName(params) {let candidates = [];
+  async function searchMunicourtEntriesByName(params) {setMuniDiag({phase:'start',params: {...params}});
+                                                      let candidates = [];
                                                       try {candidates = await searchMuniViaSubmitByName(params || {});
                                                            candidates = await attachMuniFullCaseDetails(candidates);}
                                                       catch (e) {dbg('municourt_submit_by_name_failed',{msg:String(e?.message || e)});}
@@ -2430,6 +2449,11 @@ function render() {const log = loadLog();
                                                                                  if (!entry.caseKey || seen.has(entry.caseKey)) continue;
                                                                                  seen.add(entry.caseKey);
                                                                                  entries.push(entry);}
+                                                      setMuniDiag({phase:'done',
+                                                                   params: {...params},
+                                                                   candidateCount: candidates.length,
+                                                                   entryCount: entries.length,
+                                                                   sampleCaseKeys: entries.slice(0,5).map((e) => e.caseKey)});
                                                       return entries;}
 
   async function searchMunicourtEntriesByCaseNumbers(batch) {const entries = [];
@@ -2508,6 +2532,19 @@ function render() {const log = loadLog();
                                                                            uiStatus('Debug Copied');
                                                                            render();
                                                                            return;}
+                                             if (id === 'moJsonCopyCebug') {const rows = loadDebug();
+                                                                           const diag = typeof getMuniDiag === 'function' ? (getMuniDiag() || null) : null;
+                                                                           const ns = loadNameState();
+                                                                           const cebug = {generatedAt: new Date().toISOString(),
+                                                                                          currentUrl: location.href,
+                                                                                          status: getStatus(),
+                                                                                          nameSearchState: ns,
+                                                                                          municourtDiag: diag,
+                                                                                          debugTail: rows.slice(-80),};
+                                                                           GM_setClipboard(JSON.stringify(cebug,null,2),'text');
+                                                                           uiStatus('Cebug Copied');
+                                                                           render();
+                                                                           return;}
                                              if (id === 'moJsonClearDebug') {saveDebug([]);
                                                                             clearLastHtml();
                                                                             uiStatus('Debug Cleared');
@@ -2567,9 +2604,21 @@ function render() {const log = loadLog();
                                  const passKey = typeof pass === 'string' ? pass : pass?.caseType;
                                  const passMiddle = typeof pass === 'string' ? (st.params?.middle || '') : (pass?.middle || '');
                                  const passLabel = typeof pass === 'string' ? passKey : (pass?.label || passKey);
-                                 if (!passKey) {dbg('namesearch_done',{});
+                                 if (!passKey) {let muniAdded = 0;
+                                                try {uiStatus('Final pass complete. Reading Municourt...');
+                                                     render();
+                                                     const muniEntries = await searchMunicourtEntriesByName(st.params || {});
+                                                     const nextLog = loadLog();
+                                                     for (const m of muniEntries) {if (!m?.caseKey) continue;
+                                                                                 if (nextLog.some((x) => x.caseKey === m.caseKey)) continue;
+                                                                                 nextLog.push(m);
+                                                                                 muniAdded += 1;}
+                                                     saveLog(nextLog);
+                                                     dbg('namesearch_municourt_final_pass_done',{count: muniAdded});}
+                                                catch (e) {dbg('namesearch_municourt_final_pass_error',{msg:String(e?.message || e)});}
+                                                dbg('namesearch_done',{muniAdded});
                                                 clearNameState();
-                                                uiStatus('Done.');
+                                                uiStatus(`Done. Added ${muniAdded} Municourt case(s) on final pass.`);
                                                 render();
                                                 return;}
                                  if (isNameSearchPage()) {if (st.step === 'submitted_waiting_results') {const age = Date.now() - Number(st.submittedAt || 0);
