@@ -40,39 +40,82 @@ The updated HAR (`www.municourt.net.har`) is **closer**, but still **insufficien
 
 The updated HAR is enough to stop guessing the **search submit payload** (great progress), but not enough to implement the full pass confidently because we still cannot parse the canonical search-results payload reliably.
 
-## Step-by-step: how to capture the missing pieces correctly
+## Step-by-step: exact capture procedure (button-by-button)
 
-Use these exact steps in Chrome/Edge DevTools to produce a decisive HAR:
+The current HAR appears to be **sanitized**, which removes response bodies we need.  
+If your DevTools only offers **"Export HAR (sanitized)"**, do this exact fallback procedure:
 
-1. Open DevTools → **Network**.
-2. Enable:
-   - **Preserve log**
-   - **Disable cache**
-   - (Optional but helpful) filter to `domain:municourt.net`.
-3. Start from a fresh tab/session for `https://www.municourt.net`.
-4. Perform one **known positive** name search (returns at least one case):
-   - Enter first/last/middle (if needed) and YOB.
-   - Complete captcha naturally.
-   - Submit and wait for results fully rendered.
-5. Click one result into **Full Case View** and let page finish loading.
-6. Trigger payable check path if UI does it (or click the related action once).
-7. In the Network table, click each key request and confirm **Preview/Response contains body text** for:
-   - `POST /Results/SubmitByName`
-   - Any request that returns the result list (if redirected or split)
-   - `POST /Results/FullCaseView`
-   - `POST /api/v1/IPay/CaseIsPayable`
-8. Export using **Save all as HAR with content**.
-9. Validate locally before sharing:
-   - HAR must include non-empty `response.content.text` for SubmitByName/result-list and CaseIsPayable.
-   - If those are empty, repeat capture (this is the current blocker).
-10. (Recommended) Repeat with one **known negative** name search (0 results) and export a second HAR with content.
+### Part A — Record the traffic
+
+1. Open `https://www.municourt.net`.
+2. Press **F12** (or right-click page → **Inspect**) to open DevTools.
+3. Click the **Network** tab.
+4. At the top of Network:
+   - make sure the **record button** is red (recording on),
+   - check **Preserve log**,
+   - check **Disable cache**.
+5. Click the **clear** icon (circle with slash) so the request list is empty.
+6. In the filter box, type: `municourt.net`
+7. On the site, run one **real name search** that returns at least one case:
+   - enter name/YOB,
+   - complete captcha,
+   - submit.
+8. Open one result in **Full Case View**.
+9. Trigger the payable check once (if there is a pay/check-payable button).
+
+### Part B — Export what DevTools allows
+
+10. In Network request table, right-click any row.
+11. Click **Export HAR (sanitized)**.
+12. Save file (example: `municourt-sanitized.har`).
+
+### Part C — Manually capture the missing response bodies (required)
+
+For each request below, do **all** of these actions:
+- `POST /Results/SubmitByName`
+- `POST /Results/FullCaseView`
+- `POST /api/v1/IPay/CaseIsPayable`
+
+Steps per request:
+
+1. Click the request row in Network.
+2. Click the **Headers** tab:
+   - in **Request URL**, confirm endpoint path.
+3. Click the **Payload** tab:
+   - right-click inside payload → **Copy all** (or copy visible payload text).
+4. Click the **Response** tab:
+   - click inside response body,
+   - **Ctrl+A**, **Ctrl+C** to copy entire response body.
+5. Paste into a text file using this template:
+
+```txt
+=== REQUEST: /Results/SubmitByName ===
+Request URL: <paste url>
+Request Method: <paste method>
+Request Payload:
+<paste payload>
+Response Body:
+<paste full response>
+=== END REQUEST ===
+```
+
+6. Repeat for the other two endpoints.
+
+### Part D — Deliverables to share
+
+Provide all of the following:
+
+1. `municourt-sanitized.har`
+2. `municourt-manual-responses.txt` (the copied payload + full response bodies)
+
+Without Part C, implementation is blocked because sanitized HAR omits exactly the fields needed for deterministic parsing.
 
 ## Minimum acceptance checklist for the next HAR
 
-- [ ] `SubmitByName` request + response body present.
+- [ ] `SubmitByName` request + response body present (from HAR or manual copy).
 - [ ] Result list response body present and parseable.
-- [ ] `FullCaseView` request + response body present.
-- [ ] `CaseIsPayable` request + response body present.
+- [ ] `FullCaseView` request + response body present (from HAR or manual copy).
+- [ ] `CaseIsPayable` request + response body present (from HAR or manual copy).
 - [ ] Tokens/cookies visible enough to map request dependencies.
 - [ ] At least one positive and one negative search example captured.
 
