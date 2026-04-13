@@ -110,7 +110,15 @@
                                                    const token = findVerificationToken(homeDoc);
                                                    const recaptchaResponse = findRecaptchaResponse(homeDoc);
                                                    if (!token) throw new Error('Municourt verification token not found');
-                                                   if (!recaptchaResponse) dbg('municourt_recaptcha_missing',{url: MUNI_NAME_SEARCH_URL});
+                                                   if (!recaptchaResponse) {dbg('municourt_recaptcha_missing',{url: MUNI_NAME_SEARCH_URL});
+                                                                            setMuniDiag({phase:'blocked_recaptcha_missing',
+                                                                                         first,
+                                                                                         middleInput: norm(params?.middle || ''),
+                                                                                         last,
+                                                                                         yob,
+                                                                                         hadRecaptcha: false,
+                                                                                         reason: 'SubmitByName requires g-recaptcha-response'});
+                                                                            return [];}
 
                                                    const records = [];
                                                    const seen = new Set();

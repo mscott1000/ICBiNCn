@@ -139,8 +139,8 @@
                                  if (!passKey) {let muniAdded = 0;
                                                 try {uiStatus('Final pass complete. Reading Municourt...');
                                                      render();
-                                                     const muniEntries = await searchMunicourtEntriesByName(st.params || {});
                                                      const nextLog = loadLog();
+                                                     const muniEntries = await searchMunicourtEntriesByName(st.params || {});
                                                      for (const m of muniEntries) {if (!m?.caseKey) continue;
                                                                                  if (nextLog.some((x) => x.caseKey === m.caseKey)) continue;
                                                                                  nextLog.push(m);
