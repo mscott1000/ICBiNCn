@@ -4,12 +4,26 @@
   const MUNI_BASE_URL = 'https://www.municourt.net';
   const MUNI_NAME_SEARCH_URL = `${MUNI_BASE_URL}/?sel=0`;
   const MUNI_DIAG_KEY = '__municourt_diag_v1';
+  const MUNI_REMOTE_TASK_KEY = '__muni_remote_name_task_v1';
+  const MUNI_REMOTE_RESULT_KEY = '__muni_remote_name_result_v1';
 
   function setMuniDiag(diag = {}) {try {window[MUNI_DIAG_KEY] = {ts: new Date().toISOString(),...diag};}
                                    catch {}}
 
   function getMuniDiag() {try {return window[MUNI_DIAG_KEY] || null;}
                           catch {return null;}}
+
+  function gmGetValueSafe(key,defaultValue = null) {if (typeof GM_getValue !== 'function') return Promise.resolve(defaultValue);
+                                                    try {const out = GM_getValue(key,defaultValue);
+                                                         if (out && typeof out.then === 'function') return out.catch(() => defaultValue);
+                                                         return Promise.resolve(out);}
+                                                    catch {return Promise.resolve(defaultValue);}}
+
+  function gmSetValueSafe(key,value) {if (typeof GM_setValue !== 'function') return Promise.resolve();
+                                      try {const out = GM_setValue(key,value);
+                                           if (out && typeof out.then === 'function') return out.then(() => {}).catch(() => {});
+                                           return Promise.resolve();}
+                                      catch {return Promise.resolve();}}
 
   function gmHttpRequestText(details) {return new Promise((resolve,reject) => {if (typeof GM_xmlhttpRequest !== 'function') {reject(new Error('GM_xmlhttpRequest is unavailable'));
                                                                                 return;}
@@ -65,6 +79,34 @@
                                             if (isText) return extractRecaptchaTokenFromRawHtml(docOrText);
                                             return '';}
 
+  function findRecaptchaSiteKey(docOrText) {const raw = typeof docOrText === 'string' ? String(docOrText || '') : String(docOrText?.documentElement?.outerHTML || '');
+                                            const fromStorage = norm(window?.sessionStorage?.recaptchaSiteKey || '');
+                                            if (fromStorage) return fromStorage;
+                                            const m = raw.match(/recaptchaSiteKey\s*=\s*["']([^"']+)["']/i) || raw.match(/api\.js\?render=([A-Za-z0-9_-]+)/i);
+                                            return norm(m?.[1] || '');}
+
+  async function ensureGrecaptchaReady(siteKey) {if (!siteKey || typeof document === 'undefined') return false;
+                                                 if (window?.grecaptcha?.execute) return true;
+                                                 const existing = document.querySelector('script[data-muni-recaptcha-loader="1"]') || document.querySelector(`script[src*="recaptcha/api.js?render=${siteKey}"]`);
+                                                 if (!existing) {const script = document.createElement('script');
+                                                                script.src = `https://www.google.com/recaptcha/api.js?render=${encodeURIComponent(siteKey)}`;
+                                                                script.async = true;
+                                                                script.defer = true;
+                                                                script.setAttribute('data-muni-recaptcha-loader','1');
+                                                                document.head.appendChild(script);}
+                                                 const start = Date.now();
+                                                 while (Date.now() - start < 15000) {if (window?.grecaptcha?.execute) return true;
+                                                                                     await sleep(150);}
+                                                 return false;}
+
+  async function getRecaptchaTokenForSubmit(siteKey) {if (!siteKey) return '';
+                                                      const ready = await ensureGrecaptchaReady(siteKey);
+                                                      if (!ready || !window?.grecaptcha?.execute) return '';
+                                                      try {const token = await window.grecaptcha.execute(siteKey,{action: 'submit'});
+                                                           return norm(token || '');}
+                                                      catch (e) {dbg('municourt_recaptcha_execute_error',{msg: String(e?.message || e)});
+                                                                 return '';}}
+
   function middleVariants(rawMiddle) {const mid = norm(rawMiddle || '');
                                       const out = [];
                                       const push = (v) => {const n = norm(v || '');
@@ -116,14 +158,16 @@
                                                                                                                     else lines.push(`${tds[0]} ${tds.slice(1).join(' ')}`.trim());}
                                                      return lines.join('\n').replace(/\n{3,}/g,'\n\n').trim();}
 
-  async function searchMuniViaSubmitByName(params) {const first = norm(params?.first || '');
+  async function searchMuniViaSubmitByName(params,options = {}) {const first = norm(params?.first || '');
                                                    const last = norm(params?.last || '');
                                                    const yob = norm(params?.yob || '');
                                                    if (!first || !last || !yob) return [];
                                                    const homeResp = await gmHttpRequestText({method: 'GET',url: MUNI_NAME_SEARCH_URL});
                                                    const homeDoc = htmlDocFromText(homeResp.responseText);
                                                    const token = findVerificationToken(homeDoc);
-                                                   const recaptchaResponse = findRecaptchaResponse(homeDoc);
+                                                   let recaptchaResponse = findRecaptchaResponse(homeDoc);
+                                                   const recaptchaSiteKey = findRecaptchaSiteKey(homeResp.responseText);
+                                                   if (!recaptchaResponse && options?.allowBrowserRecaptcha && /municourt\.net$/i.test(location.hostname || '')) recaptchaResponse = await getRecaptchaTokenForSubmit(recaptchaSiteKey);
                                                    if (!token) throw new Error('Municourt verification token not found');
                                                    if (!recaptchaResponse) dbg('municourt_recaptcha_missing',{url: MUNI_NAME_SEARCH_URL});
 
@@ -158,11 +202,40 @@
                                                                 first,
                                                                 middleInput: norm(params?.middle || ''),
                                                                 last,
-                                                                yob,
-                                                                attemptedMiddles,
-                                                                candidateCount: records.length,
-                                                                hadRecaptcha: !!recaptchaResponse});
+                                                               yob,
+                                                               attemptedMiddles,
+                                                               candidateCount: records.length,
+                                                               hadRecaptcha: !!recaptchaResponse});
                                                    return records;}
+
+  async function runMunicourtRemoteWorkerIfNeeded() {if (!/municourt\.net$/i.test(location.hostname || '')) return;
+                                                     const task = await gmGetValueSafe(MUNI_REMOTE_TASK_KEY,null);
+                                                     if (!task?.id || task?.done) return;
+                                                     const now = Date.now();
+                                                     const createdAt = Number(task?.createdAt || 0);
+                                                     if (createdAt && now - createdAt > 120000) return;
+                                                     if (task?.claimedAt && now - Number(task.claimedAt || 0) < 30000) return;
+                                                     await gmSetValueSafe(MUNI_REMOTE_TASK_KEY,{...task,claimedAt: now,claimedUrl: location.href});
+                                                     try {const candidates = await searchMuniViaSubmitByName(task?.params || {},{allowBrowserRecaptcha: true});
+                                                          const detailed = await attachMuniFullCaseDetails(candidates);
+                                                          const payload = {id: task.id,createdAt: now,candidates: detailed};
+                                                          await gmSetValueSafe(MUNI_REMOTE_RESULT_KEY,payload);
+                                                          await gmSetValueSafe(MUNI_REMOTE_TASK_KEY,{...task,done: true,doneAt: Date.now()});}
+                                                     catch (e) {await gmSetValueSafe(MUNI_REMOTE_RESULT_KEY,{id: task.id,createdAt: now,error: String(e?.message || e)});
+                                                                 await gmSetValueSafe(MUNI_REMOTE_TASK_KEY,{...task,done: true,doneAt: Date.now(),error: String(e?.message || e)});}}
+
+  async function searchMuniViaRemoteWorker(params) {const taskId = `muni-${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
+                                                    await gmSetValueSafe(MUNI_REMOTE_RESULT_KEY,null);
+                                                    await gmSetValueSafe(MUNI_REMOTE_TASK_KEY,{id: taskId,createdAt: Date.now(),params: {...params}});
+                                                    try {window.open(MUNI_NAME_SEARCH_URL,'_blank','noopener,noreferrer');}
+                                                    catch {}
+                                                    const waitMs = 45000;
+                                                    const start = Date.now();
+                                                    while (Date.now() - start < waitMs) {const res = await gmGetValueSafe(MUNI_REMOTE_RESULT_KEY,null);
+                                                                                         if (res?.id === taskId) return Array.isArray(res?.candidates) ? res.candidates : [];
+                                                                                         await sleep(500);}
+                                                    dbg('municourt_remote_timeout',{waitMs});
+                                                    return [];}
 
   async function attachMuniFullCaseDetails(items) {const out = [];
                                                   for (const item of items || []) {const rec = item?.record || {};
@@ -281,6 +354,7 @@
   async function searchMunicourtEntriesByName(params) {setMuniDiag({phase:'start',params: {...params}});
                                                       let candidates = [];
                                                       try {candidates = await searchMuniViaSubmitByName(params || {});
+                                                           if (!candidates.length && !/municourt\.net$/i.test(location.hostname || '')) candidates = await searchMuniViaRemoteWorker(params || {});
                                                            candidates = await attachMuniFullCaseDetails(candidates);}
                                                       catch (e) {dbg('municourt_submit_by_name_failed',{msg:String(e?.message || e)});}
                                                       if (!candidates.length) candidates = await fetchMunicourtCandidates(params || {});
@@ -294,8 +368,10 @@
                                                                    params: {...params},
                                                                    candidateCount: candidates.length,
                                                                    entryCount: entries.length,
-                                                                   sampleCaseKeys: entries.slice(0,5).map((e) => e.caseKey)});
+                                                           sampleCaseKeys: entries.slice(0,5).map((e) => e.caseKey)});
                                                       return entries;}
+
+  if (/municourt\.net$/i.test(location.hostname || '')) setTimeout(() => {runMunicourtRemoteWorkerIfNeeded().catch(() => {});},300);
 
   async function searchMunicourtEntriesByCaseNumbers(batch) {const entries = [];
                                                             const seen = new Set();
