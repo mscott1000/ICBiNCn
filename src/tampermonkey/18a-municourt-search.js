@@ -46,9 +46,24 @@
                                             const input = doc?.querySelector('input[name="__RequestVerificationToken"]');
                                             return norm(input?.value || input?.getAttribute('value') || '');}
 
-  function findRecaptchaResponse(docOrText) {const doc = typeof docOrText === 'string' ? htmlDocFromText(docOrText) : docOrText;
+  function extractRecaptchaTokenFromRawHtml(htmlText) {const raw = String(htmlText || '');
+                                                       if (!raw) return '';
+                                                       const patterns = [/name=["']g-recaptcha-response["'][^>]*value=["']([^"']{100,})["']/i,
+                                                                         /name=["']g-recaptcha-response["'][^>]*>([^<]{100,})</i,
+                                                                         /\\x22g-recaptcha-response\\x22\s*,\s*\\x22([^\\]{100,})\\x22/i,
+                                                                         /"g-recaptcha-response"\s*,\s*"([^"]{100,})"/i];
+                                                       for (const re of patterns) {const m = raw.match(re);
+                                                                                   const token = norm(m?.[1] || '');
+                                                                                   if (token.length >= 100) return token;}
+                                                       return '';}
+
+  function findRecaptchaResponse(docOrText) {const isText = typeof docOrText === 'string';
+                                            const doc = isText ? htmlDocFromText(docOrText) : docOrText;
                                             const input = doc?.querySelector('textarea[name="g-recaptcha-response"],input[name="g-recaptcha-response"]');
-                                            return norm(input?.value || input?.textContent || input?.getAttribute('value') || '');}
+                                            const directToken = norm(input?.value || input?.textContent || input?.getAttribute('value') || '');
+                                            if (directToken) return directToken;
+                                            if (isText) return extractRecaptchaTokenFromRawHtml(docOrText);
+                                            return '';}
 
   function middleVariants(rawMiddle) {const mid = norm(rawMiddle || '');
                                       const out = [];
