@@ -1,0 +1,2670 @@
+Fetch/XHR Responses -
+newHeaderData.do:
+{
+"courtId": "CT22",
+"caseNumber": "704581692",
+"caseDesc": "CITY OF ST. LOUIS V ROBERT DARNELL FOSTER JR",
+"courtDesc": "22nd Judicial Circuit",
+"location": "City of St. Louis Municipal",
+"filingDate": "03/20/2025",
+"formattedFilingDate": "03/20/2025",
+"predCode": "Z^",
+"protectionOrder": false,
+"caseType": "Municipal/ Ordinance - see Charges",
+"caseSecurity": "2",
+"caseTypeCode": "O5",
+"vineCode": "434",
+"locnCode": "S2",
+"courtCode": "22",
+"vineDisplay": "N",
+"vineID": "704581692",
+"caseDispositionDetail": {
+"dispositionDescription": "Not Disposed"
+},
+"caseChargeList": [
+{
+"caseId": "704581692",
+"subCase": "704581692",
+"chargeNumber": "1",
+"chargeFilingDate": "02/27/2025",
+"chargeCode": "ORD304.0-431N202154.0",
+"ncicCode": "99",
+"chargePIDM": "91245346",
+"chargeDescription": "Speeding (31-35 Mph Over)",
+"chargePredCode": "ZMUN",
+"chargeCodeLevel": "OR",
+"chargeCodeLevelDescription": "Ordinance",
+"ticketNumber": "704581692",
+"boundover": false
+}
+],
+"judgeDetails": {
+"lastName": "STELZER",
+"firstName": "ROBERT",
+"middleInitials": "J.",
+"formattedName": "STELZER, ROBERT J."
+},
+"circuitCaseNo": [],
+"courtType": "C",
+"disposed": false,
+"pleaAndPayInd": "Y",
+"legalFileAccepted": false,
+"paperAccepted": false,
+"confidential": false,
+"displayJudgeNotes": false,
+"caseNoteCount": 0,
+"displayLegalFileViewer": false,
+"displayFileViewer": false,
+"canUserSeePublicDocuments": false,
+"canUserSeeCaseDocuments": false,
+"canUserSeeEnoticeHistory": false,
+"canSelectDocket": false,
+"canSeeEcfLinks": false,
+"canSeeLegalFileLinks": false,
+"isTicket": false,
+"dismissed": "F",
+"fileId": "",
+"isTrafficOrCriminal": "y"
+}
+docketEntriesSearch.do?displayOption=A&sortOption=D&hasChange=false:
+{
+"caseNumber": "704581692",
+"protectionOrder": false,
+"locnCode": "S2",
+"courtCode": "22",
+"docketTabModelList": [
+{
+"whichone": 18,
+"filingDate": "03/25/2026",
+"docketDesc": "Order",
+"predCode": "ZORD",
+"sequenceNumber": 18,
+"filingPartyFullName": "",
+"docketCode": "ORDER",
+"dtypPredCode": "Z^",
+"hrngOutcome": "N",
+"documentId": 0,
+"associatedDocketInfoDetails": [],
+"associatedDocketScheduledInfo": [],
+"document": [],
+"behalfOfPartiesNames": "",
+"canSeeCaseDocuments": false,
+"confidential": false
+},
+{
+"whichone": 17,
+"filingDate": "03/13/2026",
+"docketDesc": "Notice of Court Hearing Sent",
+"sequenceNumber": 17,
+"filingPartyFullName": "",
+"docketCode": "NHEAR",
+"dtypPredCode": "Z^",
+"hrngOutcome": "N",
+"documentId": 0,
+"associatedDocketInfoDetails": [],
+"associatedDocketScheduledInfo": [],
+"document": [
+{
+"recordId": 12951084,
+"docketSeq": 17,
+"documentId": 16577904,
+"documentSecurityLevel": 1,
+"documentTitle": "704581692_NOTICE OF NEW COURT DATE_MU150_SMC_2026-Mar-13_FINAL.pdf",
+"documentExtension": "pdf"
+}
+],
+"behalfOfPartiesNames": "",
+"canSeeCaseDocuments": true,
+"confidential": false
+},
+{
+"whichone": 16,
+"filingDate": "03/13/2026",
+"docketDesc": "Arraignment Scheduled",
+"predCode": "ZHESC",
+"sequenceNumber": 16,
+"filingPartyFullName": "",
+"docketCode": "SCAR",
+"dtypPredCode": "Z^",
+"hrngOutcome": "N",
+"documentId": 0,
+"associatedDocketInfoDetails": [],
+"associatedDocketScheduledInfo": [
+{
+"associatedDate": "04/13/2026",
+"associatedDescription": "Arraignment",
+"associatedText": "City of St. Louis Municipal",
+"associatedTime": "3:00 PM",
+"associatedName": "ROBERT J. STELZER",
+"assocFilingPartyLastName": "STELZER",
+"assocFilingPartyFirstName": "ROBERT",
+"assocFilingPartyMidInitial": "J.",
+"assocDockSeq": 16,
+"documentId": 0,
+"mainDockSeq": 0,
+"assocDtypPredCode": "C"
+}
+],
+"document": [],
+"behalfOfPartiesNames": "",
+"canSeeCaseDocuments": false,
+"confidential": false
+},
+{
+"whichone": 15,
+"filingDate": "03/13/2026",
+"docketDesc": "Warrant Recalled/Withdrawn",
+"predCode": "ZWNST",
+"sequenceNumber": 15,
+"docketText": "Document ID - 25-22MFA-14858; Served To - ROBERT DARNELL FOSTER; Served Date - 03/13/2026; Served Time - 11:53:32; Service Type - OT; Reason Description - RECL; Service Text -",
+"filingPartyFullName": "",
+"docketCode": "SSWR",
+"dtypPredCode": "Z^",
+"hrngOutcome": "N",
+"documentId": 0,
+"associatedDocketInfoDetails": [],
+"associatedDocketScheduledInfo": [],
+"document": [
+{
+"recordId": 12951074,
+"docketSeq": 15,
+"documentId": 16577890,
+"documentSecurityLevel": 1,
+"documentTitle": "704581692ORDER TO RECALL WARRANTMU59SMC2026-Mar-13FINAL",
+"documentExtension": "PDF"
+}
+],
+"behalfOfPartiesNames": "",
+"canSeeCaseDocuments": true,
+"confidential": false
+},
+{
+"whichone": 14,
+"filingDate": "03/05/2026",
+"docketDesc": "Judge Assigned",
+"predCode": "ZFILE",
+"sequenceNumber": 13,
+"docketText": "PRIOR JUDGE ASSIGNED TO CIRCUIT",
+"filingPartyFullName": "",
+"docketCode": "FJUDG",
+"dtypPredCode": "Z^",
+"hrngOutcome": "N",
+"documentId": 0,
+"associatedDocketInfoDetails": [],
+"associatedDocketScheduledInfo": [],
+"document": [],
+"behalfOfPartiesNames": "",
+"canSeeCaseDocuments": false,
+"confidential": false
+},
+{
+"whichone": 13,
+"filingDate": "09/10/2025",
+"docketDesc": "Hearing Held",
+"predCode": "ZHEHE",
+"sequenceNumber": 11,
+"docketText": "City appears by City Counselor. Summons previously issued. Defendant fails to appear on summons date. Warrant ordered. $50 CASH ONLY BOND. ",
+"filingPartyFullName": "",
+"docketCode": "HRHR",
+"dtypPredCode": "Z^",
+"hrngOutcome": "N",
+"documentId": 0,
+"associatedDocketInfoDetails": [
+{
+"associatedDate": "06/13/2025",
+"associatedDescription": "Show Cause Hearing Scheduled",
+"assocDockSeq": 11,
+"documentId": 0,
+"viewDoc": "N",
+"confInd": "N",
+"mainDockSeq": 8,
+"assocDocketCode": "ZHESC",
+"document": []
+}
+],
+"associatedDocketScheduledInfo": [
+{
+"associatedDate": "09/10/2025",
+"associatedDescription": "Show Cause Hearing",
+"associatedText": "City of St. Louis Municipal",
+"associatedTime": "3:00 PM",
+"associatedName": "KARMA JOHNSON",
+"assocFilingPartyLastName": "JOHNSON",
+"assocFilingPartyFirstName": "KARMA",
+"assocDockSeq": 11,
+"documentId": 0,
+"mainDockSeq": 0,
+"assocDtypPredCode": "R"
+}
+],
+"document": [],
+"behalfOfPartiesNames": "",
+"canSeeCaseDocuments": false,
+"confidential": false
+},
+{
+"whichone": 12,
+"filingDate": "09/10/2025",
+"docketDesc": "Warrant Issd Failure to Appear",
+"predCode": "ZSUIS",
+"sequenceNumber": 12,
+"docketText": "Document ID: 25-22MFA-14858, for FOSTER, ROBERT DARNELL CASH ONLY ",
+"filingPartyFullName": "",
+"docketCode": "SIFTA",
+"dtypPredCode": "Z^",
+"hrngOutcome": "N",
+"documentId": 0,
+"associatedDocketInfoDetails": [],
+"associatedDocketScheduledInfo": [],
+"document": [],
+"behalfOfPartiesNames": "",
+"canSeeCaseDocuments": false,
+"confidential": false
+},
+{
+"whichone": 11,
+"filingDate": "09/10/2025",
+"docketDesc": "Order",
+"predCode": "ZORD",
+"sequenceNumber": 14,
+"docketText": "SUGGESTED BY OSCA",
+"filingPartyFullName": "",
+"docketCode": "ORDER",
+"dtypPredCode": "Z^",
+"hrngOutcome": "N",
+"documentId": 0,
+"associatedDocketInfoDetails": [],
+"associatedDocketScheduledInfo": [],
+"document": [],
+"behalfOfPartiesNames": "",
+"canSeeCaseDocuments": false,
+"confidential": false
+},
+{
+"whichone": 10,
+"filingDate": "07/03/2025",
+"docketDesc": "Returned Mail-Undeliverable",
+"predCode": "ZFILE",
+"sequenceNumber": 10,
+"filingPartyFullName": "",
+"docketCode": "FRMUD",
+"dtypPredCode": "Z^",
+"hrngOutcome": "N",
+"documentId": 0,
+"associatedDocketInfoDetails": [],
+"associatedDocketScheduledInfo": [],
+"document": [
+{
+"recordId": 11896241,
+"docketSeq": 10,
+"documentId": 15417287,
+"documentSecurityLevel": 1,
+"documentTitle": "RETURN MAIL",
+"documentExtension": "PDF"
+}
+],
+"behalfOfPartiesNames": "",
+"canSeeCaseDocuments": true,
+"confidential": false
+},
+{
+"whichone": 9,
+"filingDate": "06/13/2025",
+"docketDesc": "Show Cause Hearing Scheduled",
+"predCode": "ZHESC",
+"sequenceNumber": 8,
+"filingPartyFullName": "",
+"docketCode": "SCSH",
+"dtypPredCode": "Z^",
+"hrngOutcome": "N",
+"documentId": 0,
+"associatedDocketInfoDetails": [
+{
+"associatedDate": "09/10/2025",
+"associatedDescription": "Hearing Held",
+"associatedText": "City appears by City Counselor. Summons previously issued. Defendant fails to appear on summons date. Warrant ordered. $50 CASH ONLY BOND. ",
+"assocDockSeq": 11,
+"documentId": 0,
+"viewDoc": "N",
+"confInd": "N",
+"mainDockSeq": 8,
+"assocDocketCode": "ZHEHE",
+"document": []
+}
+],
+"associatedDocketScheduledInfo": [
+{
+"associatedDate": "09/10/2025",
+"associatedDescription": "Show Cause Hearing",
+"associatedText": "City of St. Louis Municipal",
+"associatedTime": "3:00 PM",
+"associatedName": "KARMA JOHNSON",
+"assocFilingPartyLastName": "JOHNSON",
+"assocFilingPartyFirstName": "KARMA",
+"assocDockSeq": 8,
+"documentId": 0,
+"mainDockSeq": 0,
+"assocDtypPredCode": "C"
+}
+],
+"document": [],
+"behalfOfPartiesNames": "",
+"canSeeCaseDocuments": false,
+"confidential": false
+},
+{
+"whichone": 8,
+"filingDate": "06/13/2025",
+"docketDesc": "Hearing Held",
+"predCode": "ZHEHE",
+"sequenceNumber": 7,
+"docketText": "City appears by City Counselor. Defendant fails to appear. Summons issued. ",
+"filingPartyFullName": "",
+"docketCode": "HRHR",
+"dtypPredCode": "Z^",
+"hrngOutcome": "N",
+"documentId": 0,
+"associatedDocketInfoDetails": [
+{
+"associatedDate": "04/29/2025",
+"associatedDescription": "Show Cause Hearing Scheduled",
+"assocDockSeq": 7,
+"documentId": 0,
+"viewDoc": "N",
+"confInd": "N",
+"mainDockSeq": 5,
+"assocDocketCode": "ZHESC",
+"document": []
+}
+],
+"associatedDocketScheduledInfo": [
+{
+"associatedDate": "06/13/2025",
+"associatedDescription": "Show Cause Hearing",
+"associatedText": "City of St. Louis Municipal",
+"associatedTime": "3:00 PM",
+"associatedName": "KARMA JOHNSON",
+"assocFilingPartyLastName": "JOHNSON",
+"assocFilingPartyFirstName": "KARMA",
+"assocDockSeq": 7,
+"documentId": 0,
+"mainDockSeq": 0,
+"assocDtypPredCode": "R"
+}
+],
+"document": [],
+"behalfOfPartiesNames": "",
+"canSeeCaseDocuments": false,
+"confidential": false
+},
+{
+"whichone": 7,
+"filingDate": "06/13/2025",
+"docketDesc": "Show Cause Issd-Fail to Appear",
+"predCode": "ZSUIS",
+"sequenceNumber": 9,
+"docketText": "Document ID: 25-MU81-18669, for FOSTER, ROBERT DARNELL ",
+"filingPartyFullName": "",
+"docketCode": "SISFA",
+"dtypPredCode": "Z^",
+"hrngOutcome": "N",
+"documentId": 0,
+"associatedDocketInfoDetails": [],
+"associatedDocketScheduledInfo": [],
+"document": [
+{
+"recordId": 11842291,
+"docketSeq": 9,
+"documentId": 15351181,
+"documentSecurityLevel": 1,
+"documentTitle": "704581692_25-MU81-18669_SHOW CAUSE SUMMONS-FAIL APPEAR_MU81_SMC_2025-Jun-16_FINAL.pdf",
+"documentExtension": "PDF"
+}
+],
+"behalfOfPartiesNames": "",
+"canSeeCaseDocuments": true,
+"confidential": false
+},
+{
+"whichone": 6,
+"filingDate": "04/29/2025",
+"docketDesc": "Show Cause Hearing Scheduled",
+"predCode": "ZHESC",
+"sequenceNumber": 5,
+"filingPartyFullName": "",
+"docketCode": "SCSH",
+"dtypPredCode": "Z^",
+"hrngOutcome": "N",
+"documentId": 0,
+"associatedDocketInfoDetails": [
+{
+"associatedDate": "06/13/2025",
+"associatedDescription": "Hearing Held",
+"associatedText": "City appears by City Counselor. Defendant fails to appear. Summons issued. ",
+"assocDockSeq": 7,
+"documentId": 0,
+"viewDoc": "N",
+"confInd": "N",
+"mainDockSeq": 5,
+"assocDocketCode": "ZHEHE",
+"document": []
+}
+],
+"associatedDocketScheduledInfo": [
+{
+"associatedDate": "06/13/2025",
+"associatedDescription": "Show Cause Hearing",
+"associatedText": "City of St. Louis Municipal",
+"associatedTime": "3:00 PM",
+"associatedName": "KARMA JOHNSON",
+"assocFilingPartyLastName": "JOHNSON",
+"assocFilingPartyFirstName": "KARMA",
+"assocDockSeq": 5,
+"documentId": 0,
+"mainDockSeq": 0,
+"assocDtypPredCode": "C"
+}
+],
+"document": [],
+"behalfOfPartiesNames": "",
+"canSeeCaseDocuments": false,
+"confidential": false
+},
+{
+"whichone": 5,
+"filingDate": "04/28/2025",
+"docketDesc": "Show Cause Issd-Fail to Appear",
+"predCode": "ZSUIS",
+"sequenceNumber": 6,
+"docketText": "Document ID: 25-MU81-10072, for FOSTER, ROBERT DARNELL City appears by City Counselor. Defendant fails to appear. Summons issued. ",
+"filingPartyFullName": "",
+"docketCode": "SISFA",
+"dtypPredCode": "Z^",
+"hrngOutcome": "N",
+"documentId": 0,
+"associatedDocketInfoDetails": [],
+"associatedDocketScheduledInfo": [],
+"document": [
+{
+"recordId": 11688649,
+"docketSeq": 6,
+"documentId": 15166924,
+"documentSecurityLevel": 1,
+"documentTitle": "704581692_25-MU81-10072_SHOW CAUSE SUMMONS-FAIL APPEAR_MU81_SMC_2025-Apr-29_FINAL.pdf",
+"documentExtension": "PDF"
+}
+],
+"behalfOfPartiesNames": "",
+"canSeeCaseDocuments": true,
+"confidential": false
+},
+{
+"whichone": 4,
+"filingDate": "04/28/2025",
+"docketDesc": "Hearing Held",
+"predCode": "ZHEHE",
+"sequenceNumber": 4,
+"docketText": "City appears by City Counselor. Defendant fails to appear. Summons issued. ",
+"filingPartyFullName": "",
+"docketCode": "HRHR",
+"dtypPredCode": "Z^",
+"hrngOutcome": "N",
+"documentId": 0,
+"associatedDocketInfoDetails": [
+{
+"associatedDate": "03/25/2025",
+"associatedDescription": "Initial Appearance",
+"associatedText": "REVISED Event Information: New Judge Id: 65552; New Event: SCPM; New EventDate: Mon Apr 28 00:00:00 CDT 2025; New EventTime: 13:00:00; New EventRoom: CRTRM4; New EventLocation: S2; New EventText: DEFENDANT SHALL APPEAR IN PERSON IF FINES NOT PAID IN FULL. SO ORDERED.; New EventType: REC; \nREVISED Event Information: New Judge Id: 65552; New Event: SCIR; New EventDate: Mon Apr 28 00:00:00 CDT 2025; New EventTime: 15:00:00; New EventRoom: CRTRM4; New EventLocation: S2; New EventText: Defendant shall appear in person. SO ORDERED.; New EventType: REC; ",
+"assocDockSeq": 4,
+"documentId": 0,
+"viewDoc": "N",
+"confInd": "N",
+"mainDockSeq": 3,
+"assocDocketCode": "ZHESC",
+"document": []
+}
+],
+"associatedDocketScheduledInfo": [
+{
+"associatedDate": "04/28/2025",
+"associatedDescription": "Initial Appearance",
+"associatedText": "City of St. Louis Municipal",
+"associatedTime": "3:00 PM",
+"associatedName": "KARMA JOHNSON",
+"assocFilingPartyLastName": "JOHNSON",
+"assocFilingPartyFirstName": "KARMA",
+"assocDockSeq": 4,
+"documentId": 0,
+"mainDockSeq": 0,
+"assocDtypPredCode": "R"
+}
+],
+"document": [],
+"behalfOfPartiesNames": "",
+"canSeeCaseDocuments": false,
+"confidential": false
+},
+{
+"whichone": 3,
+"filingDate": "03/25/2025",
+"docketDesc": "Initial Appearance",
+"predCode": "ZHESC",
+"sequenceNumber": 3,
+"docketText": "REVISED Event Information: New Judge Id: 65552; New Event: SCPM; New EventDate: Mon Apr 28 00:00:00 CDT 2025; New EventTime: 13:00:00; New EventRoom: CRTRM4; New EventLocation: S2; New EventText: DEFENDANT SHALL APPEAR IN PERSON IF FINES NOT PAID IN FULL. SO ORDERED.; New EventType: REC; \nREVISED Event Information: New Judge Id: 65552; New Event: SCIR; New EventDate: Mon Apr 28 00:00:00 CDT 2025; New EventTime: 15:00:00; New EventRoom: CRTRM4; New EventLocation: S2; New EventText: Defendant shall appear in person. SO ORDERED.; New EventType: REC; ",
+"filingPartyFullName": "",
+"docketCode": "SCIR",
+"dtypPredCode": "Z^",
+"hrngOutcome": "N",
+"documentId": 0,
+"associatedDocketInfoDetails": [
+{
+"associatedDate": "04/28/2025",
+"associatedDescription": "Hearing Held",
+"associatedText": "City appears by City Counselor. Defendant fails to appear. Summons issued. ",
+"assocDockSeq": 4,
+"documentId": 0,
+"viewDoc": "N",
+"confInd": "N",
+"mainDockSeq": 3,
+"assocDocketCode": "ZHEHE",
+"document": []
+}
+],
+"associatedDocketScheduledInfo": [
+{
+"associatedDate": "04/28/2025",
+"associatedDescription": "Initial Appearance",
+"associatedText": "City of St. Louis Municipal",
+"associatedTime": "3:00 PM",
+"associatedName": "KARMA JOHNSON",
+"assocFilingPartyLastName": "JOHNSON",
+"assocFilingPartyFirstName": "KARMA",
+"assocDockSeq": 3,
+"documentId": 0,
+"mainDockSeq": 0,
+"assocDtypPredCode": "C"
+}
+],
+"document": [],
+"behalfOfPartiesNames": "",
+"canSeeCaseDocuments": false,
+"confidential": false
+},
+{
+"whichone": 2,
+"filingDate": "03/20/2025",
+"docketDesc": "Information Filed by Citation",
+"predCode": "ZFICA",
+"sequenceNumber": 2,
+"filingPartyTypeCode": "PA",
+"filingPartyLastName": "SYKORA",
+"filingPartyFirstName": "RICHARD",
+"filingPartyMidInitial": "FRANCIS",
+"filingPartySuffix": " ",
+"filingPartyFullName": "RICHARD FRANCIS SYKORA",
+"docketCode": "AUTT",
+"dtypPredCode": "Z^",
+"eventDesc": "Prosecuting Attorney",
+"displaySortSeq": "8",
+"hrngOutcome": "N",
+"documentId": 0,
+"associatedDocketInfoDetails": [
+{
+"associatedDate": "03/20/2025",
+"associatedDescription": "CRIFS/Unredacted Document",
+"assocDockSeq": 2,
+"documentId": 0,
+"viewDoc": "N",
+"confInd": "N",
+"mainDockSeq": 1,
+"assocDocketCode": "ZFILE",
+"document": []
+}
+],
+"associatedDocketScheduledInfo": [],
+"document": [
+{
+"recordId": 11574460,
+"docketSeq": 2,
+"documentId": 15029266,
+"documentSecurityLevel": 1,
+"documentTitle": "Document PDF (2)",
+"documentExtension": "PDF"
+}
+],
+"behalfOfPartiesNames": "",
+"canSeeCaseDocuments": true,
+"confidential": false
+},
+{
+"whichone": 1,
+"filingDate": "03/20/2025",
+"docketDesc": "CRIFS/Unredacted Document",
+"predCode": "ZFILE",
+"sequenceNumber": 1,
+"filingPartyTypeCode": "PA",
+"filingPartyLastName": "SYKORA",
+"filingPartyFirstName": "RICHARD",
+"filingPartyMidInitial": "FRANCIS",
+"filingPartySuffix": " ",
+"filingPartyFullName": "RICHARD FRANCIS SYKORA",
+"docketCode": "FREDI",
+"dtypPredCode": "Z^",
+"eventDesc": "Prosecuting Attorney",
+"displaySortSeq": "8",
+"hrngOutcome": "N",
+"documentId": 0,
+"associatedDocketInfoDetails": [
+{
+"associatedDate": "03/20/2025",
+"associatedDescription": "Information Filed by Citation",
+"assocDockSeq": 2,
+"documentId": 0,
+"viewDoc": "Y",
+"confInd": "N",
+"mainDockSeq": 1,
+"assocDocketCode": "ZFICA",
+"document": [
+{
+"recordId": 11574460,
+"docketSeq": 2,
+"documentId": 15029266,
+"documentSecurityLevel": 1,
+"documentTitle": "Document PDF (2)",
+"documentExtension": "PDF"
+}
+]
+}
+],
+"associatedDocketScheduledInfo": [],
+"document": [],
+"behalfOfPartiesNames": "",
+"canSeeCaseDocuments": false,
+"confidential": false
+}
+],
+"courtType": "C",
+"disposed": false,
+"legalFileAccepted": false,
+"paperAccepted": false,
+"confidential": false,
+"displayJudgeNotes": false,
+"caseNoteCount": 0,
+"displayLegalFileViewer": false,
+"displayFileViewer": false,
+"canUserSeePublicDocuments": true,
+"canUserSeeCaseDocuments": false,
+"canUserSeeEnoticeHistory": false,
+"canSelectDocket": false,
+"canSeeEcfLinks": false,
+"canSeeLegalFileLinks": false,
+"isTicket": false
+}{
+"caseNumber": "704581692",
+"protectionOrder": false,
+"locnCode": "S2",
+"courtCode": "22",
+"docketTabModelList": [
+{
+"whichone": 18,
+"filingDate": "03/25/2026",
+"docketDesc": "Order",
+"predCode": "ZORD",
+"sequenceNumber": 18,
+"filingPartyFullName": "",
+"docketCode": "ORDER",
+"dtypPredCode": "Z^",
+"hrngOutcome": "N",
+"documentId": 0,
+"associatedDocketInfoDetails": [],
+"associatedDocketScheduledInfo": [],
+"document": [],
+"behalfOfPartiesNames": "",
+"canSeeCaseDocuments": false,
+"confidential": false
+},
+{
+"whichone": 17,
+"filingDate": "03/13/2026",
+"docketDesc": "Notice of Court Hearing Sent",
+"sequenceNumber": 17,
+"filingPartyFullName": "",
+"docketCode": "NHEAR",
+"dtypPredCode": "Z^",
+"hrngOutcome": "N",
+"documentId": 0,
+"associatedDocketInfoDetails": [],
+"associatedDocketScheduledInfo": [],
+"document": [
+{
+"recordId": 12951084,
+"docketSeq": 17,
+"documentId": 16577904,
+"documentSecurityLevel": 1,
+"documentTitle": "704581692_NOTICE OF NEW COURT DATE_MU150_SMC_2026-Mar-13_FINAL.pdf",
+"documentExtension": "pdf"
+}
+],
+"behalfOfPartiesNames": "",
+"canSeeCaseDocuments": true,
+"confidential": false
+},
+{
+"whichone": 16,
+"filingDate": "03/13/2026",
+"docketDesc": "Arraignment Scheduled",
+"predCode": "ZHESC",
+"sequenceNumber": 16,
+"filingPartyFullName": "",
+"docketCode": "SCAR",
+"dtypPredCode": "Z^",
+"hrngOutcome": "N",
+"documentId": 0,
+"associatedDocketInfoDetails": [],
+"associatedDocketScheduledInfo": [
+{
+"associatedDate": "04/13/2026",
+"associatedDescription": "Arraignment",
+"associatedText": "City of St. Louis Municipal",
+"associatedTime": "3:00 PM",
+"associatedName": "ROBERT J. STELZER",
+"assocFilingPartyLastName": "STELZER",
+"assocFilingPartyFirstName": "ROBERT",
+"assocFilingPartyMidInitial": "J.",
+"assocDockSeq": 16,
+"documentId": 0,
+"mainDockSeq": 0,
+"assocDtypPredCode": "C"
+}
+],
+"document": [],
+"behalfOfPartiesNames": "",
+"canSeeCaseDocuments": false,
+"confidential": false
+},
+{
+"whichone": 15,
+"filingDate": "03/13/2026",
+"docketDesc": "Warrant Recalled/Withdrawn",
+"predCode": "ZWNST",
+"sequenceNumber": 15,
+"docketText": "Document ID - 25-22MFA-14858; Served To - ROBERT DARNELL FOSTER; Served Date - 03/13/2026; Served Time - 11:53:32; Service Type - OT; Reason Description - RECL; Service Text -",
+"filingPartyFullName": "",
+"docketCode": "SSWR",
+"dtypPredCode": "Z^",
+"hrngOutcome": "N",
+"documentId": 0,
+"associatedDocketInfoDetails": [],
+"associatedDocketScheduledInfo": [],
+"document": [
+{
+"recordId": 12951074,
+"docketSeq": 15,
+"documentId": 16577890,
+"documentSecurityLevel": 1,
+"documentTitle": "704581692ORDER TO RECALL WARRANTMU59SMC2026-Mar-13FINAL",
+"documentExtension": "PDF"
+}
+],
+"behalfOfPartiesNames": "",
+"canSeeCaseDocuments": true,
+"confidential": false
+},
+{
+"whichone": 14,
+"filingDate": "03/05/2026",
+"docketDesc": "Judge Assigned",
+"predCode": "ZFILE",
+"sequenceNumber": 13,
+"docketText": "PRIOR JUDGE ASSIGNED TO CIRCUIT",
+"filingPartyFullName": "",
+"docketCode": "FJUDG",
+"dtypPredCode": "Z^",
+"hrngOutcome": "N",
+"documentId": 0,
+"associatedDocketInfoDetails": [],
+"associatedDocketScheduledInfo": [],
+"document": [],
+"behalfOfPartiesNames": "",
+"canSeeCaseDocuments": false,
+"confidential": false
+},
+{
+"whichone": 13,
+"filingDate": "09/10/2025",
+"docketDesc": "Hearing Held",
+"predCode": "ZHEHE",
+"sequenceNumber": 11,
+"docketText": "City appears by City Counselor. Summons previously issued. Defendant fails to appear on summons date. Warrant ordered. $50 CASH ONLY BOND. ",
+"filingPartyFullName": "",
+"docketCode": "HRHR",
+"dtypPredCode": "Z^",
+"hrngOutcome": "N",
+"documentId": 0,
+"associatedDocketInfoDetails": [
+{
+"associatedDate": "06/13/2025",
+"associatedDescription": "Show Cause Hearing Scheduled",
+"assocDockSeq": 11,
+"documentId": 0,
+"viewDoc": "N",
+"confInd": "N",
+"mainDockSeq": 8,
+"assocDocketCode": "ZHESC",
+"document": []
+}
+],
+"associatedDocketScheduledInfo": [
+{
+"associatedDate": "09/10/2025",
+"associatedDescription": "Show Cause Hearing",
+"associatedText": "City of St. Louis Municipal",
+"associatedTime": "3:00 PM",
+"associatedName": "KARMA JOHNSON",
+"assocFilingPartyLastName": "JOHNSON",
+"assocFilingPartyFirstName": "KARMA",
+"assocDockSeq": 11,
+"documentId": 0,
+"mainDockSeq": 0,
+"assocDtypPredCode": "R"
+}
+],
+"document": [],
+"behalfOfPartiesNames": "",
+"canSeeCaseDocuments": false,
+"confidential": false
+},
+{
+"whichone": 12,
+"filingDate": "09/10/2025",
+"docketDesc": "Warrant Issd Failure to Appear",
+"predCode": "ZSUIS",
+"sequenceNumber": 12,
+"docketText": "Document ID: 25-22MFA-14858, for FOSTER, ROBERT DARNELL CASH ONLY ",
+"filingPartyFullName": "",
+"docketCode": "SIFTA",
+"dtypPredCode": "Z^",
+"hrngOutcome": "N",
+"documentId": 0,
+"associatedDocketInfoDetails": [],
+"associatedDocketScheduledInfo": [],
+"document": [],
+"behalfOfPartiesNames": "",
+"canSeeCaseDocuments": false,
+"confidential": false
+},
+{
+"whichone": 11,
+"filingDate": "09/10/2025",
+"docketDesc": "Order",
+"predCode": "ZORD",
+"sequenceNumber": 14,
+"docketText": "SUGGESTED BY OSCA",
+"filingPartyFullName": "",
+"docketCode": "ORDER",
+"dtypPredCode": "Z^",
+"hrngOutcome": "N",
+"documentId": 0,
+"associatedDocketInfoDetails": [],
+"associatedDocketScheduledInfo": [],
+"document": [],
+"behalfOfPartiesNames": "",
+"canSeeCaseDocuments": false,
+"confidential": false
+},
+{
+"whichone": 10,
+"filingDate": "07/03/2025",
+"docketDesc": "Returned Mail-Undeliverable",
+"predCode": "ZFILE",
+"sequenceNumber": 10,
+"filingPartyFullName": "",
+"docketCode": "FRMUD",
+"dtypPredCode": "Z^",
+"hrngOutcome": "N",
+"documentId": 0,
+"associatedDocketInfoDetails": [],
+"associatedDocketScheduledInfo": [],
+"document": [
+{
+"recordId": 11896241,
+"docketSeq": 10,
+"documentId": 15417287,
+"documentSecurityLevel": 1,
+"documentTitle": "RETURN MAIL",
+"documentExtension": "PDF"
+}
+],
+"behalfOfPartiesNames": "",
+"canSeeCaseDocuments": true,
+"confidential": false
+},
+{
+"whichone": 9,
+"filingDate": "06/13/2025",
+"docketDesc": "Show Cause Hearing Scheduled",
+"predCode": "ZHESC",
+"sequenceNumber": 8,
+"filingPartyFullName": "",
+"docketCode": "SCSH",
+"dtypPredCode": "Z^",
+"hrngOutcome": "N",
+"documentId": 0,
+"associatedDocketInfoDetails": [
+{
+"associatedDate": "09/10/2025",
+"associatedDescription": "Hearing Held",
+"associatedText": "City appears by City Counselor. Summons previously issued. Defendant fails to appear on summons date. Warrant ordered. $50 CASH ONLY BOND. ",
+"assocDockSeq": 11,
+"documentId": 0,
+"viewDoc": "N",
+"confInd": "N",
+"mainDockSeq": 8,
+"assocDocketCode": "ZHEHE",
+"document": []
+}
+],
+"associatedDocketScheduledInfo": [
+{
+"associatedDate": "09/10/2025",
+"associatedDescription": "Show Cause Hearing",
+"associatedText": "City of St. Louis Municipal",
+"associatedTime": "3:00 PM",
+"associatedName": "KARMA JOHNSON",
+"assocFilingPartyLastName": "JOHNSON",
+"assocFilingPartyFirstName": "KARMA",
+"assocDockSeq": 8,
+"documentId": 0,
+"mainDockSeq": 0,
+"assocDtypPredCode": "C"
+}
+],
+"document": [],
+"behalfOfPartiesNames": "",
+"canSeeCaseDocuments": false,
+"confidential": false
+},
+{
+"whichone": 8,
+"filingDate": "06/13/2025",
+"docketDesc": "Hearing Held",
+"predCode": "ZHEHE",
+"sequenceNumber": 7,
+"docketText": "City appears by City Counselor. Defendant fails to appear. Summons issued. ",
+"filingPartyFullName": "",
+"docketCode": "HRHR",
+"dtypPredCode": "Z^",
+"hrngOutcome": "N",
+"documentId": 0,
+"associatedDocketInfoDetails": [
+{
+"associatedDate": "04/29/2025",
+"associatedDescription": "Show Cause Hearing Scheduled",
+"assocDockSeq": 7,
+"documentId": 0,
+"viewDoc": "N",
+"confInd": "N",
+"mainDockSeq": 5,
+"assocDocketCode": "ZHESC",
+"document": []
+}
+],
+"associatedDocketScheduledInfo": [
+{
+"associatedDate": "06/13/2025",
+"associatedDescription": "Show Cause Hearing",
+"associatedText": "City of St. Louis Municipal",
+"associatedTime": "3:00 PM",
+"associatedName": "KARMA JOHNSON",
+"assocFilingPartyLastName": "JOHNSON",
+"assocFilingPartyFirstName": "KARMA",
+"assocDockSeq": 7,
+"documentId": 0,
+"mainDockSeq": 0,
+"assocDtypPredCode": "R"
+}
+],
+"document": [],
+"behalfOfPartiesNames": "",
+"canSeeCaseDocuments": false,
+"confidential": false
+},
+{
+"whichone": 7,
+"filingDate": "06/13/2025",
+"docketDesc": "Show Cause Issd-Fail to Appear",
+"predCode": "ZSUIS",
+"sequenceNumber": 9,
+"docketText": "Document ID: 25-MU81-18669, for FOSTER, ROBERT DARNELL ",
+"filingPartyFullName": "",
+"docketCode": "SISFA",
+"dtypPredCode": "Z^",
+"hrngOutcome": "N",
+"documentId": 0,
+"associatedDocketInfoDetails": [],
+"associatedDocketScheduledInfo": [],
+"document": [
+{
+"recordId": 11842291,
+"docketSeq": 9,
+"documentId": 15351181,
+"documentSecurityLevel": 1,
+"documentTitle": "704581692_25-MU81-18669_SHOW CAUSE SUMMONS-FAIL APPEAR_MU81_SMC_2025-Jun-16_FINAL.pdf",
+"documentExtension": "PDF"
+}
+],
+"behalfOfPartiesNames": "",
+"canSeeCaseDocuments": true,
+"confidential": false
+},
+{
+"whichone": 6,
+"filingDate": "04/29/2025",
+"docketDesc": "Show Cause Hearing Scheduled",
+"predCode": "ZHESC",
+"sequenceNumber": 5,
+"filingPartyFullName": "",
+"docketCode": "SCSH",
+"dtypPredCode": "Z^",
+"hrngOutcome": "N",
+"documentId": 0,
+"associatedDocketInfoDetails": [
+{
+"associatedDate": "06/13/2025",
+"associatedDescription": "Hearing Held",
+"associatedText": "City appears by City Counselor. Defendant fails to appear. Summons issued. ",
+"assocDockSeq": 7,
+"documentId": 0,
+"viewDoc": "N",
+"confInd": "N",
+"mainDockSeq": 5,
+"assocDocketCode": "ZHEHE",
+"document": []
+}
+],
+"associatedDocketScheduledInfo": [
+{
+"associatedDate": "06/13/2025",
+"associatedDescription": "Show Cause Hearing",
+"associatedText": "City of St. Louis Municipal",
+"associatedTime": "3:00 PM",
+"associatedName": "KARMA JOHNSON",
+"assocFilingPartyLastName": "JOHNSON",
+"assocFilingPartyFirstName": "KARMA",
+"assocDockSeq": 5,
+"documentId": 0,
+"mainDockSeq": 0,
+"assocDtypPredCode": "C"
+}
+],
+"document": [],
+"behalfOfPartiesNames": "",
+"canSeeCaseDocuments": false,
+"confidential": false
+},
+{
+"whichone": 5,
+"filingDate": "04/28/2025",
+"docketDesc": "Show Cause Issd-Fail to Appear",
+"predCode": "ZSUIS",
+"sequenceNumber": 6,
+"docketText": "Document ID: 25-MU81-10072, for FOSTER, ROBERT DARNELL City appears by City Counselor. Defendant fails to appear. Summons issued. ",
+"filingPartyFullName": "",
+"docketCode": "SISFA",
+"dtypPredCode": "Z^",
+"hrngOutcome": "N",
+"documentId": 0,
+"associatedDocketInfoDetails": [],
+"associatedDocketScheduledInfo": [],
+"document": [
+{
+"recordId": 11688649,
+"docketSeq": 6,
+"documentId": 15166924,
+"documentSecurityLevel": 1,
+"documentTitle": "704581692_25-MU81-10072_SHOW CAUSE SUMMONS-FAIL APPEAR_MU81_SMC_2025-Apr-29_FINAL.pdf",
+"documentExtension": "PDF"
+}
+],
+"behalfOfPartiesNames": "",
+"canSeeCaseDocuments": true,
+"confidential": false
+},
+{
+"whichone": 4,
+"filingDate": "04/28/2025",
+"docketDesc": "Hearing Held",
+"predCode": "ZHEHE",
+"sequenceNumber": 4,
+"docketText": "City appears by City Counselor. Defendant fails to appear. Summons issued. ",
+"filingPartyFullName": "",
+"docketCode": "HRHR",
+"dtypPredCode": "Z^",
+"hrngOutcome": "N",
+"documentId": 0,
+"associatedDocketInfoDetails": [
+{
+"associatedDate": "03/25/2025",
+"associatedDescription": "Initial Appearance",
+"associatedText": "REVISED Event Information: New Judge Id: 65552; New Event: SCPM; New EventDate: Mon Apr 28 00:00:00 CDT 2025; New EventTime: 13:00:00; New EventRoom: CRTRM4; New EventLocation: S2; New EventText: DEFENDANT SHALL APPEAR IN PERSON IF FINES NOT PAID IN FULL. SO ORDERED.; New EventType: REC; \nREVISED Event Information: New Judge Id: 65552; New Event: SCIR; New EventDate: Mon Apr 28 00:00:00 CDT 2025; New EventTime: 15:00:00; New EventRoom: CRTRM4; New EventLocation: S2; New EventText: Defendant shall appear in person. SO ORDERED.; New EventType: REC; ",
+"assocDockSeq": 4,
+"documentId": 0,
+"viewDoc": "N",
+"confInd": "N",
+"mainDockSeq": 3,
+"assocDocketCode": "ZHESC",
+"document": []
+}
+],
+"associatedDocketScheduledInfo": [
+{
+"associatedDate": "04/28/2025",
+"associatedDescription": "Initial Appearance",
+"associatedText": "City of St. Louis Municipal",
+"associatedTime": "3:00 PM",
+"associatedName": "KARMA JOHNSON",
+"assocFilingPartyLastName": "JOHNSON",
+"assocFilingPartyFirstName": "KARMA",
+"assocDockSeq": 4,
+"documentId": 0,
+"mainDockSeq": 0,
+"assocDtypPredCode": "R"
+}
+],
+"document": [],
+"behalfOfPartiesNames": "",
+"canSeeCaseDocuments": false,
+"confidential": false
+},
+{
+"whichone": 3,
+"filingDate": "03/25/2025",
+"docketDesc": "Initial Appearance",
+"predCode": "ZHESC",
+"sequenceNumber": 3,
+"docketText": "REVISED Event Information: New Judge Id: 65552; New Event: SCPM; New EventDate: Mon Apr 28 00:00:00 CDT 2025; New EventTime: 13:00:00; New EventRoom: CRTRM4; New EventLocation: S2; New EventText: DEFENDANT SHALL APPEAR IN PERSON IF FINES NOT PAID IN FULL. SO ORDERED.; New EventType: REC; \nREVISED Event Information: New Judge Id: 65552; New Event: SCIR; New EventDate: Mon Apr 28 00:00:00 CDT 2025; New EventTime: 15:00:00; New EventRoom: CRTRM4; New EventLocation: S2; New EventText: Defendant shall appear in person. SO ORDERED.; New EventType: REC; ",
+"filingPartyFullName": "",
+"docketCode": "SCIR",
+"dtypPredCode": "Z^",
+"hrngOutcome": "N",
+"documentId": 0,
+"associatedDocketInfoDetails": [
+{
+"associatedDate": "04/28/2025",
+"associatedDescription": "Hearing Held",
+"associatedText": "City appears by City Counselor. Defendant fails to appear. Summons issued. ",
+"assocDockSeq": 4,
+"documentId": 0,
+"viewDoc": "N",
+"confInd": "N",
+"mainDockSeq": 3,
+"assocDocketCode": "ZHEHE",
+"document": []
+}
+],
+"associatedDocketScheduledInfo": [
+{
+"associatedDate": "04/28/2025",
+"associatedDescription": "Initial Appearance",
+"associatedText": "City of St. Louis Municipal",
+"associatedTime": "3:00 PM",
+"associatedName": "KARMA JOHNSON",
+"assocFilingPartyLastName": "JOHNSON",
+"assocFilingPartyFirstName": "KARMA",
+"assocDockSeq": 3,
+"documentId": 0,
+"mainDockSeq": 0,
+"assocDtypPredCode": "C"
+}
+],
+"document": [],
+"behalfOfPartiesNames": "",
+"canSeeCaseDocuments": false,
+"confidential": false
+},
+{
+"whichone": 2,
+"filingDate": "03/20/2025",
+"docketDesc": "Information Filed by Citation",
+"predCode": "ZFICA",
+"sequenceNumber": 2,
+"filingPartyTypeCode": "PA",
+"filingPartyLastName": "SYKORA",
+"filingPartyFirstName": "RICHARD",
+"filingPartyMidInitial": "FRANCIS",
+"filingPartySuffix": " ",
+"filingPartyFullName": "RICHARD FRANCIS SYKORA",
+"docketCode": "AUTT",
+"dtypPredCode": "Z^",
+"eventDesc": "Prosecuting Attorney",
+"displaySortSeq": "8",
+"hrngOutcome": "N",
+"documentId": 0,
+"associatedDocketInfoDetails": [
+{
+"associatedDate": "03/20/2025",
+"associatedDescription": "CRIFS/Unredacted Document",
+"assocDockSeq": 2,
+"documentId": 0,
+"viewDoc": "N",
+"confInd": "N",
+"mainDockSeq": 1,
+"assocDocketCode": "ZFILE",
+"document": []
+}
+],
+"associatedDocketScheduledInfo": [],
+"document": [
+{
+"recordId": 11574460,
+"docketSeq": 2,
+"documentId": 15029266,
+"documentSecurityLevel": 1,
+"documentTitle": "Document PDF (2)",
+"documentExtension": "PDF"
+}
+],
+"behalfOfPartiesNames": "",
+"canSeeCaseDocuments": true,
+"confidential": false
+},
+{
+"whichone": 1,
+"filingDate": "03/20/2025",
+"docketDesc": "CRIFS/Unredacted Document",
+"predCode": "ZFILE",
+"sequenceNumber": 1,
+"filingPartyTypeCode": "PA",
+"filingPartyLastName": "SYKORA",
+"filingPartyFirstName": "RICHARD",
+"filingPartyMidInitial": "FRANCIS",
+"filingPartySuffix": " ",
+"filingPartyFullName": "RICHARD FRANCIS SYKORA",
+"docketCode": "FREDI",
+"dtypPredCode": "Z^",
+"eventDesc": "Prosecuting Attorney",
+"displaySortSeq": "8",
+"hrngOutcome": "N",
+"documentId": 0,
+"associatedDocketInfoDetails": [
+{
+"associatedDate": "03/20/2025",
+"associatedDescription": "Information Filed by Citation",
+"assocDockSeq": 2,
+"documentId": 0,
+"viewDoc": "Y",
+"confInd": "N",
+"mainDockSeq": 1,
+"assocDocketCode": "ZFICA",
+"document": [
+{
+"recordId": 11574460,
+"docketSeq": 2,
+"documentId": 15029266,
+"documentSecurityLevel": 1,
+"documentTitle": "Document PDF (2)",
+"documentExtension": "PDF"
+}
+]
+}
+],
+"associatedDocketScheduledInfo": [],
+"document": [],
+"behalfOfPartiesNames": "",
+"canSeeCaseDocuments": false,
+"confidential": false
+}
+],
+"courtType": "C",
+"disposed": false,
+"legalFileAccepted": false,
+"paperAccepted": false,
+"confidential": false,
+"displayJudgeNotes": false,
+"caseNoteCount": 0,
+"displayLegalFileViewer": false,
+"displayFileViewer": false,
+"canUserSeePublicDocuments": true,
+"canUserSeeCaseDocuments": false,
+"canUserSeeEnoticeHistory": false,
+"canSelectDocket": false,
+"canSeeEcfLinks": false,
+"canSeeLegalFileLinks": false,
+"isTicket": false
+}didn't work, you guessed. use this information:
+case search page: https://www.courts.mo.gov/casenet/caseNoSearch.do
+Fetch/XHR Responses -
+newHeaderData.do:
+{
+"courtId": "CT22",
+"caseNumber": "704581692",
+"caseDesc": "CITY OF ST. LOUIS V ROBERT DARNELL FOSTER JR",
+"courtDesc": "22nd Judicial Circuit",
+"location": "City of St. Louis Municipal",
+"filingDate": "03/20/2025",
+"formattedFilingDate": "03/20/2025",
+"predCode": "Z^",
+"protectionOrder": false,
+"caseType": "Municipal/ Ordinance - see Charges",
+"caseSecurity": "2",
+"caseTypeCode": "O5",
+"vineCode": "434",
+"locnCode": "S2",
+"courtCode": "22",
+"vineDisplay": "N",
+"vineID": "704581692",
+"caseDispositionDetail": {
+"dispositionDescription": "Not Disposed"
+},
+"caseChargeList": [
+{
+"caseId": "704581692",
+"subCase": "704581692",
+"chargeNumber": "1",
+"chargeFilingDate": "02/27/2025",
+"chargeCode": "ORD304.0-431N202154.0",
+"ncicCode": "99",
+"chargePIDM": "91245346",
+"chargeDescription": "Speeding (31-35 Mph Over)",
+"chargePredCode": "ZMUN",
+"chargeCodeLevel": "OR",
+"chargeCodeLevelDescription": "Ordinance",
+"ticketNumber": "704581692",
+"boundover": false
+}
+],
+"judgeDetails": {
+"lastName": "STELZER",
+"firstName": "ROBERT",
+"middleInitials": "J.",
+"formattedName": "STELZER, ROBERT J."
+},
+"circuitCaseNo": [],
+"courtType": "C",
+"disposed": false,
+"pleaAndPayInd": "Y",
+"legalFileAccepted": false,
+"paperAccepted": false,
+"confidential": false,
+"displayJudgeNotes": false,
+"caseNoteCount": 0,
+"displayLegalFileViewer": false,
+"displayFileViewer": false,
+"canUserSeePublicDocuments": false,
+"canUserSeeCaseDocuments": false,
+"canUserSeeEnoticeHistory": false,
+"canSelectDocket": false,
+"canSeeEcfLinks": false,
+"canSeeLegalFileLinks": false,
+"isTicket": false,
+"dismissed": "F",
+"fileId": "",
+"isTrafficOrCriminal": "y"
+}
+docketEntriesSearch.do?displayOption=A&sortOption=D&hasChange=false:
+{
+"caseNumber": "704581692",
+"protectionOrder": false,
+"locnCode": "S2",
+"courtCode": "22",
+"docketTabModelList": [
+{
+"whichone": 18,
+"filingDate": "03/25/2026",
+"docketDesc": "Order",
+"predCode": "ZORD",
+"sequenceNumber": 18,
+"filingPartyFullName": "",
+"docketCode": "ORDER",
+"dtypPredCode": "Z^",
+"hrngOutcome": "N",
+"documentId": 0,
+"associatedDocketInfoDetails": [],
+"associatedDocketScheduledInfo": [],
+"document": [],
+"behalfOfPartiesNames": "",
+"canSeeCaseDocuments": false,
+"confidential": false
+},
+{
+"whichone": 17,
+"filingDate": "03/13/2026",
+"docketDesc": "Notice of Court Hearing Sent",
+"sequenceNumber": 17,
+"filingPartyFullName": "",
+"docketCode": "NHEAR",
+"dtypPredCode": "Z^",
+"hrngOutcome": "N",
+"documentId": 0,
+"associatedDocketInfoDetails": [],
+"associatedDocketScheduledInfo": [],
+"document": [
+{
+"recordId": 12951084,
+"docketSeq": 17,
+"documentId": 16577904,
+"documentSecurityLevel": 1,
+"documentTitle": "704581692_NOTICE OF NEW COURT DATE_MU150_SMC_2026-Mar-13_FINAL.pdf",
+"documentExtension": "pdf"
+}
+],
+"behalfOfPartiesNames": "",
+"canSeeCaseDocuments": true,
+"confidential": false
+},
+{
+"whichone": 16,
+"filingDate": "03/13/2026",
+"docketDesc": "Arraignment Scheduled",
+"predCode": "ZHESC",
+"sequenceNumber": 16,
+"filingPartyFullName": "",
+"docketCode": "SCAR",
+"dtypPredCode": "Z^",
+"hrngOutcome": "N",
+"documentId": 0,
+"associatedDocketInfoDetails": [],
+"associatedDocketScheduledInfo": [
+{
+"associatedDate": "04/13/2026",
+"associatedDescription": "Arraignment",
+"associatedText": "City of St. Louis Municipal",
+"associatedTime": "3:00 PM",
+"associatedName": "ROBERT J. STELZER",
+"assocFilingPartyLastName": "STELZER",
+"assocFilingPartyFirstName": "ROBERT",
+"assocFilingPartyMidInitial": "J.",
+"assocDockSeq": 16,
+"documentId": 0,
+"mainDockSeq": 0,
+"assocDtypPredCode": "C"
+}
+],
+"document": [],
+"behalfOfPartiesNames": "",
+"canSeeCaseDocuments": false,
+"confidential": false
+},
+{
+"whichone": 15,
+"filingDate": "03/13/2026",
+"docketDesc": "Warrant Recalled/Withdrawn",
+"predCode": "ZWNST",
+"sequenceNumber": 15,
+"docketText": "Document ID - 25-22MFA-14858; Served To - ROBERT DARNELL FOSTER; Served Date - 03/13/2026; Served Time - 11:53:32; Service Type - OT; Reason Description - RECL; Service Text -",
+"filingPartyFullName": "",
+"docketCode": "SSWR",
+"dtypPredCode": "Z^",
+"hrngOutcome": "N",
+"documentId": 0,
+"associatedDocketInfoDetails": [],
+"associatedDocketScheduledInfo": [],
+"document": [
+{
+"recordId": 12951074,
+"docketSeq": 15,
+"documentId": 16577890,
+"documentSecurityLevel": 1,
+"documentTitle": "704581692ORDER TO RECALL WARRANTMU59SMC2026-Mar-13FINAL",
+"documentExtension": "PDF"
+}
+],
+"behalfOfPartiesNames": "",
+"canSeeCaseDocuments": true,
+"confidential": false
+},
+{
+"whichone": 14,
+"filingDate": "03/05/2026",
+"docketDesc": "Judge Assigned",
+"predCode": "ZFILE",
+"sequenceNumber": 13,
+"docketText": "PRIOR JUDGE ASSIGNED TO CIRCUIT",
+"filingPartyFullName": "",
+"docketCode": "FJUDG",
+"dtypPredCode": "Z^",
+"hrngOutcome": "N",
+"documentId": 0,
+"associatedDocketInfoDetails": [],
+"associatedDocketScheduledInfo": [],
+"document": [],
+"behalfOfPartiesNames": "",
+"canSeeCaseDocuments": false,
+"confidential": false
+},
+{
+"whichone": 13,
+"filingDate": "09/10/2025",
+"docketDesc": "Hearing Held",
+"predCode": "ZHEHE",
+"sequenceNumber": 11,
+"docketText": "City appears by City Counselor. Summons previously issued. Defendant fails to appear on summons date. Warrant ordered. $50 CASH ONLY BOND. ",
+"filingPartyFullName": "",
+"docketCode": "HRHR",
+"dtypPredCode": "Z^",
+"hrngOutcome": "N",
+"documentId": 0,
+"associatedDocketInfoDetails": [
+{
+"associatedDate": "06/13/2025",
+"associatedDescription": "Show Cause Hearing Scheduled",
+"assocDockSeq": 11,
+"documentId": 0,
+"viewDoc": "N",
+"confInd": "N",
+"mainDockSeq": 8,
+"assocDocketCode": "ZHESC",
+"document": []
+}
+],
+"associatedDocketScheduledInfo": [
+{
+"associatedDate": "09/10/2025",
+"associatedDescription": "Show Cause Hearing",
+"associatedText": "City of St. Louis Municipal",
+"associatedTime": "3:00 PM",
+"associatedName": "KARMA JOHNSON",
+"assocFilingPartyLastName": "JOHNSON",
+"assocFilingPartyFirstName": "KARMA",
+"assocDockSeq": 11,
+"documentId": 0,
+"mainDockSeq": 0,
+"assocDtypPredCode": "R"
+}
+],
+"document": [],
+"behalfOfPartiesNames": "",
+"canSeeCaseDocuments": false,
+"confidential": false
+},
+{
+"whichone": 12,
+"filingDate": "09/10/2025",
+"docketDesc": "Warrant Issd Failure to Appear",
+"predCode": "ZSUIS",
+"sequenceNumber": 12,
+"docketText": "Document ID: 25-22MFA-14858, for FOSTER, ROBERT DARNELL CASH ONLY ",
+"filingPartyFullName": "",
+"docketCode": "SIFTA",
+"dtypPredCode": "Z^",
+"hrngOutcome": "N",
+"documentId": 0,
+"associatedDocketInfoDetails": [],
+"associatedDocketScheduledInfo": [],
+"document": [],
+"behalfOfPartiesNames": "",
+"canSeeCaseDocuments": false,
+"confidential": false
+},
+{
+"whichone": 11,
+"filingDate": "09/10/2025",
+"docketDesc": "Order",
+"predCode": "ZORD",
+"sequenceNumber": 14,
+"docketText": "SUGGESTED BY OSCA",
+"filingPartyFullName": "",
+"docketCode": "ORDER",
+"dtypPredCode": "Z^",
+"hrngOutcome": "N",
+"documentId": 0,
+"associatedDocketInfoDetails": [],
+"associatedDocketScheduledInfo": [],
+"document": [],
+"behalfOfPartiesNames": "",
+"canSeeCaseDocuments": false,
+"confidential": false
+},
+{
+"whichone": 10,
+"filingDate": "07/03/2025",
+"docketDesc": "Returned Mail-Undeliverable",
+"predCode": "ZFILE",
+"sequenceNumber": 10,
+"filingPartyFullName": "",
+"docketCode": "FRMUD",
+"dtypPredCode": "Z^",
+"hrngOutcome": "N",
+"documentId": 0,
+"associatedDocketInfoDetails": [],
+"associatedDocketScheduledInfo": [],
+"document": [
+{
+"recordId": 11896241,
+"docketSeq": 10,
+"documentId": 15417287,
+"documentSecurityLevel": 1,
+"documentTitle": "RETURN MAIL",
+"documentExtension": "PDF"
+}
+],
+"behalfOfPartiesNames": "",
+"canSeeCaseDocuments": true,
+"confidential": false
+},
+{
+"whichone": 9,
+"filingDate": "06/13/2025",
+"docketDesc": "Show Cause Hearing Scheduled",
+"predCode": "ZHESC",
+"sequenceNumber": 8,
+"filingPartyFullName": "",
+"docketCode": "SCSH",
+"dtypPredCode": "Z^",
+"hrngOutcome": "N",
+"documentId": 0,
+"associatedDocketInfoDetails": [
+{
+"associatedDate": "09/10/2025",
+"associatedDescription": "Hearing Held",
+"associatedText": "City appears by City Counselor. Summons previously issued. Defendant fails to appear on summons date. Warrant ordered. $50 CASH ONLY BOND. ",
+"assocDockSeq": 11,
+"documentId": 0,
+"viewDoc": "N",
+"confInd": "N",
+"mainDockSeq": 8,
+"assocDocketCode": "ZHEHE",
+"document": []
+}
+],
+"associatedDocketScheduledInfo": [
+{
+"associatedDate": "09/10/2025",
+"associatedDescription": "Show Cause Hearing",
+"associatedText": "City of St. Louis Municipal",
+"associatedTime": "3:00 PM",
+"associatedName": "KARMA JOHNSON",
+"assocFilingPartyLastName": "JOHNSON",
+"assocFilingPartyFirstName": "KARMA",
+"assocDockSeq": 8,
+"documentId": 0,
+"mainDockSeq": 0,
+"assocDtypPredCode": "C"
+}
+],
+"document": [],
+"behalfOfPartiesNames": "",
+"canSeeCaseDocuments": false,
+"confidential": false
+},
+{
+"whichone": 8,
+"filingDate": "06/13/2025",
+"docketDesc": "Hearing Held",
+"predCode": "ZHEHE",
+"sequenceNumber": 7,
+"docketText": "City appears by City Counselor. Defendant fails to appear. Summons issued. ",
+"filingPartyFullName": "",
+"docketCode": "HRHR",
+"dtypPredCode": "Z^",
+"hrngOutcome": "N",
+"documentId": 0,
+"associatedDocketInfoDetails": [
+{
+"associatedDate": "04/29/2025",
+"associatedDescription": "Show Cause Hearing Scheduled",
+"assocDockSeq": 7,
+"documentId": 0,
+"viewDoc": "N",
+"confInd": "N",
+"mainDockSeq": 5,
+"assocDocketCode": "ZHESC",
+"document": []
+}
+],
+"associatedDocketScheduledInfo": [
+{
+"associatedDate": "06/13/2025",
+"associatedDescription": "Show Cause Hearing",
+"associatedText": "City of St. Louis Municipal",
+"associatedTime": "3:00 PM",
+"associatedName": "KARMA JOHNSON",
+"assocFilingPartyLastName": "JOHNSON",
+"assocFilingPartyFirstName": "KARMA",
+"assocDockSeq": 7,
+"documentId": 0,
+"mainDockSeq": 0,
+"assocDtypPredCode": "R"
+}
+],
+"document": [],
+"behalfOfPartiesNames": "",
+"canSeeCaseDocuments": false,
+"confidential": false
+},
+{
+"whichone": 7,
+"filingDate": "06/13/2025",
+"docketDesc": "Show Cause Issd-Fail to Appear",
+"predCode": "ZSUIS",
+"sequenceNumber": 9,
+"docketText": "Document ID: 25-MU81-18669, for FOSTER, ROBERT DARNELL ",
+"filingPartyFullName": "",
+"docketCode": "SISFA",
+"dtypPredCode": "Z^",
+"hrngOutcome": "N",
+"documentId": 0,
+"associatedDocketInfoDetails": [],
+"associatedDocketScheduledInfo": [],
+"document": [
+{
+"recordId": 11842291,
+"docketSeq": 9,
+"documentId": 15351181,
+"documentSecurityLevel": 1,
+"documentTitle": "704581692_25-MU81-18669_SHOW CAUSE SUMMONS-FAIL APPEAR_MU81_SMC_2025-Jun-16_FINAL.pdf",
+"documentExtension": "PDF"
+}
+],
+"behalfOfPartiesNames": "",
+"canSeeCaseDocuments": true,
+"confidential": false
+},
+{
+"whichone": 6,
+"filingDate": "04/29/2025",
+"docketDesc": "Show Cause Hearing Scheduled",
+"predCode": "ZHESC",
+"sequenceNumber": 5,
+"filingPartyFullName": "",
+"docketCode": "SCSH",
+"dtypPredCode": "Z^",
+"hrngOutcome": "N",
+"documentId": 0,
+"associatedDocketInfoDetails": [
+{
+"associatedDate": "06/13/2025",
+"associatedDescription": "Hearing Held",
+"associatedText": "City appears by City Counselor. Defendant fails to appear. Summons issued. ",
+"assocDockSeq": 7,
+"documentId": 0,
+"viewDoc": "N",
+"confInd": "N",
+"mainDockSeq": 5,
+"assocDocketCode": "ZHEHE",
+"document": []
+}
+],
+"associatedDocketScheduledInfo": [
+{
+"associatedDate": "06/13/2025",
+"associatedDescription": "Show Cause Hearing",
+"associatedText": "City of St. Louis Municipal",
+"associatedTime": "3:00 PM",
+"associatedName": "KARMA JOHNSON",
+"assocFilingPartyLastName": "JOHNSON",
+"assocFilingPartyFirstName": "KARMA",
+"assocDockSeq": 5,
+"documentId": 0,
+"mainDockSeq": 0,
+"assocDtypPredCode": "C"
+}
+],
+"document": [],
+"behalfOfPartiesNames": "",
+"canSeeCaseDocuments": false,
+"confidential": false
+},
+{
+"whichone": 5,
+"filingDate": "04/28/2025",
+"docketDesc": "Show Cause Issd-Fail to Appear",
+"predCode": "ZSUIS",
+"sequenceNumber": 6,
+"docketText": "Document ID: 25-MU81-10072, for FOSTER, ROBERT DARNELL City appears by City Counselor. Defendant fails to appear. Summons issued. ",
+"filingPartyFullName": "",
+"docketCode": "SISFA",
+"dtypPredCode": "Z^",
+"hrngOutcome": "N",
+"documentId": 0,
+"associatedDocketInfoDetails": [],
+"associatedDocketScheduledInfo": [],
+"document": [
+{
+"recordId": 11688649,
+"docketSeq": 6,
+"documentId": 15166924,
+"documentSecurityLevel": 1,
+"documentTitle": "704581692_25-MU81-10072_SHOW CAUSE SUMMONS-FAIL APPEAR_MU81_SMC_2025-Apr-29_FINAL.pdf",
+"documentExtension": "PDF"
+}
+],
+"behalfOfPartiesNames": "",
+"canSeeCaseDocuments": true,
+"confidential": false
+},
+{
+"whichone": 4,
+"filingDate": "04/28/2025",
+"docketDesc": "Hearing Held",
+"predCode": "ZHEHE",
+"sequenceNumber": 4,
+"docketText": "City appears by City Counselor. Defendant fails to appear. Summons issued. ",
+"filingPartyFullName": "",
+"docketCode": "HRHR",
+"dtypPredCode": "Z^",
+"hrngOutcome": "N",
+"documentId": 0,
+"associatedDocketInfoDetails": [
+{
+"associatedDate": "03/25/2025",
+"associatedDescription": "Initial Appearance",
+"associatedText": "REVISED Event Information: New Judge Id: 65552; New Event: SCPM; New EventDate: Mon Apr 28 00:00:00 CDT 2025; New EventTime: 13:00:00; New EventRoom: CRTRM4; New EventLocation: S2; New EventText: DEFENDANT SHALL APPEAR IN PERSON IF FINES NOT PAID IN FULL. SO ORDERED.; New EventType: REC; \nREVISED Event Information: New Judge Id: 65552; New Event: SCIR; New EventDate: Mon Apr 28 00:00:00 CDT 2025; New EventTime: 15:00:00; New EventRoom: CRTRM4; New EventLocation: S2; New EventText: Defendant shall appear in person. SO ORDERED.; New EventType: REC; ",
+"assocDockSeq": 4,
+"documentId": 0,
+"viewDoc": "N",
+"confInd": "N",
+"mainDockSeq": 3,
+"assocDocketCode": "ZHESC",
+"document": []
+}
+],
+"associatedDocketScheduledInfo": [
+{
+"associatedDate": "04/28/2025",
+"associatedDescription": "Initial Appearance",
+"associatedText": "City of St. Louis Municipal",
+"associatedTime": "3:00 PM",
+"associatedName": "KARMA JOHNSON",
+"assocFilingPartyLastName": "JOHNSON",
+"assocFilingPartyFirstName": "KARMA",
+"assocDockSeq": 4,
+"documentId": 0,
+"mainDockSeq": 0,
+"assocDtypPredCode": "R"
+}
+],
+"document": [],
+"behalfOfPartiesNames": "",
+"canSeeCaseDocuments": false,
+"confidential": false
+},
+{
+"whichone": 3,
+"filingDate": "03/25/2025",
+"docketDesc": "Initial Appearance",
+"predCode": "ZHESC",
+"sequenceNumber": 3,
+"docketText": "REVISED Event Information: New Judge Id: 65552; New Event: SCPM; New EventDate: Mon Apr 28 00:00:00 CDT 2025; New EventTime: 13:00:00; New EventRoom: CRTRM4; New EventLocation: S2; New EventText: DEFENDANT SHALL APPEAR IN PERSON IF FINES NOT PAID IN FULL. SO ORDERED.; New EventType: REC; \nREVISED Event Information: New Judge Id: 65552; New Event: SCIR; New EventDate: Mon Apr 28 00:00:00 CDT 2025; New EventTime: 15:00:00; New EventRoom: CRTRM4; New EventLocation: S2; New EventText: Defendant shall appear in person. SO ORDERED.; New EventType: REC; ",
+"filingPartyFullName": "",
+"docketCode": "SCIR",
+"dtypPredCode": "Z^",
+"hrngOutcome": "N",
+"documentId": 0,
+"associatedDocketInfoDetails": [
+{
+"associatedDate": "04/28/2025",
+"associatedDescription": "Hearing Held",
+"associatedText": "City appears by City Counselor. Defendant fails to appear. Summons issued. ",
+"assocDockSeq": 4,
+"documentId": 0,
+"viewDoc": "N",
+"confInd": "N",
+"mainDockSeq": 3,
+"assocDocketCode": "ZHEHE",
+"document": []
+}
+],
+"associatedDocketScheduledInfo": [
+{
+"associatedDate": "04/28/2025",
+"associatedDescription": "Initial Appearance",
+"associatedText": "City of St. Louis Municipal",
+"associatedTime": "3:00 PM",
+"associatedName": "KARMA JOHNSON",
+"assocFilingPartyLastName": "JOHNSON",
+"assocFilingPartyFirstName": "KARMA",
+"assocDockSeq": 3,
+"documentId": 0,
+"mainDockSeq": 0,
+"assocDtypPredCode": "C"
+}
+],
+"document": [],
+"behalfOfPartiesNames": "",
+"canSeeCaseDocuments": false,
+"confidential": false
+},
+{
+"whichone": 2,
+"filingDate": "03/20/2025",
+"docketDesc": "Information Filed by Citation",
+"predCode": "ZFICA",
+"sequenceNumber": 2,
+"filingPartyTypeCode": "PA",
+"filingPartyLastName": "SYKORA",
+"filingPartyFirstName": "RICHARD",
+"filingPartyMidInitial": "FRANCIS",
+"filingPartySuffix": " ",
+"filingPartyFullName": "RICHARD FRANCIS SYKORA",
+"docketCode": "AUTT",
+"dtypPredCode": "Z^",
+"eventDesc": "Prosecuting Attorney",
+"displaySortSeq": "8",
+"hrngOutcome": "N",
+"documentId": 0,
+"associatedDocketInfoDetails": [
+{
+"associatedDate": "03/20/2025",
+"associatedDescription": "CRIFS/Unredacted Document",
+"assocDockSeq": 2,
+"documentId": 0,
+"viewDoc": "N",
+"confInd": "N",
+"mainDockSeq": 1,
+"assocDocketCode": "ZFILE",
+"document": []
+}
+],
+"associatedDocketScheduledInfo": [],
+"document": [
+{
+"recordId": 11574460,
+"docketSeq": 2,
+"documentId": 15029266,
+"documentSecurityLevel": 1,
+"documentTitle": "Document PDF (2)",
+"documentExtension": "PDF"
+}
+],
+"behalfOfPartiesNames": "",
+"canSeeCaseDocuments": true,
+"confidential": false
+},
+{
+"whichone": 1,
+"filingDate": "03/20/2025",
+"docketDesc": "CRIFS/Unredacted Document",
+"predCode": "ZFILE",
+"sequenceNumber": 1,
+"filingPartyTypeCode": "PA",
+"filingPartyLastName": "SYKORA",
+"filingPartyFirstName": "RICHARD",
+"filingPartyMidInitial": "FRANCIS",
+"filingPartySuffix": " ",
+"filingPartyFullName": "RICHARD FRANCIS SYKORA",
+"docketCode": "FREDI",
+"dtypPredCode": "Z^",
+"eventDesc": "Prosecuting Attorney",
+"displaySortSeq": "8",
+"hrngOutcome": "N",
+"documentId": 0,
+"associatedDocketInfoDetails": [
+{
+"associatedDate": "03/20/2025",
+"associatedDescription": "Information Filed by Citation",
+"assocDockSeq": 2,
+"documentId": 0,
+"viewDoc": "Y",
+"confInd": "N",
+"mainDockSeq": 1,
+"assocDocketCode": "ZFICA",
+"document": [
+{
+"recordId": 11574460,
+"docketSeq": 2,
+"documentId": 15029266,
+"documentSecurityLevel": 1,
+"documentTitle": "Document PDF (2)",
+"documentExtension": "PDF"
+}
+]
+}
+],
+"associatedDocketScheduledInfo": [],
+"document": [],
+"behalfOfPartiesNames": "",
+"canSeeCaseDocuments": false,
+"confidential": false
+}
+],
+"courtType": "C",
+"disposed": false,
+"legalFileAccepted": false,
+"paperAccepted": false,
+"confidential": false,
+"displayJudgeNotes": false,
+"caseNoteCount": 0,
+"displayLegalFileViewer": false,
+"displayFileViewer": false,
+"canUserSeePublicDocuments": true,
+"canUserSeeCaseDocuments": false,
+"canUserSeeEnoticeHistory": false,
+"canSelectDocket": false,
+"canSeeEcfLinks": false,
+"canSeeLegalFileLinks": false,
+"isTicket": false
+}{
+"caseNumber": "704581692",
+"protectionOrder": false,
+"locnCode": "S2",
+"courtCode": "22",
+"docketTabModelList": [
+{
+"whichone": 18,
+"filingDate": "03/25/2026",
+"docketDesc": "Order",
+"predCode": "ZORD",
+"sequenceNumber": 18,
+"filingPartyFullName": "",
+"docketCode": "ORDER",
+"dtypPredCode": "Z^",
+"hrngOutcome": "N",
+"documentId": 0,
+"associatedDocketInfoDetails": [],
+"associatedDocketScheduledInfo": [],
+"document": [],
+"behalfOfPartiesNames": "",
+"canSeeCaseDocuments": false,
+"confidential": false
+},
+{
+"whichone": 17,
+"filingDate": "03/13/2026",
+"docketDesc": "Notice of Court Hearing Sent",
+"sequenceNumber": 17,
+"filingPartyFullName": "",
+"docketCode": "NHEAR",
+"dtypPredCode": "Z^",
+"hrngOutcome": "N",
+"documentId": 0,
+"associatedDocketInfoDetails": [],
+"associatedDocketScheduledInfo": [],
+"document": [
+{
+"recordId": 12951084,
+"docketSeq": 17,
+"documentId": 16577904,
+"documentSecurityLevel": 1,
+"documentTitle": "704581692_NOTICE OF NEW COURT DATE_MU150_SMC_2026-Mar-13_FINAL.pdf",
+"documentExtension": "pdf"
+}
+],
+"behalfOfPartiesNames": "",
+"canSeeCaseDocuments": true,
+"confidential": false
+},
+{
+"whichone": 16,
+"filingDate": "03/13/2026",
+"docketDesc": "Arraignment Scheduled",
+"predCode": "ZHESC",
+"sequenceNumber": 16,
+"filingPartyFullName": "",
+"docketCode": "SCAR",
+"dtypPredCode": "Z^",
+"hrngOutcome": "N",
+"documentId": 0,
+"associatedDocketInfoDetails": [],
+"associatedDocketScheduledInfo": [
+{
+"associatedDate": "04/13/2026",
+"associatedDescription": "Arraignment",
+"associatedText": "City of St. Louis Municipal",
+"associatedTime": "3:00 PM",
+"associatedName": "ROBERT J. STELZER",
+"assocFilingPartyLastName": "STELZER",
+"assocFilingPartyFirstName": "ROBERT",
+"assocFilingPartyMidInitial": "J.",
+"assocDockSeq": 16,
+"documentId": 0,
+"mainDockSeq": 0,
+"assocDtypPredCode": "C"
+}
+],
+"document": [],
+"behalfOfPartiesNames": "",
+"canSeeCaseDocuments": false,
+"confidential": false
+},
+{
+"whichone": 15,
+"filingDate": "03/13/2026",
+"docketDesc": "Warrant Recalled/Withdrawn",
+"predCode": "ZWNST",
+"sequenceNumber": 15,
+"docketText": "Document ID - 25-22MFA-14858; Served To - ROBERT DARNELL FOSTER; Served Date - 03/13/2026; Served Time - 11:53:32; Service Type - OT; Reason Description - RECL; Service Text -",
+"filingPartyFullName": "",
+"docketCode": "SSWR",
+"dtypPredCode": "Z^",
+"hrngOutcome": "N",
+"documentId": 0,
+"associatedDocketInfoDetails": [],
+"associatedDocketScheduledInfo": [],
+"document": [
+{
+"recordId": 12951074,
+"docketSeq": 15,
+"documentId": 16577890,
+"documentSecurityLevel": 1,
+"documentTitle": "704581692ORDER TO RECALL WARRANTMU59SMC2026-Mar-13FINAL",
+"documentExtension": "PDF"
+}
+],
+"behalfOfPartiesNames": "",
+"canSeeCaseDocuments": true,
+"confidential": false
+},
+{
+"whichone": 14,
+"filingDate": "03/05/2026",
+"docketDesc": "Judge Assigned",
+"predCode": "ZFILE",
+"sequenceNumber": 13,
+"docketText": "PRIOR JUDGE ASSIGNED TO CIRCUIT",
+"filingPartyFullName": "",
+"docketCode": "FJUDG",
+"dtypPredCode": "Z^",
+"hrngOutcome": "N",
+"documentId": 0,
+"associatedDocketInfoDetails": [],
+"associatedDocketScheduledInfo": [],
+"document": [],
+"behalfOfPartiesNames": "",
+"canSeeCaseDocuments": false,
+"confidential": false
+},
+{
+"whichone": 13,
+"filingDate": "09/10/2025",
+"docketDesc": "Hearing Held",
+"predCode": "ZHEHE",
+"sequenceNumber": 11,
+"docketText": "City appears by City Counselor. Summons previously issued. Defendant fails to appear on summons date. Warrant ordered. $50 CASH ONLY BOND. ",
+"filingPartyFullName": "",
+"docketCode": "HRHR",
+"dtypPredCode": "Z^",
+"hrngOutcome": "N",
+"documentId": 0,
+"associatedDocketInfoDetails": [
+{
+"associatedDate": "06/13/2025",
+"associatedDescription": "Show Cause Hearing Scheduled",
+"assocDockSeq": 11,
+"documentId": 0,
+"viewDoc": "N",
+"confInd": "N",
+"mainDockSeq": 8,
+"assocDocketCode": "ZHESC",
+"document": []
+}
+],
+"associatedDocketScheduledInfo": [
+{
+"associatedDate": "09/10/2025",
+"associatedDescription": "Show Cause Hearing",
+"associatedText": "City of St. Louis Municipal",
+"associatedTime": "3:00 PM",
+"associatedName": "KARMA JOHNSON",
+"assocFilingPartyLastName": "JOHNSON",
+"assocFilingPartyFirstName": "KARMA",
+"assocDockSeq": 11,
+"documentId": 0,
+"mainDockSeq": 0,
+"assocDtypPredCode": "R"
+}
+],
+"document": [],
+"behalfOfPartiesNames": "",
+"canSeeCaseDocuments": false,
+"confidential": false
+},
+{
+"whichone": 12,
+"filingDate": "09/10/2025",
+"docketDesc": "Warrant Issd Failure to Appear",
+"predCode": "ZSUIS",
+"sequenceNumber": 12,
+"docketText": "Document ID: 25-22MFA-14858, for FOSTER, ROBERT DARNELL CASH ONLY ",
+"filingPartyFullName": "",
+"docketCode": "SIFTA",
+"dtypPredCode": "Z^",
+"hrngOutcome": "N",
+"documentId": 0,
+"associatedDocketInfoDetails": [],
+"associatedDocketScheduledInfo": [],
+"document": [],
+"behalfOfPartiesNames": "",
+"canSeeCaseDocuments": false,
+"confidential": false
+},
+{
+"whichone": 11,
+"filingDate": "09/10/2025",
+"docketDesc": "Order",
+"predCode": "ZORD",
+"sequenceNumber": 14,
+"docketText": "SUGGESTED BY OSCA",
+"filingPartyFullName": "",
+"docketCode": "ORDER",
+"dtypPredCode": "Z^",
+"hrngOutcome": "N",
+"documentId": 0,
+"associatedDocketInfoDetails": [],
+"associatedDocketScheduledInfo": [],
+"document": [],
+"behalfOfPartiesNames": "",
+"canSeeCaseDocuments": false,
+"confidential": false
+},
+{
+"whichone": 10,
+"filingDate": "07/03/2025",
+"docketDesc": "Returned Mail-Undeliverable",
+"predCode": "ZFILE",
+"sequenceNumber": 10,
+"filingPartyFullName": "",
+"docketCode": "FRMUD",
+"dtypPredCode": "Z^",
+"hrngOutcome": "N",
+"documentId": 0,
+"associatedDocketInfoDetails": [],
+"associatedDocketScheduledInfo": [],
+"document": [
+{
+"recordId": 11896241,
+"docketSeq": 10,
+"documentId": 15417287,
+"documentSecurityLevel": 1,
+"documentTitle": "RETURN MAIL",
+"documentExtension": "PDF"
+}
+],
+"behalfOfPartiesNames": "",
+"canSeeCaseDocuments": true,
+"confidential": false
+},
+{
+"whichone": 9,
+"filingDate": "06/13/2025",
+"docketDesc": "Show Cause Hearing Scheduled",
+"predCode": "ZHESC",
+"sequenceNumber": 8,
+"filingPartyFullName": "",
+"docketCode": "SCSH",
+"dtypPredCode": "Z^",
+"hrngOutcome": "N",
+"documentId": 0,
+"associatedDocketInfoDetails": [
+{
+"associatedDate": "09/10/2025",
+"associatedDescription": "Hearing Held",
+"associatedText": "City appears by City Counselor. Summons previously issued. Defendant fails to appear on summons date. Warrant ordered. $50 CASH ONLY BOND. ",
+"assocDockSeq": 11,
+"documentId": 0,
+"viewDoc": "N",
+"confInd": "N",
+"mainDockSeq": 8,
+"assocDocketCode": "ZHEHE",
+"document": []
+}
+],
+"associatedDocketScheduledInfo": [
+{
+"associatedDate": "09/10/2025",
+"associatedDescription": "Show Cause Hearing",
+"associatedText": "City of St. Louis Municipal",
+"associatedTime": "3:00 PM",
+"associatedName": "KARMA JOHNSON",
+"assocFilingPartyLastName": "JOHNSON",
+"assocFilingPartyFirstName": "KARMA",
+"assocDockSeq": 8,
+"documentId": 0,
+"mainDockSeq": 0,
+"assocDtypPredCode": "C"
+}
+],
+"document": [],
+"behalfOfPartiesNames": "",
+"canSeeCaseDocuments": false,
+"confidential": false
+},
+{
+"whichone": 8,
+"filingDate": "06/13/2025",
+"docketDesc": "Hearing Held",
+"predCode": "ZHEHE",
+"sequenceNumber": 7,
+"docketText": "City appears by City Counselor. Defendant fails to appear. Summons issued. ",
+"filingPartyFullName": "",
+"docketCode": "HRHR",
+"dtypPredCode": "Z^",
+"hrngOutcome": "N",
+"documentId": 0,
+"associatedDocketInfoDetails": [
+{
+"associatedDate": "04/29/2025",
+"associatedDescription": "Show Cause Hearing Scheduled",
+"assocDockSeq": 7,
+"documentId": 0,
+"viewDoc": "N",
+"confInd": "N",
+"mainDockSeq": 5,
+"assocDocketCode": "ZHESC",
+"document": []
+}
+],
+"associatedDocketScheduledInfo": [
+{
+"associatedDate": "06/13/2025",
+"associatedDescription": "Show Cause Hearing",
+"associatedText": "City of St. Louis Municipal",
+"associatedTime": "3:00 PM",
+"associatedName": "KARMA JOHNSON",
+"assocFilingPartyLastName": "JOHNSON",
+"assocFilingPartyFirstName": "KARMA",
+"assocDockSeq": 7,
+"documentId": 0,
+"mainDockSeq": 0,
+"assocDtypPredCode": "R"
+}
+],
+"document": [],
+"behalfOfPartiesNames": "",
+"canSeeCaseDocuments": false,
+"confidential": false
+},
+{
+"whichone": 7,
+"filingDate": "06/13/2025",
+"docketDesc": "Show Cause Issd-Fail to Appear",
+"predCode": "ZSUIS",
+"sequenceNumber": 9,
+"docketText": "Document ID: 25-MU81-18669, for FOSTER, ROBERT DARNELL ",
+"filingPartyFullName": "",
+"docketCode": "SISFA",
+"dtypPredCode": "Z^",
+"hrngOutcome": "N",
+"documentId": 0,
+"associatedDocketInfoDetails": [],
+"associatedDocketScheduledInfo": [],
+"document": [
+{
+"recordId": 11842291,
+"docketSeq": 9,
+"documentId": 15351181,
+"documentSecurityLevel": 1,
+"documentTitle": "704581692_25-MU81-18669_SHOW CAUSE SUMMONS-FAIL APPEAR_MU81_SMC_2025-Jun-16_FINAL.pdf",
+"documentExtension": "PDF"
+}
+],
+"behalfOfPartiesNames": "",
+"canSeeCaseDocuments": true,
+"confidential": false
+},
+{
+"whichone": 6,
+"filingDate": "04/29/2025",
+"docketDesc": "Show Cause Hearing Scheduled",
+"predCode": "ZHESC",
+"sequenceNumber": 5,
+"filingPartyFullName": "",
+"docketCode": "SCSH",
+"dtypPredCode": "Z^",
+"hrngOutcome": "N",
+"documentId": 0,
+"associatedDocketInfoDetails": [
+{
+"associatedDate": "06/13/2025",
+"associatedDescription": "Hearing Held",
+"associatedText": "City appears by City Counselor. Defendant fails to appear. Summons issued. ",
+"assocDockSeq": 7,
+"documentId": 0,
+"viewDoc": "N",
+"confInd": "N",
+"mainDockSeq": 5,
+"assocDocketCode": "ZHEHE",
+"document": []
+}
+],
+"associatedDocketScheduledInfo": [
+{
+"associatedDate": "06/13/2025",
+"associatedDescription": "Show Cause Hearing",
+"associatedText": "City of St. Louis Municipal",
+"associatedTime": "3:00 PM",
+"associatedName": "KARMA JOHNSON",
+"assocFilingPartyLastName": "JOHNSON",
+"assocFilingPartyFirstName": "KARMA",
+"assocDockSeq": 5,
+"documentId": 0,
+"mainDockSeq": 0,
+"assocDtypPredCode": "C"
+}
+],
+"document": [],
+"behalfOfPartiesNames": "",
+"canSeeCaseDocuments": false,
+"confidential": false
+},
+{
+"whichone": 5,
+"filingDate": "04/28/2025",
+"docketDesc": "Show Cause Issd-Fail to Appear",
+"predCode": "ZSUIS",
+"sequenceNumber": 6,
+"docketText": "Document ID: 25-MU81-10072, for FOSTER, ROBERT DARNELL City appears by City Counselor. Defendant fails to appear. Summons issued. ",
+"filingPartyFullName": "",
+"docketCode": "SISFA",
+"dtypPredCode": "Z^",
+"hrngOutcome": "N",
+"documentId": 0,
+"associatedDocketInfoDetails": [],
+"associatedDocketScheduledInfo": [],
+"document": [
+{
+"recordId": 11688649,
+"docketSeq": 6,
+"documentId": 15166924,
+"documentSecurityLevel": 1,
+"documentTitle": "704581692_25-MU81-10072_SHOW CAUSE SUMMONS-FAIL APPEAR_MU81_SMC_2025-Apr-29_FINAL.pdf",
+"documentExtension": "PDF"
+}
+],
+"behalfOfPartiesNames": "",
+"canSeeCaseDocuments": true,
+"confidential": false
+},
+{
+"whichone": 4,
+"filingDate": "04/28/2025",
+"docketDesc": "Hearing Held",
+"predCode": "ZHEHE",
+"sequenceNumber": 4,
+"docketText": "City appears by City Counselor. Defendant fails to appear. Summons issued. ",
+"filingPartyFullName": "",
+"docketCode": "HRHR",
+"dtypPredCode": "Z^",
+"hrngOutcome": "N",
+"documentId": 0,
+"associatedDocketInfoDetails": [
+{
+"associatedDate": "03/25/2025",
+"associatedDescription": "Initial Appearance",
+"associatedText": "REVISED Event Information: New Judge Id: 65552; New Event: SCPM; New EventDate: Mon Apr 28 00:00:00 CDT 2025; New EventTime: 13:00:00; New EventRoom: CRTRM4; New EventLocation: S2; New EventText: DEFENDANT SHALL APPEAR IN PERSON IF FINES NOT PAID IN FULL. SO ORDERED.; New EventType: REC; \nREVISED Event Information: New Judge Id: 65552; New Event: SCIR; New EventDate: Mon Apr 28 00:00:00 CDT 2025; New EventTime: 15:00:00; New EventRoom: CRTRM4; New EventLocation: S2; New EventText: Defendant shall appear in person. SO ORDERED.; New EventType: REC; ",
+"assocDockSeq": 4,
+"documentId": 0,
+"viewDoc": "N",
+"confInd": "N",
+"mainDockSeq": 3,
+"assocDocketCode": "ZHESC",
+"document": []
+}
+],
+"associatedDocketScheduledInfo": [
+{
+"associatedDate": "04/28/2025",
+"associatedDescription": "Initial Appearance",
+"associatedText": "City of St. Louis Municipal",
+"associatedTime": "3:00 PM",
+"associatedName": "KARMA JOHNSON",
+"assocFilingPartyLastName": "JOHNSON",
+"assocFilingPartyFirstName": "KARMA",
+"assocDockSeq": 4,
+"documentId": 0,
+"mainDockSeq": 0,
+"assocDtypPredCode": "R"
+}
+],
+"document": [],
+"behalfOfPartiesNames": "",
+"canSeeCaseDocuments": false,
+"confidential": false
+},
+{
+"whichone": 3,
+"filingDate": "03/25/2025",
+"docketDesc": "Initial Appearance",
+"predCode": "ZHESC",
+"sequenceNumber": 3,
+"docketText": "REVISED Event Information: New Judge Id: 65552; New Event: SCPM; New EventDate: Mon Apr 28 00:00:00 CDT 2025; New EventTime: 13:00:00; New EventRoom: CRTRM4; New EventLocation: S2; New EventText: DEFENDANT SHALL APPEAR IN PERSON IF FINES NOT PAID IN FULL. SO ORDERED.; New EventType: REC; \nREVISED Event Information: New Judge Id: 65552; New Event: SCIR; New EventDate: Mon Apr 28 00:00:00 CDT 2025; New EventTime: 15:00:00; New EventRoom: CRTRM4; New EventLocation: S2; New EventText: Defendant shall appear in person. SO ORDERED.; New EventType: REC; ",
+"filingPartyFullName": "",
+"docketCode": "SCIR",
+"dtypPredCode": "Z^",
+"hrngOutcome": "N",
+"documentId": 0,
+"associatedDocketInfoDetails": [
+{
+"associatedDate": "04/28/2025",
+"associatedDescription": "Hearing Held",
+"associatedText": "City appears by City Counselor. Defendant fails to appear. Summons issued. ",
+"assocDockSeq": 4,
+"documentId": 0,
+"viewDoc": "N",
+"confInd": "N",
+"mainDockSeq": 3,
+"assocDocketCode": "ZHEHE",
+"document": []
+}
+],
+"associatedDocketScheduledInfo": [
+{
+"associatedDate": "04/28/2025",
+"associatedDescription": "Initial Appearance",
+"associatedText": "City of St. Louis Municipal",
+"associatedTime": "3:00 PM",
+"associatedName": "KARMA JOHNSON",
+"assocFilingPartyLastName": "JOHNSON",
+"assocFilingPartyFirstName": "KARMA",
+"assocDockSeq": 3,
+"documentId": 0,
+"mainDockSeq": 0,
+"assocDtypPredCode": "C"
+}
+],
+"document": [],
+"behalfOfPartiesNames": "",
+"canSeeCaseDocuments": false,
+"confidential": false
+},
+{
+"whichone": 2,
+"filingDate": "03/20/2025",
+"docketDesc": "Information Filed by Citation",
+"predCode": "ZFICA",
+"sequenceNumber": 2,
+"filingPartyTypeCode": "PA",
+"filingPartyLastName": "SYKORA",
+"filingPartyFirstName": "RICHARD",
+"filingPartyMidInitial": "FRANCIS",
+"filingPartySuffix": " ",
+"filingPartyFullName": "RICHARD FRANCIS SYKORA",
+"docketCode": "AUTT",
+"dtypPredCode": "Z^",
+"eventDesc": "Prosecuting Attorney",
+"displaySortSeq": "8",
+"hrngOutcome": "N",
+"documentId": 0,
+"associatedDocketInfoDetails": [
+{
+"associatedDate": "03/20/2025",
+"associatedDescription": "CRIFS/Unredacted Document",
+"assocDockSeq": 2,
+"documentId": 0,
+"viewDoc": "N",
+"confInd": "N",
+"mainDockSeq": 1,
+"assocDocketCode": "ZFILE",
+"document": []
+}
+],
+"associatedDocketScheduledInfo": [],
+"document": [
+{
+"recordId": 11574460,
+"docketSeq": 2,
+"documentId": 15029266,
+"documentSecurityLevel": 1,
+"documentTitle": "Document PDF (2)",
+"documentExtension": "PDF"
+}
+],
+"behalfOfPartiesNames": "",
+"canSeeCaseDocuments": true,
+"confidential": false
+},
+{
+"whichone": 1,
+"filingDate": "03/20/2025",
+"docketDesc": "CRIFS/Unredacted Document",
+"predCode": "ZFILE",
+"sequenceNumber": 1,
+"filingPartyTypeCode": "PA",
+"filingPartyLastName": "SYKORA",
+"filingPartyFirstName": "RICHARD",
+"filingPartyMidInitial": "FRANCIS",
+"filingPartySuffix": " ",
+"filingPartyFullName": "RICHARD FRANCIS SYKORA",
+"docketCode": "FREDI",
+"dtypPredCode": "Z^",
+"eventDesc": "Prosecuting Attorney",
+"displaySortSeq": "8",
+"hrngOutcome": "N",
+"documentId": 0,
+"associatedDocketInfoDetails": [
+{
+"associatedDate": "03/20/2025",
+"associatedDescription": "Information Filed by Citation",
+"assocDockSeq": 2,
+"documentId": 0,
+"viewDoc": "Y",
+"confInd": "N",
+"mainDockSeq": 1,
+"assocDocketCode": "ZFICA",
+"document": [
+{
+"recordId": 11574460,
+"docketSeq": 2,
+"documentId": 15029266,
+"documentSecurityLevel": 1,
+"documentTitle": "Document PDF (2)",
+"documentExtension": "PDF"
+}
+]
+}
+],
+"associatedDocketScheduledInfo": [],
+"document": [],
+"behalfOfPartiesNames": "",
+"canSeeCaseDocuments": false,
+"confidential": false
+}
+],
+"courtType": "C",
+"disposed": false,
+"legalFileAccepted": false,
+"paperAccepted": false,
+"confidential": false,
+"displayJudgeNotes": false,
+"caseNoteCount": 0,
+"displayLegalFileViewer": false,
+"displayFileViewer": false,
+"canUserSeePublicDocuments": true,
+"canUserSeeCaseDocuments": false,
+"canUserSeeEnoticeHistory": false,
+"canSelectDocket": false,
+"canSeeEcfLinks": false,
+"canSeeLegalFileLinks": false,
+"isTicket": false
+}
+
