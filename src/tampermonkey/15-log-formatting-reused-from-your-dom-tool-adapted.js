@@ -1,8 +1,7 @@
 /************************************************************
    * Log formatting (reused from your DOM tool, adapted)
    ************************************************************/
-  function formatEntry(e) {if (e?._source === 'municourt' && norm(e?.muniCaseDetailText || '')) return `${e.muniCaseDetailText}\n\n`;
-                         const lines = [e.caseTitle || '(- - -)','',
+  function formatEntry(e) {const lines = [e.caseTitle || '(- - -)','',
                                          `Location: ${e.location || ''}`,
                                          `Date Filed: ${e.dateFiled || ''}`,
                                          `Disposition: ${e.disposition || ''}`,
@@ -15,11 +14,12 @@
                          if (e.initialAppearanceDate) lines.push(`Initial Appearance: ${e.initialAppearanceDate}`);
                          if (e.licenseHoldDate) lines.push(`License Hold: ${e.licenseHoldDate}`);
                          lines.push(`Upcoming Court Dates: ${e.nextDocketDate || ''}`,'',
-                                    `Charge Description: ${e.chargeDescription || ''}`,
-                                    `Charge Type: ${e.chargeType || ''}`,
-                                    `Charge Class: ${e.chargeClass || ''}`,
-                                    `Judge: ${e.judge || ''}`,'',
-                                    `CaseNet:\n${e.caseUrl || ''}\n`,'','','');
+                                         `Charge Description: ${e.chargeDescription || ''}`,
+                                         `Charge Type: ${e.chargeType || ''}`,
+                                         `Charge Class: ${e.chargeClass || ''}`,
+                                         `Judge: ${e.judge || ''}`,'',
+                                         `CaseNet:\n${e.caseUrl || ''}\n`,'','','');
+                         if (e?._source === 'municourt' && norm(e?.muniCaseDetailText || '')) lines.push('MuniCourt Detail:',e.muniCaseDetailText,'','','');
                          return lines.join('\n');}
 
   function buildGroupedCopyText() {const log = loadLog();
@@ -308,7 +308,9 @@ Court Clerk: ${clerk}` : display;
   function getCaseNumberForSummary(e) {const fromTitle = norm(String(e?.caseTitle || '').split('–')[0]);
                                       if (fromTitle && /^\d/.test(fromTitle)) return fromTitle;
                                       const fromKey = norm(e?.caseKey || '');
-                                      if (fromKey) return fromKey;
+                                      if (fromKey) {const stripped = norm(fromKey.split('|')[0]);
+                                                    if (stripped) return stripped;
+                                                    return fromKey;}
                                       return '- - -';}
 
   function getWarrantLabelForSummary(e) {const explicit = norm(String(e?.summaryStatus || '')).toLowerCase();
@@ -440,10 +442,7 @@ Court Clerk: ${clerk}` : display;
                                                                                                                                                                                                    return a.idx - b.idx;})
                                                                                                                                                                                    .map(({entry}) => entry);
                                                                                                                                                                                 sections.push(header);
-                                                                                                                                                                                for (const e of sortedEntries) {const muniSummary = norm(e?._source === 'municourt' ? e?.muniSummaryRow || '' : '');
-                                                                                                                                                                                                          if (muniSummary) {sections.push(muniSummary);
-                                                                                                                                                                                                                           continue;}
-                                                                                                                                                                                                          const caseNo = getCaseNumberForSummary(e);
+                                                                                                                                                                                for (const e of sortedEntries) {const caseNo = getCaseNumberForSummary(e);
                                                                                                                                                                                                           const charge = norm(e?.chargeDescription || '') || 'No Charges Found';
                                                                                                                                                                                                           const lineStatus = getSummaryLineStatus(e);
                                                                                                                                                                                                           sections.push(`${caseNo}: ${charge} - ${lineStatus}`);}
