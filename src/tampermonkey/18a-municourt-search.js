@@ -182,6 +182,57 @@
                                                                                                                     else lines.push(`${tds[0]} ${tds.slice(1).join(' ')}`.trim());}
                                                      return lines.join('\n').replace(/\n{3,}/g,'\n\n').trim();}
 
+  function extractMuniLabeledValue(raw,label,nextLabels = []) {const text = String(raw || '');
+                                                               if (!text) return '';
+                                                               const escapedLabel = label.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+                                                               const escapedNext = nextLabels.map((v) => v.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'));
+                                                               const tail = escapedNext.length ? `(?=\\s+(?:${escapedNext.join('|')}):|$)` : '(?=$)';
+                                                               const re = new RegExp(`${escapedLabel}:\\s*([\\s\\S]*?)${tail}`,'i');
+                                                               const m = text.match(re);
+                                                               return norm(m?.[1] || '');}
+
+  function parseMuniDateOnly(raw) {const text = norm(raw || '');
+                                   if (!text) return '- - -';
+                                   const m = text.match(/\b(\d{1,2}\/\d{1,2}\/\d{2,4})\b/);
+                                   if (m?.[1]) return m[1];
+                                   return text;}
+
+  function deriveMuniCaseHeader(caseNo,location) {const localCaseNo = norm(caseNo || '') || '- - -';
+                                                  const loc = norm(location || '');
+                                                  const city = norm(loc.replace(/\bmunicipal\s+court\b/i,'').replace(/\bcourt\b/i,'')).toUpperCase() || loc.toUpperCase() || '- - -';
+                                                  return `${localCaseNo} - ${city} (municourt)`;}
+
+  function parseMuniFullCaseDetails(detailText = '') {const raw = String(detailText || '');
+                                                      const labels = ['Status','Case #','Ticket #','OCN','Court Name','Bond Set Amount','Website','Defendant','Birth Year','Address','Violation Information Date/Time','Location','Issuing Agency','Charge Information Charge','State Charge','Ordinance','Disposition Date','Plea','Disposition','Defense Attorney Information Name','Phone','Case Filed Date','Original Court Date','Current Court Date'];
+                                                      const status = extractMuniLabeledValue(raw,'Status',['Case #','Ticket #','OCN','Court Name']);
+                                                      const courtName = extractMuniLabeledValue(raw,'Court Name',['Bond Set Amount','Website','Defendant']);
+                                                      const bondSetAmount = extractMuniLabeledValue(raw,'Bond Set Amount',['Website','Defendant']);
+                                                      const defendant = extractMuniLabeledValue(raw,'Defendant',['Birth Year','Address']);
+                                                      const birthYear = extractMuniLabeledValue(raw,'Birth Year',['Address','Violation Information Date/Time']);
+                                                      const address = extractMuniLabeledValue(raw,'Address',['Violation Information Date/Time','Location','Issuing Agency']);
+                                                      const chargeDescription = extractMuniLabeledValue(raw,'Charge Information Charge',['State Charge','Ordinance','Disposition Date']);
+                                                      const disposition = extractMuniLabeledValue(raw,'Disposition',['Defense Attorney Information Name','Case Filed Date']);
+                                                      const caseFiledDate = extractMuniLabeledValue(raw,'Case Filed Date',['Original Court Date','Current Court Date']);
+                                                      const originalCourtDateRaw = extractMuniLabeledValue(raw,'Original Court Date',['Current Court Date']);
+                                                      const currentCourtDateRaw = extractMuniLabeledValue(raw,'Current Court Date',[]);
+                                                      const stateCharge = extractMuniLabeledValue(raw,'State Charge',['Ordinance','Disposition Date']);
+                                                      const ordinance = extractMuniLabeledValue(raw,'Ordinance',['Disposition Date']);
+                                                      const chargeType = ordinance || /^ord/i.test(stateCharge) ? 'Ordinance' : '- - -';
+                                                      return {status: status || '- - -',
+                                                              courtName: courtName || '- - -',
+                                                              bondSetAmount: bondSetAmount || '- - -',
+                                                              defendant: defendant || '- - -',
+                                                              birthYear: birthYear || '- - -',
+                                                              address: address || '- - -',
+                                                              chargeDescription: chargeDescription || '- - -',
+                                                              disposition: disposition || '- - -',
+                                                              caseFiledDate: caseFiledDate || '- - -',
+                                                              originalCourtDateRaw: originalCourtDateRaw || '- - -',
+                                                              originalCourtDate: parseMuniDateOnly(originalCourtDateRaw),
+                                                              currentCourtDate: parseMuniDateOnly(currentCourtDateRaw),
+                                                              chargeType,
+                                                              labels};}
+
   async function searchMuniViaSubmitByName(params,options = {}) {const first = norm(params?.first || '');
                                                    const last = norm(params?.last || '');
                                                    const yob = norm(params?.yob || '');
@@ -298,27 +349,33 @@
                                                                        const caseUrl = valueFromAny(rec,['caseUrl','url']) || sourceLabel;
                                                                        const entryKeyBase = (caseNo || valueFromAny(rec,['button']) || '- - -').toUpperCase();
                                                                        const summaryRow = norm(rec?.resultRowText || `${caseTitle}   ${caseNo}   ${location}   ${chargeDescription}   ${summaryRaw || summaryStatus}`);
+                                                                       const parsedDetail = parseMuniFullCaseDetails(rec?.muniCaseDetailText || '');
+                                                                       const muniLocation = parsedDetail.courtName !== '- - -' ? parsedDetail.courtName : location;
+                                                                       const muniCaseTitle = deriveMuniCaseHeader(caseNo,muniLocation);
                                                                        return {caseKey: `${entryKeyBase}|MUNICOURT`,
-                                                                               caseTitle,
+                                                                               caseTitle: muniCaseTitle,
                                                                                caseUrl,
                                                                                judge,
-                                                                               dateFiled: valueFromAny(rec,['case_filed_date','dateFiled','filingDate']) || '- - -',
-                                                                               location,
+                                                                               dateFiled: parsedDetail.caseFiledDate !== '- - -' ? parsedDetail.caseFiledDate : valueFromAny(rec,['case_filed_date','dateFiled','filingDate']) || '- - -',
+                                                                               location: muniLocation,
                                                                                caseBalance: valueFromAny(rec,['caseBalance','balance','amountDue']) || '- - -',
-                                                                               disposition,
-                                                                               address: valueFromAny(rec,['address','defendantAddress']) || '- - -',
-                                                                               yob: valueFromAny(rec,['birth_year','yob','birthYear','yearOfBirth']) || '- - -',
-                                                                               yobRaw: valueFromAny(rec,['birth_year','yob','birthYear','yearOfBirth']) || '- - -',
+                                                                               disposition: parsedDetail.disposition !== '- - -' ? parsedDetail.disposition : disposition,
+                                                                               address: parsedDetail.address !== '- - -' ? parsedDetail.address : valueFromAny(rec,['address','defendantAddress']) || '- - -',
+                                                                               yob: parsedDetail.birthYear !== '- - -' ? parsedDetail.birthYear : valueFromAny(rec,['birth_year','yob','birthYear','yearOfBirth']) || '- - -',
+                                                                               yobRaw: parsedDetail.birthYear !== '- - -' ? parsedDetail.birthYear : valueFromAny(rec,['birth_year','yob','birthYear','yearOfBirth']) || '- - -',
                                                                                attorney: valueFromAny(rec,['attorney','attorneyName']) || '- - -',
                                                                                warrantSummary: warrantRaw || summaryRaw || '- - -',
                                                                                summaryStatus,
                                                                                initialAppearanceDate: valueFromAny(rec,['initialAppearanceDate']) || '',
                                                                                licenseHoldDate: valueFromAny(rec,['licenseHoldDate']) || '',
-                                                                               nextDocketDate,
-                                                                               ftaDates: ['- - -'],
-                                                                               chargeDescription,
-                                                                               chargeType: valueFromAny(rec,['chargeType','offenseType']) || '- - -',
+                                                                               nextDocketDate: parsedDetail.currentCourtDate !== '- - -' ? parsedDetail.currentCourtDate : nextDocketDate,
+                                                                               ftaDates: parsedDetail.originalCourtDate !== '- - -' ? [parsedDetail.originalCourtDate] : ['- - -'],
+                                                                               chargeDescription: parsedDetail.chargeDescription !== '- - -' ? parsedDetail.chargeDescription : chargeDescription,
+                                                                               chargeType: parsedDetail.chargeType !== '- - -' ? parsedDetail.chargeType : valueFromAny(rec,['chargeType','offenseType']) || '- - -',
                                                                                chargeClass: valueFromAny(rec,['chargeClass','offenseClass']) || '- - -',
+                                                                               warrantEvent: parsedDetail.status !== '- - -' ? parsedDetail.status : summaryRaw || summaryStatus || '- - -',
+                                                                               bondAmount: parsedDetail.bondSetAmount || '- - -',
+                                                                               mostRecentWarrantDate: parsedDetail.originalCourtDate || '- - -',
                                                                                muniSummaryRow: summaryRow,
                                                                                ticketNumber: caseNo,
                                                                                muniCaseDetailText: detail,
