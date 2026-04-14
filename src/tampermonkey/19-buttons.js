@@ -137,7 +137,16 @@
                                  const passKey = typeof pass === 'string' ? pass : pass?.caseType;
                                  const passMiddle = typeof pass === 'string' ? (st.params?.middle || '') : (pass?.middle || '');
                                  const passLabel = typeof pass === 'string' ? passKey : (pass?.label || passKey);
-                                 if (!passKey) {let muniAdded = 0;
+                                 if (!passKey) {if (st.step === 'municourt_finalizing') {const age = Date.now() - Number(st.finalizingStartedAt || 0);
+                                                                                          if (age < 120000) return;
+                                                                                          dbg('namesearch_municourt_final_pass_stale_reset',{ageMs: age});
+                                                                                          st.step = 'go_search';
+                                                                                          st.finalizingStartedAt = 0;
+                                                                                          saveNameState(st);}
+                                                st.step = 'municourt_finalizing';
+                                                st.finalizingStartedAt = Date.now();
+                                                saveNameState(st);
+                                                let muniAdded = 0;
                                                 try {uiStatus('Final pass complete. Reading Municourt...');
                                                      render();
                                                      const nextLog = loadLog();
