@@ -1,7 +1,21 @@
 /************************************************************
    * Log formatting (reused from your DOM tool, adapted)
    ************************************************************/
-  function formatEntry(e) {const lines = [e.caseTitle || '(- - -)','',
+  function parseWarrantSummaryFields(e) {const raw = norm(String(e?.warrantSummary || ''));
+                                         const parsedDate = norm(String(e?.mostRecentWarrantDate || ''));
+                                         const parsedEvent = norm(String(e?.warrantEvent || ''));
+                                         const parsedBond = norm(String(e?.bondAmount || ''));
+                                         const fallback = {date: parsedDate || '- - -',event: parsedEvent || '- - -',bond: parsedBond || '- - -'};
+                                         if (!raw || raw === '- - -') return fallback;
+                                         const dateMatch = raw.match(/(?:^|\n)\s*Date:\s*([^\n]+)/i);
+                                         const eventMatch = raw.match(/(?:^|\n)\s*Event:\s*([^\n]+)/i);
+                                         const bondMatch = raw.match(/(?:^|\n)\s*(?:Bond(?: Amount)?):\s*([^\n]+)/i);
+                                         return {date: parsedDate || norm(dateMatch?.[1] || '') || fallback.date,
+                                                 event: parsedEvent || norm(eventMatch?.[1] || '') || (raw && raw !== '- - -' ? raw : fallback.event),
+                                                 bond: parsedBond || norm(bondMatch?.[1] || '') || fallback.bond};}
+
+  function formatEntry(e) {const warrantFields = parseWarrantSummaryFields(e);
+                           const lines = [e.caseTitle || '(- - -)','',
                                          `Location: ${e.location || ''}`,
                                          `Date Filed: ${e.dateFiled || ''}`,
                                          `Disposition: ${e.disposition || ''}`,
@@ -9,7 +23,9 @@
                                          `Address: ${e.address || ''}`,
                                          `Year of Birth: ${e.yob || ''}`,
                                          `Attorney: ${e.attorney || ''}`,'',
-                                         `Most Recent Warrant/Summons: ${e.warrantSummary || ''}`,
+                                         `Most Recent Warrant/Summons: ${warrantFields.date || '- - -'}`,
+                                         `Event: ${warrantFields.event || '- - -'}`,
+                                         `Bond Amount: ${warrantFields.bond || '- - -'}`,
                                          `FTA Dates: ${(e.ftaDates || []).join(', ')}`,];
                          if (e.initialAppearanceDate) lines.push(`Initial Appearance: ${e.initialAppearanceDate}`);
                          if (e.licenseHoldDate) lines.push(`License Hold: ${e.licenseHoldDate}`);
@@ -17,8 +33,9 @@
                                          `Charge Description: ${e.chargeDescription || ''}`,
                                          `Charge Type: ${e.chargeType || ''}`,
                                          `Charge Class: ${e.chargeClass || ''}`,
-                                         `Judge: ${e.judge || ''}`,'',
-                                         `CaseNet:\n${e.caseUrl || ''}\n`,'','','');
+                                         `Judge: ${e.judge || ''}`,'');
+                         if (e?._source !== 'municourt') lines.push(`CaseNet:\n${e.caseUrl || ''}\n`);
+                         lines.push('','','');
                          if (e?._source === 'municourt' && norm(e?.muniCaseDetailText || '')) lines.push('MuniCourt Detail:',e.muniCaseDetailText,'','','');
                          return lines.join('\n');}
 
@@ -353,6 +370,14 @@ Court Clerk: ${clerk}` : display;
                                    const attorneySuffix = getAttorneySuffixForSummary(e);
                                    return `${warrantLabel}${fineSuffix}${attorneySuffix}`;}
 
+  function getMunicourtSummaryLineStatus(e) {const warrantLabel = getWarrantLabelForSummary(e);
+                                            const normalized = norm(String(warrantLabel || '')).toLowerCase();
+                                            if (!normalized) return 'nonwarrant';
+                                            if (normalized.includes('hold')) return 'hold';
+                                            if (normalized.includes('warrant')) return 'warrant';
+                                            if (normalized.includes('upcoming')) return 'upcoming';
+                                            return normalized;}
+
   function parseUpcomingCourtDate(e) {const raw = norm(e?.nextDocketDate || '');
                                      if (!raw || raw === '- - -') return '';
                                      const parts = raw.split(';').map((x) => norm(x));
@@ -442,10 +467,18 @@ Court Clerk: ${clerk}` : display;
                                                                                                                                                                                                    return a.idx - b.idx;})
                                                                                                                                                                                    .map(({entry}) => entry);
                                                                                                                                                                                 sections.push(header);
-                                                                                                                                                                                for (const e of sortedEntries) {const caseNo = getCaseNumberForSummary(e);
-                                                                                                                                                                                                          const charge = norm(e?.chargeDescription || '') || 'No Charges Found';
-                                                                                                                                                                                                          const lineStatus = getSummaryLineStatus(e);
-                                                                                                                                                                                                          sections.push(`${caseNo}: ${charge} - ${lineStatus}`);}
+                                                                                                                                                                                const municourtEntries = sortedEntries.filter((e) => e?._source === 'municourt');
+                                                                                                                                                                                const nonMunicourtEntries = sortedEntries.filter((e) => e?._source !== 'municourt');
+                                                                                                                                                                                if (municourtEntries.length) {sections.push('(municourt)');
+                                                                                                                                                                                                             for (const e of municourtEntries) {const caseNo = getCaseNumberForSummary(e);
+                                                                                                                                                                                                                                            const charge = norm(e?.chargeDescription || '') || 'No Charges Found';
+                                                                                                                                                                                                                                            const lineStatus = getMunicourtSummaryLineStatus(e);
+                                                                                                                                                                                                                                            sections.push(`${caseNo}     ${charge} - ${lineStatus}`);}
+                                                                                                                                                                                                             if (nonMunicourtEntries.length) sections.push('- - -');}
+                                                                                                                                                                                for (const e of nonMunicourtEntries) {const caseNo = getCaseNumberForSummary(e);
+                                                                                                                                                                                                             const charge = norm(e?.chargeDescription || '') || 'No Charges Found';
+                                                                                                                                                                                                             const lineStatus = getSummaryLineStatus(e);
+                                                                                                                                                                                                             sections.push(`${caseNo}: ${charge} - ${lineStatus}`);}
                                                                                                                                                                                 if (header.includes('FRESH START FRIDAY')) hasFreshStartFridaySection = true;
                                                                                                                                                                                 sections.push('');
                                                                                                                                                                                 sections.push('');}}
