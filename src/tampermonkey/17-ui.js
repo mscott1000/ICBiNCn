@@ -342,9 +342,6 @@ dock.innerHTML = `
     <div id="moJsonFooterInner">
       <button class="moBtn" id="moJsonHelpBtn">Help</button>
       <div class="moBottomRow">
-        <button class="moBtn" id="moJsonCopyDebug">Copy Debug</button>
-        <button class="moBtn" id="moJsonCopyCebug">Copy Cebug</button>
-        <button class="moBtn" id="moJsonClearDebug">Clear Debug</button>
         <button class="moBtn" id="moJsonStop">Stop All</button>
         <button class="moBtn" id="moJsonClear">Clear Log</button>
       </div>
