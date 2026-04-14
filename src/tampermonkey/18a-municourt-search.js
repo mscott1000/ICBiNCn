@@ -81,12 +81,19 @@
 
   function findRecaptchaSiteKey(docOrText) {const raw = typeof docOrText === 'string' ? String(docOrText || '') : String(docOrText?.documentElement?.outerHTML || '');
                                             const fromStorage = norm(window?.sessionStorage?.recaptchaSiteKey || '');
+                                            const fromUnsafeStorage = norm((typeof unsafeWindow !== 'undefined' ? unsafeWindow?.sessionStorage?.recaptchaSiteKey : '') || '');
                                             if (fromStorage) return fromStorage;
+                                            if (fromUnsafeStorage) return fromUnsafeStorage;
                                             const m = raw.match(/recaptchaSiteKey\s*=\s*["']([^"']+)["']/i) || raw.match(/api\.js\?render=([A-Za-z0-9_-]+)/i);
                                             return norm(m?.[1] || '');}
 
+  function getRecaptchaApi() {const localApi = window?.grecaptcha;
+                              if (localApi?.execute) return localApi;
+                              if (typeof unsafeWindow !== 'undefined' && unsafeWindow?.grecaptcha?.execute) return unsafeWindow.grecaptcha;
+                              return null;}
+
   async function ensureGrecaptchaReady(siteKey) {if (!siteKey || typeof document === 'undefined') return false;
-                                                 if (window?.grecaptcha?.execute) return true;
+                                                 if (getRecaptchaApi()?.execute) return true;
                                                  const existing = document.querySelector('script[data-muni-recaptcha-loader="1"]') || document.querySelector(`script[src*="recaptcha/api.js?render=${siteKey}"]`);
                                                  if (!existing) {const script = document.createElement('script');
                                                                 script.src = `https://www.google.com/recaptcha/api.js?render=${encodeURIComponent(siteKey)}`;
@@ -94,15 +101,22 @@
                                                                 script.defer = true;
                                                                 script.setAttribute('data-muni-recaptcha-loader','1');
                                                                 document.head.appendChild(script);}
+                                                 const waitForReady = async (api) => new Promise((resolve) => {if (!api?.ready) {resolve();
+                                                                                                                  return;}
+                                                                                                                  try {api.ready(() => resolve());}
+                                                                                                                  catch {resolve();}});
                                                  const start = Date.now();
-                                                 while (Date.now() - start < 15000) {if (window?.grecaptcha?.execute) return true;
+                                                 while (Date.now() - start < 15000) {const api = getRecaptchaApi();
+                                                                                     if (api?.execute) {await waitForReady(api);
+                                                                                                         return true;}
                                                                                      await sleep(150);}
                                                  return false;}
 
   async function getRecaptchaTokenForSubmit(siteKey) {if (!siteKey) return '';
                                                       const ready = await ensureGrecaptchaReady(siteKey);
-                                                      if (!ready || !window?.grecaptcha?.execute) return '';
-                                                      try {const token = await window.grecaptcha.execute(siteKey,{action: 'submit'});
+                                                      const api = getRecaptchaApi();
+                                                      if (!ready || !api?.execute) return '';
+                                                      try {const token = await api.execute(siteKey,{action: 'submit'});
                                                            return norm(token || '');}
                                                       catch (e) {dbg('municourt_recaptcha_execute_error',{msg: String(e?.message || e)});
                                                                  return '';}}
