@@ -1463,7 +1463,7 @@ Court Clerk: ${clerk}` : display;
                                   const expected = norm(document.getElementById('moNsYob')?.value || '');
                                   const filteredLog = log.filter((e) => {const m = yobMatchesExpected(expected,e?.yobRaw || e?.yob || '');
                                                                          return m.ok && !e?._skipReason;});
-                                  const jurisdictionLog = filteredLog.filter((e) => e?._source === 'municourt' || !hasUpcomingCourtDate(e));
+                                  const jurisdictionLog = filteredLog.filter((e) => !hasUpcomingCourtDate(e));
                                   const byJurisdiction = new Map();
                                   for (const e of jurisdictionLog) {const jurisdiction = norm(e?.location || '') || '- - -';
                                                                     if (!byJurisdiction.has(jurisdiction)) byJurisdiction.set(jurisdiction,[]);
@@ -1490,8 +1490,7 @@ Court Clerk: ${clerk}` : display;
                                                                    sections.push('');}
 
                                   const upcomingByJurisdiction = new Map();
-                                  for (const e of filteredLog) {if (e?._source === 'municourt') continue;
-                                                               const next = parseUpcomingCourtDate(e);
+                                  for (const e of filteredLog) {const next = parseUpcomingCourtDate(e);
                                                                if (!next) continue;
                                                                const jurisdiction = norm(e?.location || '') || '- - -';
                                                                if (!upcomingByJurisdiction.has(jurisdiction)) upcomingByJurisdiction.set(jurisdiction,[]);
