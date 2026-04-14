@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         ICBiNCn 4.7
+// @name         ICBiNCn 4.13
 // @namespace    http://tampermonkey.net/
 // @version      2026-04-13
 // @description  Background Case.net scraper using JSON/XHR endpoints. Navs to search results pages, pulls case data via POST requests, then writes to a persistent log for copying. Now with Track This Case.
@@ -894,10 +894,6 @@ async function trackTick() {const st = loadTrackState();
                                                                      const m = raw.match(regex);
                                                                      return m?.[1] ? norm(m[1]) : '';}
 
-  function parseMuniDateOnly(rawValue) {const raw = norm(rawValue || '');
-                                        if (!raw) return '';
-                                        const m = raw.match(/^(\d{1,2}\/\d{1,2}\/\d{2,4})\b/);
-                                        return m?.[1] || raw;}
 
   function getMuniSectionField(detailText,sectionLabel,fieldLabel,nextSections = []) {const raw = norm(detailText || '');
                                                                                         if (!raw || !sectionLabel || !fieldLabel) return '';
@@ -1249,7 +1245,7 @@ Court Clerk: ${clerk}` : display;
                                            for (const line of merged) {const parsed = parseMunicipalityLine(line);
                                                                        if (!parsed) continue;
                                                                        if (!map.has(parsed.key)) map.set(parsed.key,[]);
-                                                                       map.get(parsed.key).push(parsed);} 
+                                                                       map.get(parsed.key).push(parsed);}
                                            return map;}
 
 
@@ -1439,7 +1435,7 @@ Court Clerk: ${clerk}` : display;
                                                                                                                                                                                 sections.push(header);
                                                                                                                                                                                 const municourtEntries = sortedEntries.filter((e) => e?._source === 'municourt');
                                                                                                                                                                                 const nonMunicourtEntries = sortedEntries.filter((e) => e?._source !== 'municourt');
-                                                                                                                                                                                if (municourtEntries.length) {sections.push('(municourt)');
+                                                                                                                                                                                if (municourtEntries.length) {sections.push('');
                                                                                                                                                                                                              for (const e of municourtEntries) {const caseNo = getCaseNumberForSummary(e);
                                                                                                                                                                                                                                             const charge = norm(e?.chargeDescription || '') || 'No Charges Found';
                                                                                                                                                                                                                                             const lineStatus = getMunicourtSummaryLineStatus(e);
@@ -2203,7 +2199,7 @@ function render() {const log = loadLog();
                                                                                               muniAdded += 1;}
                                                                   saveLog(nextLog);
                                                                   if (muniAdded) dbg('municourt_case_batch_added',{count: muniAdded});}
-                                                             catch (e) {dbg('municourt_case_batch_error',{msg:String(e?.message || e)});} 
+                                                             catch (e) {dbg('municourt_case_batch_error',{msg:String(e?.message || e)});}
                                                              const okCount = results.filter(Boolean).length;
                                                              const errCount = (errors || []).length;
                                                              const unresolvedMsg = unresolved.length ? ` Unresolved case numbers: ${unresolved.length}.` : '';
