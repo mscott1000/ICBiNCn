@@ -127,7 +127,8 @@
                                      });
 
 
-  async function nameSearchTick() {const st = loadNameState();
+  async function nameSearchTick() {if (/municourt\.net$/i.test(location.hostname || '')) return;
+                                 const st = loadNameState();
                                  if (!st?.active) return;
                                  if (st.navPendingUntil && Date.now() < Number(st.navPendingUntil)) return;
                                  if (isRun()) return;
