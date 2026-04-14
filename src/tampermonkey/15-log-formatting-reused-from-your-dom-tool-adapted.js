@@ -8,11 +8,6 @@
                                                                      const m = raw.match(regex);
                                                                      return m?.[1] ? norm(m[1]) : '';}
 
-  function parseMuniDateOnly(rawValue) {const raw = norm(rawValue || '');
-                                        if (!raw) return '';
-                                        const m = raw.match(/^(\d{1,2}\/\d{1,2}\/\d{2,4})\b/);
-                                        return m?.[1] || raw;}
-
   function getMuniSectionField(detailText,sectionLabel,fieldLabel,nextSections = []) {const raw = norm(detailText || '');
                                                                                         if (!raw || !sectionLabel || !fieldLabel) return '';
                                                                                         const esc = (txt) => txt.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
@@ -32,7 +27,15 @@
                                             const m = raw.match(/^([\s\S]*?\b\d{5}(?:-\d{4})?)(?:\b|$)/);
                                             return norm(m?.[1] || raw);}
 
-  function getMuniCopyHeader(e) {const caseNo = getCaseNumberForSummary(e);
+  function getMuniPrimaryCaseNumber(e) {const fromCaseNumber = norm(String(e?.caseNumber || e?.ticketNumber || ''));
+                                        if (fromCaseNumber && /^\d/.test(fromCaseNumber)) return fromCaseNumber;
+                                        const fromKey = norm(String(e?.caseKey || '').split('|')[0]).replace(/[A-Z]$/i,'');
+                                        if (fromKey && /^\d/.test(fromKey)) return fromKey;
+                                        const fromTitle = norm(String(e?.caseTitle || ''));
+                                        const titleMatch = fromTitle.match(/^(\d[\d-]*)\b/);
+                                        return titleMatch?.[1] || '';}
+
+  function getMuniCopyHeader(e) {const caseNo = getMuniPrimaryCaseNumber(e) || getCaseNumberForSummary(e).replace(/\s*\(municourt\)$/i,'');
                                  const location = norm(e?.location || '');
                                  const locationBase = location.replace(/\s+MUNICIPAL\s+COURT$/i,'')
                                                               .replace(/\s+MUNICIPAL$/i,'')
@@ -113,8 +116,9 @@
                                          `Charge Description: ${e.chargeDescription || ''}`,
                                          `Charge Type: ${e.chargeType || ''}`,
                                          `Charge Class: ${e.chargeClass || ''}`,
-                                         `Judge: ${e.judge || ''}`,'',);
-                         if (e?._source !== 'municourt') lines.push(`CaseNet:\n${e.caseUrl || ''}\n`,'','','');
+                                         `Judge: ${e.judge || ''}`,'');
+                         if (e?._source !== 'municourt') lines.push(`CaseNet:\n${e.caseUrl || ''}\n`);
+                         lines.push('','','');
                          if (e?._source === 'municourt' && norm(e?.muniCaseDetailText || '')) lines.push('MuniCourt Detail:',e.muniCaseDetailText,'','','');
                          return lines.join('\n');}
 
@@ -402,6 +406,8 @@ Court Clerk: ${clerk}` : display;
                                    '- - - - -'].join('\n');
 
   function getCaseNumberForSummary(e) {const fromTitle = norm(String(e?.caseTitle || '').split('–')[0]);
+                                      if (e?._source === 'municourt') {const muniNo = getMuniPrimaryCaseNumber(e) || fromTitle;
+                                                                       return muniNo ? `${muniNo} (municourt)` : '(municourt)';}
                                       if (fromTitle && /^\d/.test(fromTitle)) return fromTitle;
                                       const fromCaseNumber = norm(String(e?.caseNumber || e?.ticketNumber || ''));
                                       if (fromCaseNumber && /^\d/.test(fromCaseNumber)) return fromCaseNumber;
@@ -552,11 +558,11 @@ Court Clerk: ${clerk}` : display;
                                                                                                                                                                                 sections.push(header);
                                                                                                                                                                                 const municourtEntries = sortedEntries.filter((e) => e?._source === 'municourt');
                                                                                                                                                                                 const nonMunicourtEntries = sortedEntries.filter((e) => e?._source !== 'municourt');
-                                                                                                                                                                                if (municourtEntries.length) {sections.push('(municourt)');
+                                                                                                                                                                                if (municourtEntries.length) {
                                                                                                                                                                                                              for (const e of municourtEntries) {const caseNo = getCaseNumberForSummary(e);
                                                                                                                                                                                                                                             const charge = norm(e?.chargeDescription || '') || 'No Charges Found';
                                                                                                                                                                                                                                             const lineStatus = getMunicourtSummaryLineStatus(e);
-                                                                                                                                                                                                                                            sections.push(`${caseNo}     ${charge} - ${lineStatus}`);}
+                                                                                                                                                                                                                                            sections.push(`${caseNo} - ${charge} - ${lineStatus}`);}
                                                                                                                                                                                                              if (nonMunicourtEntries.length) sections.push('- - -');}
                                                                                                                                                                                 for (const e of nonMunicourtEntries) {const caseNo = getCaseNumberForSummary(e);
                                                                                                                                                                                                              const charge = norm(e?.chargeDescription || '') || 'No Charges Found';
