@@ -48,6 +48,16 @@
                                                           if (s) return s;}
                                  return '';}
 
+  function muniFieldFromDetail(detailText,label,nextLabels = []) {const raw = norm(detailText || '');
+                                                                   if (!raw || !label) return '';
+                                                                   const escapedLabel = label.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+                                                                   const nextPattern = nextLabels.map((x) => x && x.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).filter(Boolean).join('|');
+                                                                   const regex = nextPattern
+                                                                     ? new RegExp(`${escapedLabel}:\\s*([\\s\\S]*?)(?=\\s*(?:${nextPattern}):|$)`,'i')
+                                                                     : new RegExp(`${escapedLabel}:\\s*([\\s\\S]*?)$`,'i');
+                                                                   const m = raw.match(regex);
+                                                                   return m?.[1] ? norm(m[1]) : '';}
+
   function mapMuniStatus(rawStatus,rawWarrant) {const blob = `${norm(rawStatus)} ${norm(rawWarrant)}`.toLowerCase();
                                                 if (!blob) return 'nonwarrant';
                                                 if (/hold/.test(blob)) return 'nonwarrant and HOLD placed on license';
@@ -323,10 +333,13 @@
                                                                                               out.push(item);}}
                                                   return out;}
 
-  function mapMuniRecordToEntry(rec,sourceLabel,caseNumberHint = '') {const caseNo = valueFromAny(rec,['ticketNumber','ticket_','caseNumber','case_','caseNo','caseNum','citationNo','citationNumber']) || norm(caseNumberHint).toUpperCase() || '- - -';
+  function mapMuniRecordToEntry(rec,sourceLabel,caseNumberHint = '') {const detail = norm(rec?.muniCaseDetailText || '');
+                                                                       const ticketFromDetail = muniFieldFromDetail(detail,'Ticket #',['OCN','Court Name','Bond Set Amount']);
+                                                                       const statusFromDetail = muniFieldFromDetail(detail,'Status',['Case #','Ticket #']);
+                                                                       const caseNo = valueFromAny(rec,['ticketNumber','ticket_','caseNumber','case_','caseNo','caseNum','citationNo','citationNumber']) || ticketFromDetail || norm(caseNumberHint).toUpperCase() || '- - -';
                                                                        const location = valueFromAny(rec,['courtName','court_name','court','municipality','city','location']) || '- - -';
                                                                        const chargeDescription = valueFromAny(rec,['chargeDescription','charge_description','offenseDescription','offense','violationDescription','charge']) || '- - -';
-                                                                       const disposition = valueFromAny(rec,['disposition','caseDisposition','dispositionText']) || '- - -';
+                                                                       const disposition = statusFromDetail || valueFromAny(rec,['status','caseStatus','disposition','caseDisposition','dispositionText']) || '- - -';
                                                                        const caseTitle = valueFromAny(rec,['defendantName','defendant','caseDesc','caseDescription','style','caption']) || '- - -';
                                                                        const judge = valueFromAny(rec,['judge','judgeName']) || '- - -';
                                                                        const nextDocketDate = valueFromAny(rec,['current_court_date','nextCourtDate','courtDate','upcomingCourtDate','nextDocketDate']) || '- - -';
@@ -334,7 +347,7 @@
                                                                        const summaryRaw = valueFromAny(rec,['status','caseStatus']);
                                                                        const summaryStatus = mapMuniStatus(summaryRaw,warrantRaw);
                                                                        const caseUrl = valueFromAny(rec,['caseUrl','url']) || sourceLabel;
-                                                                       const entryKeyBase = (caseNo || '- - -').toUpperCase();
+                                                                       const entryKeyBase = (caseNo || valueFromAny(rec,['button']) || '- - -').toUpperCase();
                                                                        const summaryRow = norm(rec?.resultRowText || `${caseTitle}   ${caseNo}   ${location}   ${chargeDescription}   ${summaryRaw || summaryStatus}`);
                                                                        const parsedDetail = parseMuniFullCaseDetails(rec?.muniCaseDetailText || '');
                                                                        const muniLocation = parsedDetail.courtName !== '- - -' ? parsedDetail.courtName : location;
@@ -364,7 +377,8 @@
                                                                                bondAmount: parsedDetail.bondSetAmount || '- - -',
                                                                                mostRecentWarrantDate: parsedDetail.originalCourtDate || '- - -',
                                                                                muniSummaryRow: summaryRow,
-                                                                               muniCaseDetailText: norm(rec?.muniCaseDetailText || ''),
+                                                                               ticketNumber: caseNo,
+                                                                               muniCaseDetailText: detail,
                                                                                _source: 'municourt',};}
 
   function flattenLikelyCaseRecords(node) {const out = [];

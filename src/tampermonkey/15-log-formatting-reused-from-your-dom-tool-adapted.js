@@ -1,3 +1,83 @@
+  function getMuniFieldFromDetail(detailText,label,nextLabels = []) {const raw = norm(detailText || '');
+                                                                     if (!raw || !label) return '';
+                                                                     const escapedLabel = label.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+                                                                     const nextPattern = nextLabels.map((x) => x && x.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).filter(Boolean).join('|');
+                                                                     const regex = nextPattern
+                                                                       ? new RegExp(`${escapedLabel}:\\s*([\\s\\S]*?)(?=\\s*(?:${nextPattern}):|$)`,'i')
+                                                                       : new RegExp(`${escapedLabel}:\\s*([\\s\\S]*?)$`,'i');
+                                                                     const m = raw.match(regex);
+                                                                     return m?.[1] ? norm(m[1]) : '';}
+
+  function parseMuniDateOnly(rawValue) {const raw = norm(rawValue || '');
+                                        if (!raw) return '';
+                                        const m = raw.match(/^(\d{1,2}\/\d{1,2}\/\d{2,4})\b/);
+                                        return m?.[1] || raw;}
+
+  function getMuniSectionField(detailText,sectionLabel,fieldLabel,nextSections = []) {const raw = norm(detailText || '');
+                                                                                        if (!raw || !sectionLabel || !fieldLabel) return '';
+                                                                                        const esc = (txt) => txt.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+                                                                                        const nextPattern = nextSections.map((x) => esc(x || '')).filter(Boolean).join('|');
+                                                                                        const sectionRegex = nextPattern
+                                                                                          ? new RegExp(`${esc(sectionLabel)}\\s*([\\s\\S]*?)(?=\\s*(?:${nextPattern})\\b|$)`,'i')
+                                                                                          : new RegExp(`${esc(sectionLabel)}\\s*([\\s\\S]*?)$`,'i');
+                                                                                        const sectionMatch = raw.match(sectionRegex);
+                                                                                        if (!sectionMatch?.[1]) return '';
+                                                                                        const sectionText = norm(sectionMatch[1]);
+                                                                                        const fieldRegex = new RegExp(`${esc(fieldLabel)}:\\s*([^\\n]*?)(?=\\s+[A-Z][A-Za-z ]{1,40}:|$)`,'i');
+                                                                                        const fieldMatch = sectionText.match(fieldRegex);
+                                                                                        return norm(fieldMatch?.[1] || '');}
+
+  function trimAddressAfterZip(rawAddress) {const raw = norm(rawAddress || '');
+                                            if (!raw) return '';
+                                            const m = raw.match(/^([\s\S]*?\b\d{5}(?:-\d{4})?)(?:\b|$)/);
+                                            return norm(m?.[1] || raw);}
+
+  function getMuniCopyHeader(e) {const caseNo = getCaseNumberForSummary(e);
+                                 const location = norm(e?.location || '');
+                                 const locationBase = location.replace(/\s+MUNICIPAL\s+COURT$/i,'')
+                                                              .replace(/\s+MUNICIPAL$/i,'')
+                                                              .trim();
+                                 const locationLabel = (locationBase || location || '- - -').toUpperCase();
+                                 return `${caseNo} - ${locationLabel} (municourt)`;}
+
+  function applyMuniDetailFormatting(e) {if (e?._source !== 'municourt') return e;
+                                         const detail = norm(e?.muniCaseDetailText || '');
+                                         if (!detail) return e;
+                                         const status = getMuniFieldFromDetail(detail,'Status',['Case #','Ticket #']);
+                                         const bondAmount = getMuniFieldFromDetail(detail,'Bond Set Amount',['Website','Defendant']);
+                                         const detailAddress = getMuniFieldFromDetail(detail,'Address',['Violation Information','Date/Time','Issuing Agency','Charge Information']);
+                                         const address = trimAddressAfterZip(detailAddress || e.address);
+                                         const birthYear = getMuniFieldFromDetail(detail,'Birth Year',['Address','Violation Information']) || e.yob;
+                                         const attorney = getMuniSectionField(detail,'Defense Attorney Information','Name',['Case Filed Date','Original Court Date','Current Court Date']) || e.attorney;
+                                         const caseFiledDate = getMuniFieldFromDetail(detail,'Case Filed Date',['Original Court Date','Current Court Date']) || e.dateFiled;
+                                         const originalCourtDate = getMuniFieldFromDetail(detail,'Original Court Date',['Current Court Date']);
+                                         const currentCourtDate = getMuniFieldFromDetail(detail,'Current Court Date',['Charge Information']) || e.nextDocketDate;
+                                         const chargeDescriptionRaw = getMuniFieldFromDetail(detail,'Charge',['State Charge','Ordinance']);
+                                         const chargeDescription = norm(chargeDescriptionRaw.replace(/^\d+\s+/,'') || '') || e.chargeDescription;
+                                         const disposition = status || e.disposition;
+                                         const ticketNumber = getMuniFieldFromDetail(detail,'Ticket #',['OCN','Court Name','Bond Set Amount']) || e.ticketNumber || '';
+                                         const chargeType = getMuniFieldFromDetail(detail,'Ordinance',['Disposition Date','Plea']) ? 'Ordinance' : (e.chargeType || '- - -');
+                                         const originalDateOnly = parseMuniDateOnly(originalCourtDate);
+                                         const currentDateOnly = parseMuniDateOnly(currentCourtDate);
+                                         return {...e,
+                                           caseNumber: ticketNumber || e.caseNumber || e.caseKey || '',
+                                           caseTitle: getMuniCopyHeader(e),
+                                           dateFiled: caseFiledDate || '- - -',
+                                           disposition: disposition || '- - -',
+                                           caseBalance: e.caseBalance || '- - -',
+                                           address: address || '- - -',
+                                           yob: birthYear || '- - -',
+                                           attorney: attorney || '- - -',
+                                           warrantSummary: originalDateOnly || e.warrantSummary || '- - -',
+                                           event: status || '- - -',
+                                           bondAmount: bondAmount || '- - -',
+                                           ftaDates: [originalDateOnly || '- - -'],
+                                           nextDocketDate: currentDateOnly || '- - -',
+                                           chargeDescription: chargeDescription || '- - -',
+                                           chargeType: chargeType || '- - -',
+                                           chargeClass: e.chargeClass || '- - -',
+                                           judge: e.judge || '- - -'};}
+
 /************************************************************
    * Log formatting (reused from your DOM tool, adapted)
    ************************************************************/
@@ -33,9 +113,8 @@
                                          `Charge Description: ${e.chargeDescription || ''}`,
                                          `Charge Type: ${e.chargeType || ''}`,
                                          `Charge Class: ${e.chargeClass || ''}`,
-                                         `Judge: ${e.judge || ''}`,'');
-                         if (e?._source !== 'municourt') lines.push(`CaseNet:\n${e.caseUrl || ''}\n`);
-                         lines.push('','','');
+                                         `Judge: ${e.judge || ''}`,'',);
+                         if (e?._source !== 'municourt') lines.push(`CaseNet:\n${e.caseUrl || ''}\n`,'','','');
                          if (e?._source === 'municourt' && norm(e?.muniCaseDetailText || '')) lines.push('MuniCourt Detail:',e.muniCaseDetailText,'','','');
                          return lines.join('\n');}
 
@@ -67,7 +146,7 @@
                                                                                  orderedEntries.push(...sortedEntries);}}
                                   appendEntries(eligibleJurisdictions);
                                   appendEntries(ineligibleJurisdictions);
-                                  return orderedEntries.map((e) => formatEntry(e)).join('\n').trim();}
+                                  return orderedEntries.map((e) => formatEntry(applyMuniDetailFormatting(e))).join('\n').trim();}
 
 
 
@@ -324,8 +403,12 @@ Court Clerk: ${clerk}` : display;
 
   function getCaseNumberForSummary(e) {const fromTitle = norm(String(e?.caseTitle || '').split('–')[0]);
                                       if (fromTitle && /^\d/.test(fromTitle)) return fromTitle;
+                                      const fromCaseNumber = norm(String(e?.caseNumber || e?.ticketNumber || ''));
+                                      if (fromCaseNumber && /^\d/.test(fromCaseNumber)) return fromCaseNumber;
                                       const fromKey = norm(e?.caseKey || '');
                                       if (fromKey) {const stripped = norm(fromKey.split('|')[0]);
+                                                    const strippedDigits = norm(stripped.replace(/[A-Z]$/i,''));
+                                                    if (strippedDigits && /^\d/.test(strippedDigits)) return strippedDigits;
                                                     if (stripped) return stripped;
                                                     return fromKey;}
                                       return '- - -';}
