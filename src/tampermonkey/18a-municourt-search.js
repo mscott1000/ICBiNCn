@@ -438,10 +438,12 @@
 
   async function searchMunicourtEntriesByName(params) {setMuniDiag({phase:'start',params: {...params}});
                                                       let candidates = [];
-                                                      try {candidates = await searchMuniViaSubmitByName(params || {});
-                                                           if (!candidates.length && !/municourt\.net$/i.test(location.hostname || '')) candidates = await searchMuniViaRemoteWorker(params || {});
-                                                           candidates = await attachMuniFullCaseDetails(candidates);}
-                                                      catch (e) {dbg('municourt_submit_by_name_failed',{msg:String(e?.message || e)});}
+                                                      let submitByNameErrored = false;
+                                                      try {candidates = await searchMuniViaSubmitByName(params || {});}
+                                                      catch (e) {submitByNameErrored = true;
+                                                                 dbg('municourt_submit_by_name_failed',{msg:String(e?.message || e)});}
+                                                      if (submitByNameErrored && !/municourt\.net$/i.test(location.hostname || '')) candidates = await searchMuniViaRemoteWorker(params || {});
+                                                      candidates = await attachMuniFullCaseDetails(candidates);
                                                       if (!candidates.length) candidates = await fetchMunicourtCandidates(params || {});
                                                       const entries = [];
                                                       const seen = new Set();
