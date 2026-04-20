@@ -54,8 +54,7 @@
                                           return 'placed';}
 
   function findFirstWarrantOrSummons(docketList) {const hasRecallOrServedLanguage = (t) => /\brecall\w*\b|\bserv\w*\b/i.test(t);
-                                                 const isWarrantServed = (t) => /\bwarrant\s+served\b/i.test(t);
-                                                 const isWarrant = (t) => /\bwarrant\b/i.test(t) && !isWarrantServed(t);
+                                                 const isWarrant = (t) => /\bwarrant\b/i.test(t);
                                                  const isSummons = (t) => /\bsummons?\b|\bsummon\b|\bsummoned\b/i.test(t);
                                                  for (const e of docketList || []) {const desc = norm(e?.docketDesc || '');
                                                                                    const txt = norm(e?.docketText || '');
