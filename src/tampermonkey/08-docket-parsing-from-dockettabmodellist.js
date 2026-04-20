@@ -45,9 +45,9 @@
 
   function classifyLicenseHoldEvent(text) {const t = normalizePhraseForMatch(text);
                                           if (!t) return '';
-                                          const hasHold = /\bhold\b/.test(t) || /\bheld\b/.test(t);
-                                          const hasLicense = /\blicen[sc]e\b/.test(t);
-                                          if (!hasHold || !hasLicense) return '';
+                                          const hasHold = /\bhold\b/.test(t) || /\bheld\b/.test(t) || /\bhold\s+order\b/.test(t);
+                                          const hasLicenseContext = /\blicen[sc]e\b/.test(t) || /\bdmv\b/.test(t) || /\bdor\b/.test(t) || /\bdriv(?:er|ing)\b/.test(t);
+                                          if (!hasHold || !hasLicenseContext) return '';
                                           if (/\breleased\b/.test(t) || /\blifted\b/.test(t) || /\bremoved\b/.test(t)) return 'released';
                                           if (/\bplaced\b/.test(t)) return 'placed';
                                           if (/\bplace\b/.test(t)) return 'placed';
@@ -85,9 +85,9 @@
 
   function findLicenseHoldDate(docketList) {for (const e of docketList || []) {const line = docketEntryText(e);
                                                                              if (!line) continue;
-                                                                             const hasHold = /\bhold\b/i.test(line);
-                                                                             const hasLicense = /\blicen[sc]e\b/i.test(line);
-                                                                             if (hasHold && hasLicense) return norm(e?.filingDate || '') || '';}
+                                                                             const hasHold = /\bhold\b/i.test(line) || /\bhold\s+order\b/i.test(line);
+                                                                             const hasLicenseContext = /\blicen[sc]e\b/i.test(line) || /\bdmv\b/i.test(line) || /\bdor\b/i.test(line) || /\bdriv(?:er|ing)\b/i.test(line);
+                                                                             if (hasHold && hasLicenseContext) return norm(e?.filingDate || '') || '';}
                                             return '';}
 
   function analyzeDocketStatus(docketList) {let paidInFull = false;
