@@ -60,8 +60,11 @@
 
   function mapMuniStatus(rawStatus,rawWarrant) {const blob = `${norm(rawStatus)} ${norm(rawWarrant)}`.toLowerCase();
                                                 if (!blob) return 'nonwarrant';
-                                                if (/hold/.test(blob)) return 'nonwarrant and HOLD placed on license';
-                                                if (/warrant|capias|failure to appear/.test(blob) && !/recalled|served|withdrawn|canceled|cancelled/.test(blob)) return 'warrant';
+                                                const hasHold = /hold/.test(blob);
+                                                const hasActiveWarrant = /warrant|capias|failure to appear/.test(blob) && !/recalled|served|withdrawn|canceled|cancelled/.test(blob);
+                                                if (hasActiveWarrant && hasHold) return 'warrant and HOLD placed on license';
+                                                if (hasActiveWarrant) return 'warrant';
+                                                if (hasHold) return 'nonwarrant and HOLD placed on license';
                                                 return 'nonwarrant';}
 
   function htmlDocFromText(txt) {return new DOMParser().parseFromString(String(txt || ''),'text/html');}
