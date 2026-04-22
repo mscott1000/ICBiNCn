@@ -102,9 +102,8 @@
                                                                  entry.chargeClass = chargeParts.cls || '- - -';
                                                                  entry.caseBalance = await getCaseBalanceIfGuiltyViaApi(entry.disposition,basics.header_meta,caseNumber,resolvedCourtId);
                                                                  const isGuiltyDisposed = /guilty/i.test(String(entry.disposition || ''));
-                                                                 const hasStrictZeroBalance = String(entry.caseBalance || '').trim() === '0';
+                                                                 const hasZeroBalance = /^\$?0(?:\.0+)?$/.test(String(entry.caseBalance || '').replace(/,/g,'').trim());
                                                                  const isNonwarrantStatus = /^nonwarrant\b/i.test(String(entry.summaryStatus || '').trim());
-                                                                 const hasReliableNonwarrantEvidence = Boolean(hit && (hasRecallOrServedLanguage || hit.kind === 'summons'));
-                                                                 if (isGuiltyDisposed && hasStrictZeroBalance && isNonwarrantStatus && hasReliableNonwarrantEvidence) {entry._skipReason = 'guilty_zero_balance_nonwarrant';
-                                                                                                                                                                     return entry;}
+                                                                 if (isGuiltyDisposed && hasZeroBalance && isNonwarrantStatus) {entry._skipReason = 'guilty_zero_balance_nonwarrant';
+                                                                                                                           return entry;}
                                                                  return entry;}

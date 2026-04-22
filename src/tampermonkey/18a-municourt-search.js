@@ -58,37 +58,14 @@
                                                                    const m = raw.match(regex);
                                                                    return m?.[1] ? norm(m[1]) : '';}
 
-  function muniLineDateTs(line,index = 0) {const m = norm(line || '').match(/\b(\d{1,2}\/\d{1,2}\/\d{2,4})\b/);
-                                            if (!m?.[1]) return Number.NaN;
-                                            const dt = parseUsDateToDate(m[1]);
-                                            if (!(dt instanceof Date) || Number.isNaN(dt.getTime())) return Number.NaN;
-                                            return dt.getTime() + (index / 10000);}
-
-  function mapMuniStatus(rawStatus,rawWarrant,detailText = '') {const blob = `${norm(rawStatus)} ${norm(rawWarrant)}`.toLowerCase();
-                                                                const detail = String(detailText || '');
-                                                                let warrantSeenTs = Number.NEGATIVE_INFINITY;
-                                                                let holdSeenTs = Number.NEGATIVE_INFINITY;
-                                                                let clearSeenTs = Number.NEGATIVE_INFINITY;
-                                                                const lines = detail ? detail.split(/\r?\n/) : [];
-                                                                for (let i = 0;i < lines.length;i++) {const line = norm(lines[i] || '');
-                                                                                                       if (!line) continue;
-                                                                                                       const t = line.toLowerCase();
-                                                                                                       const ts = muniLineDateTs(line,i);
-                                                                                                       const markTs = Number.isFinite(ts) ? ts : i;
-                                                                                                       if (/\bwarrant\b|\bcapias\b|\bfailure to appear\b/.test(t) && !/\brecalled\b|\bserved\b|\bwithdrawn\b|\bcanceled\b|\bcancelled\b/.test(t)) warrantSeenTs = Math.max(warrantSeenTs,markTs);
-                                                                                                       if (/\bhold\b|\bheld\b|\bhold\s+order\b/.test(t) && !/\breleased\b|\blifted\b|\bremoved\b/.test(t)) holdSeenTs = Math.max(holdSeenTs,markTs);
-                                                                                                       if (/\bsentenced\b|\bdestroy\b|\breleased\b|\brecalled\b|\bserved\b|\bwithdrawn\b|\bcanceled\b|\bcancelled\b|\blifted\b|\bremoved\b/.test(t)) clearSeenTs = Math.max(clearSeenTs,markTs);}
-
-                                                                if (blob) {if (/\bwarrant\b|\bcapias\b|\bfailure to appear\b/.test(blob) && !/\brecalled\b|\bserved\b|\bwithdrawn\b|\bcanceled\b|\bcancelled\b/.test(blob)) warrantSeenTs = Math.max(warrantSeenTs,-0.25);
-                                                                          if (/\bhold\b|\bheld\b|\bhold\s+order\b/.test(blob) && !/\breleased\b|\blifted\b|\bremoved\b/.test(blob)) holdSeenTs = Math.max(holdSeenTs,-0.25);
-                                                                          if (/\bsentenced\b|\bdestroy\b|\breleased\b|\brecalled\b|\bserved\b|\bwithdrawn\b|\bcanceled\b|\bcancelled\b|\blifted\b|\bremoved\b/.test(blob)) clearSeenTs = Math.max(clearSeenTs,-0.25);}
-
-                                                                const hasActiveWarrant = warrantSeenTs > clearSeenTs;
-                                                                const hasActiveHold = holdSeenTs > clearSeenTs;
-                                                                if (hasActiveWarrant && hasActiveHold) return 'warrant and HOLD placed on license';
-                                                                if (hasActiveWarrant) return 'warrant';
-                                                                if (hasActiveHold) return 'nonwarrant and HOLD placed on license';
-                                                                return 'nonwarrant';}
+  function mapMuniStatus(rawStatus,rawWarrant) {const blob = `${norm(rawStatus)} ${norm(rawWarrant)}`.toLowerCase();
+                                                if (!blob) return 'nonwarrant';
+                                                const hasHold = /hold/.test(blob);
+                                                const hasActiveWarrant = /warrant|capias|failure to appear/.test(blob) && !/recalled|served|withdrawn|canceled|cancelled/.test(blob);
+                                                if (hasActiveWarrant && hasHold) return 'warrant and HOLD placed on license';
+                                                if (hasActiveWarrant) return 'warrant';
+                                                if (hasHold) return 'nonwarrant and HOLD placed on license';
+                                                return 'nonwarrant';}
 
   function htmlDocFromText(txt) {return new DOMParser().parseFromString(String(txt || ''),'text/html');}
 
@@ -371,7 +348,7 @@
                                                                        const nextDocketDate = valueFromAny(rec,['current_court_date','nextCourtDate','courtDate','upcomingCourtDate','nextDocketDate']) || '- - -';
                                                                        const warrantRaw = valueFromAny(rec,['warrantStatus','warrantSummary','warrant']);
                                                                        const summaryRaw = valueFromAny(rec,['status','caseStatus']);
-                                                                       const summaryStatus = mapMuniStatus(summaryRaw,warrantRaw,detail);
+                                                                       const summaryStatus = mapMuniStatus(summaryRaw,warrantRaw);
                                                                        const caseUrl = valueFromAny(rec,['caseUrl','url']) || sourceLabel;
                                                                        const entryKeyBase = (caseNo || valueFromAny(rec,['button']) || '- - -').toUpperCase();
                                                                        const summaryRow = norm(rec?.resultRowText || `${caseTitle}   ${caseNo}   ${location}   ${chargeDescription}   ${summaryRaw || summaryStatus}`);
