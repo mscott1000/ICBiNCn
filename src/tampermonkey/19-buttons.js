@@ -1,7 +1,7 @@
 /************************************************************
    * Buttons
    ************************************************************/
-  function buildNameSearchPasses(params) {const caseTypePasses = ['criminal','traffic'];
+  function buildNameSearchPasses(params) {const caseTypePasses = ['criminal','traffic','infraction'];
                                    const middleRaw = norm(params?.middle || '');
                                    return caseTypePasses.map((caseType) => ({caseType,
                                                                             middle: middleRaw,
