@@ -122,36 +122,38 @@
                          if (e?._source === 'municourt' && norm(e?.muniCaseDetailText || '')) lines.push('MuniCourt Detail:',e.muniCaseDetailText,'','','');
                          return lines.join('\n');}
 
-  function buildGroupedCopyText() {const log = loadLog();
-                                  const expected = norm(document.getElementById('moNsYob')?.value || '');
-                                  const filteredLog = log.filter((e) => {const m = yobMatchesExpected(expected,e?.yobRaw || e?.yob || '');
-                                                                         return m.ok;});
-                                  const byJurisdiction = new Map();
-                                  for (const e of filteredLog) {const jurisdiction = norm(e?.location || '') || '- - -';
-                                                                if (!byJurisdiction.has(jurisdiction)) byJurisdiction.set(jurisdiction,[]);
-                                                                byJurisdiction.get(jurisdiction).push(e);}
-                                  const sortedJurisdictions = Array.from(byJurisdiction.entries())
-                                                                   .map(([jurisdiction,entries],idx) => ({jurisdiction,entries,idx,score: getJurisdictionScore(entries)}))
-                                                                   .sort((a,b) => {const scoreDiff = b.score - a.score;
-                                                                                   if (scoreDiff) return scoreDiff;
-                                                                                   return a.idx - b.idx;});
-                                  const eligibleJurisdictions = [];
-                                  const ineligibleJurisdictions = [];
-                                  for (const jurisdictionEntry of sortedJurisdictions) {if (isEligibleSummaryJurisdiction(jurisdictionEntry.jurisdiction)) eligibleJurisdictions.push(jurisdictionEntry);
-                                                                                         else ineligibleJurisdictions.push(jurisdictionEntry);}
-                                  const orderedEntries = [];
-                                  function appendEntries(jurisdictions) {for (const {entries} of jurisdictions) {const sortedEntries = entries.map((entry,idx) => ({entry,idx}))
-                                                                                                                               .sort((a,b) => {const judgeA = normalizeJudgeName(a.entry?.judge || '');
-                                                                                                                                               const judgeB = normalizeJudgeName(b.entry?.judge || '');
-                                                                                                                                               const judgeDiff = judgeA.localeCompare(judgeB);
-                                                                                                                                               if (judgeDiff) return judgeDiff;
-                                                                                                                                               return a.idx - b.idx;})
-                                                                                                                               .map(({entry}) => entry);
-                                                                                 orderedEntries.push(...sortedEntries);}}
-                                  appendEntries(eligibleJurisdictions);
-                                  appendEntries(ineligibleJurisdictions);
-                                  return orderedEntries.map((e) => formatEntry(applyMuniDetailFormatting(e))).join('\n').trim();}
+  function getOrderedEntriesForClipboard() {const log = loadLog();
+                                            const expected = norm(document.getElementById('moNsYob')?.value || '');
+                                            const filteredLog = log.filter((e) => {const m = yobMatchesExpected(expected,e?.yobRaw || e?.yob || '');
+                                                                                   return m.ok;});
+                                            const byJurisdiction = new Map();
+                                            for (const e of filteredLog) {const jurisdiction = norm(e?.location || '') || '- - -';
+                                                                          if (!byJurisdiction.has(jurisdiction)) byJurisdiction.set(jurisdiction,[]);
+                                                                          byJurisdiction.get(jurisdiction).push(e);}
+                                            const sortedJurisdictions = Array.from(byJurisdiction.entries())
+                                                                             .map(([jurisdiction,entries],idx) => ({jurisdiction,entries,idx,score: getJurisdictionScore(entries)}))
+                                                                             .sort((a,b) => {const scoreDiff = b.score - a.score;
+                                                                                             if (scoreDiff) return scoreDiff;
+                                                                                             return a.idx - b.idx;});
+                                            const eligibleJurisdictions = [];
+                                            const ineligibleJurisdictions = [];
+                                            for (const jurisdictionEntry of sortedJurisdictions) {if (isEligibleSummaryJurisdiction(jurisdictionEntry.jurisdiction)) eligibleJurisdictions.push(jurisdictionEntry);
+                                                                                                   else ineligibleJurisdictions.push(jurisdictionEntry);}
+                                            const orderedEntries = [];
+                                            function appendEntries(jurisdictions) {for (const {entries} of jurisdictions) {const sortedEntries = entries.map((entry,idx) => ({entry,idx}))
+                                                                                                                                         .sort((a,b) => {const judgeA = normalizeJudgeName(a.entry?.judge || '');
+                                                                                                                                                         const judgeB = normalizeJudgeName(b.entry?.judge || '');
+                                                                                                                                                         const judgeDiff = judgeA.localeCompare(judgeB);
+                                                                                                                                                         if (judgeDiff) return judgeDiff;
+                                                                                                                                                         return a.idx - b.idx;})
+                                                                                                                                         .map(({entry}) => entry);
+                                                                                           orderedEntries.push(...sortedEntries);}}
+                                            appendEntries(eligibleJurisdictions);
+                                            appendEntries(ineligibleJurisdictions);
+                                            return orderedEntries;}
 
+  function buildGroupedCopyText() {const orderedEntries = getOrderedEntriesForClipboard();
+                                  return orderedEntries.map((e) => formatEntry(applyMuniDetailFormatting(e))).join('\n').trim();}
 
 
   const MUNICIPALITY_CONTACTS_RAW = `ARNOLD MUNICIPAL - (636) 296-0595
@@ -573,4 +575,44 @@ Court Clerk: ${clerk}` : display;
                                                                                                                                                                                 sections.push('');}}
                                                                   return {sections,hasFreshStartFridaySection};}
 
-  function buildSummaryCopyText() {return buildGroupedCopyText();}
+  function buildSummaryCopyText() {const filteredLog = getOrderedEntriesForClipboard();
+                                  const byJurisdiction = new Map();
+                                  for (const e of filteredLog) {const jurisdiction = norm(e?.location || '') || '- - -';
+                                                                if (!byJurisdiction.has(jurisdiction)) byJurisdiction.set(jurisdiction,[]);
+                                                                byJurisdiction.get(jurisdiction).push(e);}
+
+                                  const sortedJurisdictions = Array.from(byJurisdiction.entries())
+                                                                   .map(([jurisdiction,entries],idx) => ({jurisdiction,entries,idx,score: getJurisdictionScore(entries)}))
+                                                                   .sort((a,b) => {const scoreDiff = b.score - a.score;
+                                                                                   if (scoreDiff) return scoreDiff;
+                                                                                   return a.idx - b.idx;});
+                                  const eligibleJurisdictions = [];
+                                  const ineligibleJurisdictions = [];
+                                  for (const jurisdictionEntry of sortedJurisdictions) {if (isEligibleSummaryJurisdiction(jurisdictionEntry.jurisdiction)) eligibleJurisdictions.push(jurisdictionEntry);
+                                                                                         else ineligibleJurisdictions.push(jurisdictionEntry);}
+                                  const {sections: eligibleSections,hasFreshStartFridaySection: eligibleHasFreshStartFridaySection} = buildJurisdictionSummarySections(eligibleJurisdictions);
+                                  const {sections: ineligibleSections,hasFreshStartFridaySection: ineligibleHasFreshStartFridaySection} = buildJurisdictionSummarySections(ineligibleJurisdictions);
+                                  const sections = [...eligibleSections];
+                                  if (eligibleSections.length && ineligibleSections.length) sections.push('');
+                                  sections.push(...ineligibleSections);
+                                  const hasFreshStartFridaySection = eligibleHasFreshStartFridaySection || ineligibleHasFreshStartFridaySection;
+
+                                  if (hasFreshStartFridaySection) {sections.push(FRESH_START_FRIDAY_TEXT);
+                                                                   sections.push('');
+                                                                   sections.push('');}
+
+                                  const upcomingByJurisdiction = new Map();
+                                  for (const e of filteredLog) {const next = parseUpcomingCourtDate(e);
+                                                               if (!next) continue;
+                                                               const jurisdiction = norm(e?.location || '') || '- - -';
+                                                               if (!upcomingByJurisdiction.has(jurisdiction)) upcomingByJurisdiction.set(jurisdiction,[]);
+                                                               upcomingByJurisdiction.get(jurisdiction).push(next);}
+
+                                  if (upcomingByJurisdiction.size) {sections.push('');
+                                                                   sections.push('Here are the upcoming court dates we were able to find:');
+                                                                   sections.push('');
+                                                                   for (const [jurisdiction,dates] of upcomingByJurisdiction.entries()) {sections.push(jurisdiction);
+                                                                                                                              for (const d of dates) sections.push(d);
+                                                                                                                              sections.push('');}}
+
+                                  return sections.join('\n').trim();}
