@@ -16,7 +16,7 @@
                                                                             setRun(false);
                                                                             saveDraft({...params});
                                                                             const passes = buildNameSearchPasses(params);
-                                                                            saveNameState({active:true,passIndex:0,passes,step:'go_search',params,});
+                                                                            saveNameState({active:true,passIndex:0,passes,step:'go_search',params,casenetAddedTotal:0,});
                                                                             uiStatus('Searching…');
                                                                             dbg('namesearch_start',{params});
                                                                             if (!isNameSearchPage()) {location.href = canonicalNameSearchUrl();}
@@ -137,7 +137,16 @@
                                  const passKey = typeof pass === 'string' ? pass : pass?.caseType;
                                  const passMiddle = typeof pass === 'string' ? (st.params?.middle || '') : (pass?.middle || '');
                                  const passLabel = typeof pass === 'string' ? passKey : (pass?.label || passKey);
-                                 if (!passKey) {if (st.step === 'municourt_finalizing') {const age = Date.now() - Number(st.finalizingStartedAt || 0);
+                                 if (!passKey) {uiStatus('Preparing Municourt.net pass (3/3)');
+                                                render();
+                                                if (Number(st.prepareStartedAt || 0) === 0) {st.prepareStartedAt = Date.now();
+                                                                                             saveNameState(st);
+                                                                                             return;}
+                                                const muniPrepAge = Date.now() - Number(st.prepareStartedAt || 0);
+                                                if (muniPrepAge < 3000) return;
+                                                st.prepareStartedAt = 0;
+                                                saveNameState(st);
+                                                if (st.step === 'municourt_finalizing') {const age = Date.now() - Number(st.finalizingStartedAt || 0);
                                                                                           if (age < 120000) return;
                                                                                           dbg('namesearch_municourt_final_pass_stale_reset',{ageMs: age});
                                                                                           st.step = 'go_search';
@@ -158,9 +167,10 @@
                                                      saveLog(nextLog);
                                                      dbg('namesearch_municourt_final_pass_done',{count: muniAdded});}
                                                 catch (e) {dbg('namesearch_municourt_final_pass_error',{msg:String(e?.message || e)});}
-                                                dbg('namesearch_done',{muniAdded});
+                                                const casenetAdded = Number(st.casenetAddedTotal || 0);
+                                                dbg('namesearch_done',{casenetAdded,muniAdded});
                                                 clearNameState();
-                                                uiStatus(`Done. Added ${muniAdded} Municourt case(s) on final pass.`);
+                                                uiStatus(`Done. Case.net: ${casenetAdded}  Municourt.net: ${muniAdded}`);
                                                 render();
                                                 return;}
                                  if (isNameSearchPage()) {if (st.step === 'submitted_waiting_results') {const age = Date.now() - Number(st.submittedAt || 0);
@@ -168,6 +178,17 @@
                                                                                                         dbg('namesearch_resubmit',{passKey,ageMs:age});
                                                                                                         st.step = 'go_search';
                                                                                                         saveNameState(st);}
+                                                          const prepMessages = ['Preparing Criminal pass (1/3)','Preparing Traffic/Municipal pass (2/3)','Preparing Municourt.net pass (3/3)'];
+                                                          const prepLabel = prepMessages[st.passIndex || 0] || `Preparing pass (${(st.passIndex || 0) + 1}/3)`;
+                                                          uiStatus(prepLabel);
+                                                          render();
+                                                          if (Number(st.prepareStartedAt || 0) === 0) {st.prepareStartedAt = Date.now();
+                                                                                                       saveNameState(st);
+                                                                                                       return;}
+                                                          const prepAge = Date.now() - Number(st.prepareStartedAt || 0);
+                                                          if (prepAge < 3000) return;
+                                                          st.prepareStartedAt = 0;
+                                                          saveNameState(st);
                                                           uiStatus(`Searching ${st.passIndex + 1}/${(st.passes || []).length} (${passLabel})…`);
                                                           dbg('namesearch_submit',{passKey,passMiddle});
                                                           fillNameSearchForm({...st.params,middle: passMiddle},passKey);
@@ -193,14 +214,17 @@
                                                                 st.step = 'pulling_results';
                                                                 st.pullStartedAt = Date.now();
                                                                 saveNameState(st);
-                                                                try {await pullJsonFromResultsPage();}
+                                                                let pullStats = null;
+                                                                try {pullStats = await pullJsonFromResultsPage();}
                                                                 catch (e) {dbg('namesearch_pull_fatal',{passKey,msg:String(e?.message || e)});
                                                                            setRun(false);}
+                                                                st.casenetAddedTotal = Number(st.casenetAddedTotal || 0) + Number(pullStats?.appendedCount || 0);
                                                                 dbg('namesearch_pull_done',{passKey});
                                                                 st.passIndex = (st.passIndex || 0) + 1;
                                                                 st.step = 'go_search';
                                                                 st.pullStartedAt = 0;
-                                                                st.navPendingUntil = Date.now() + 5000;
+                                                                st.prepareStartedAt = Date.now();
+                                                                st.navPendingUntil = Date.now() + 3000;
                                                                 saveNameState(st);
                                                                 location.href = canonicalNameSearchUrl();
                                                                 return;}

@@ -878,7 +878,9 @@ async function trackTick() {const st = loadTrackState();
                                                                  entry.chargeClass = chargeParts.cls || '- - -';
                                                                  entry.caseBalance = await getCaseBalanceIfGuiltyViaApi(entry.disposition,basics.header_meta,caseNumber,resolvedCourtId);
                                                                  const isGuiltyDisposed = /guilty/i.test(String(entry.disposition || ''));
-                                                                 const hasZeroBalance = /^\$?0(?:\.0+)?$/.test(String(entry.caseBalance || '').replace(/,/g,'').trim());
+                                                                 const caseBalanceText = String(entry.caseBalance || '').trim();
+                                                                 const hasUnknownBalance = /^-\s*-\s*-$/.test(caseBalanceText);
+                                                                 const hasZeroBalance = !hasUnknownBalance && /^\$?0(?:\.0+)?$/.test(caseBalanceText.replace(/,/g,''));
                                                                  const isNonwarrantStatus = /^nonwarrant\b/i.test(String(entry.summaryStatus || '').trim());
                                                                  if (isGuiltyDisposed && hasZeroBalance && isNonwarrantStatus) {entry._skipReason = 'guilty_zero_balance_nonwarrant';
                                                                                                                            return entry;}
@@ -2223,10 +2225,10 @@ function render() {const log = loadLog();
                                            const ready = await waitForResultsReady();
                                            if (ready?.noMatches) {uiStatus('No matches found for this search.');
                                                                   render();
-                                                                  return;}
+                                                                  return {appendedCount: 0};}
                                            if (!ready?.ready) {uiStatus('Results are still loading. Try again in a moment.');
                                                                render();
-                                                               return;}
+                                                               return {appendedCount: 0};}
                                            setShowEntriesTo100();
                                            const ns = loadNameState();
                                            const searchParams = ns?.params || {};
@@ -2249,7 +2251,7 @@ function render() {const log = loadLog();
                                            dbg('harvest_done',{count: cases.length});
                                            if (!cases.length) {uiStatus('No case links found.');
                                                                render();
-                                                               return;}
+                                                               return {appendedCount: 0};}
                                            setStop(false);
                                            setRun(true);
                                            uiStatus('Reading...');
@@ -2272,12 +2274,14 @@ function render() {const log = loadLog();
                                                                                                                  if (out && (out._skipReason === 'blank_title' || out._skipReason === 'transferred_case')) return null;
                                                                                                                  return out;});
                                                 const nextLog = loadLog();
+                                                let appendedCount = 0;
                                                 for (const r of results) {if (!r || !r.caseKey) continue;
                                                                          if (r._skipReason === 'paid_in_full' || r._skipReason === 'guilty_zero_balance_nonwarrant') {const idx = nextLog.findIndex((x) => x.caseKey === r.caseKey);
                                                                                                                                                                                   if (idx >= 0) nextLog.splice(idx,1);
                                                                                                                                                                                   continue;}
                                                                          if (nextLog.some((x) => x.caseKey === r.caseKey)) continue;
-                                                                         nextLog.push(r);}
+                                                                         nextLog.push(r);
+                                                                         appendedCount += 1;}
                                                 saveLog(nextLog);
                                                 const okCount = results.filter(Boolean).length;
                                                 const skipCount = results.filter((r) => r && r._skipReason === 'backend_jndi_error').length;
@@ -2285,11 +2289,13 @@ function render() {const log = loadLog();
                                                 if (isStop()) {uiStatus('Stopped.');
                                                                dbg('run_stopped',{okCount,skipCount,errCount});}
                                                 else {uiStatus(`${okCount} Case.net cases added. YOB mismatches: ${yobMismatchCount}. Errors: ${errors.length}.`);}
-                                                if (errCount) dbg('run_errors',{errors: errors.slice(0,12)});}
+                                                if (errCount) dbg('run_errors',{errors: errors.slice(0,12)});
+                                                return {appendedCount};}
                                            catch (err) {dbg('fatal_pull',{msg: String(err?.message || err),stack: String(err?.stack || ''),});
                                                        uiStatus('*error*: ' + String(err?.message || err));}
                                            finally {setRun(false);
-                                                    render();}}
+                                                    render();}
+                                           return {appendedCount: 0};}
 /************************************************************
    * Municourt supplemental search
    ************************************************************/
@@ -2783,7 +2789,7 @@ function render() {const log = loadLog();
                                                                             setRun(false);
                                                                             saveDraft({...params});
                                                                             const passes = buildNameSearchPasses(params);
-                                                                            saveNameState({active:true,passIndex:0,passes,step:'go_search',params,});
+                                                                            saveNameState({active:true,passIndex:0,passes,step:'go_search',params,casenetAddedTotal:0,});
                                                                             uiStatus('Searching…');
                                                                             dbg('namesearch_start',{params});
                                                                             if (!isNameSearchPage()) {location.href = canonicalNameSearchUrl();}
@@ -2904,7 +2910,16 @@ function render() {const log = loadLog();
                                  const passKey = typeof pass === 'string' ? pass : pass?.caseType;
                                  const passMiddle = typeof pass === 'string' ? (st.params?.middle || '') : (pass?.middle || '');
                                  const passLabel = typeof pass === 'string' ? passKey : (pass?.label || passKey);
-                                 if (!passKey) {if (st.step === 'municourt_finalizing') {const age = Date.now() - Number(st.finalizingStartedAt || 0);
+                                 if (!passKey) {uiStatus('Preparing Municourt.net pass (3/3)');
+                                                render();
+                                                if (Number(st.prepareStartedAt || 0) === 0) {st.prepareStartedAt = Date.now();
+                                                                                             saveNameState(st);
+                                                                                             return;}
+                                                const muniPrepAge = Date.now() - Number(st.prepareStartedAt || 0);
+                                                if (muniPrepAge < 3000) return;
+                                                st.prepareStartedAt = 0;
+                                                saveNameState(st);
+                                                if (st.step === 'municourt_finalizing') {const age = Date.now() - Number(st.finalizingStartedAt || 0);
                                                                                           if (age < 120000) return;
                                                                                           dbg('namesearch_municourt_final_pass_stale_reset',{ageMs: age});
                                                                                           st.step = 'go_search';
@@ -2925,9 +2940,10 @@ function render() {const log = loadLog();
                                                      saveLog(nextLog);
                                                      dbg('namesearch_municourt_final_pass_done',{count: muniAdded});}
                                                 catch (e) {dbg('namesearch_municourt_final_pass_error',{msg:String(e?.message || e)});}
-                                                dbg('namesearch_done',{muniAdded});
+                                                const casenetAdded = Number(st.casenetAddedTotal || 0);
+                                                dbg('namesearch_done',{casenetAdded,muniAdded});
                                                 clearNameState();
-                                                uiStatus(`Done. Added ${muniAdded} Municourt case(s) on final pass.`);
+                                                uiStatus(`Done. Case.net: ${casenetAdded}  Municourt.net: ${muniAdded}`);
                                                 render();
                                                 return;}
                                  if (isNameSearchPage()) {if (st.step === 'submitted_waiting_results') {const age = Date.now() - Number(st.submittedAt || 0);
@@ -2935,6 +2951,17 @@ function render() {const log = loadLog();
                                                                                                         dbg('namesearch_resubmit',{passKey,ageMs:age});
                                                                                                         st.step = 'go_search';
                                                                                                         saveNameState(st);}
+                                                          const prepMessages = ['Preparing Criminal pass (1/3)','Preparing Traffic/Municipal pass (2/3)','Preparing Municourt.net pass (3/3)'];
+                                                          const prepLabel = prepMessages[st.passIndex || 0] || `Preparing pass (${(st.passIndex || 0) + 1}/3)`;
+                                                          uiStatus(prepLabel);
+                                                          render();
+                                                          if (Number(st.prepareStartedAt || 0) === 0) {st.prepareStartedAt = Date.now();
+                                                                                                       saveNameState(st);
+                                                                                                       return;}
+                                                          const prepAge = Date.now() - Number(st.prepareStartedAt || 0);
+                                                          if (prepAge < 3000) return;
+                                                          st.prepareStartedAt = 0;
+                                                          saveNameState(st);
                                                           uiStatus(`Searching ${st.passIndex + 1}/${(st.passes || []).length} (${passLabel})…`);
                                                           dbg('namesearch_submit',{passKey,passMiddle});
                                                           fillNameSearchForm({...st.params,middle: passMiddle},passKey);
@@ -2960,14 +2987,17 @@ function render() {const log = loadLog();
                                                                 st.step = 'pulling_results';
                                                                 st.pullStartedAt = Date.now();
                                                                 saveNameState(st);
-                                                                try {await pullJsonFromResultsPage();}
+                                                                let pullStats = null;
+                                                                try {pullStats = await pullJsonFromResultsPage();}
                                                                 catch (e) {dbg('namesearch_pull_fatal',{passKey,msg:String(e?.message || e)});
                                                                            setRun(false);}
+                                                                st.casenetAddedTotal = Number(st.casenetAddedTotal || 0) + Number(pullStats?.appendedCount || 0);
                                                                 dbg('namesearch_pull_done',{passKey});
                                                                 st.passIndex = (st.passIndex || 0) + 1;
                                                                 st.step = 'go_search';
                                                                 st.pullStartedAt = 0;
-                                                                st.navPendingUntil = Date.now() + 5000;
+                                                                st.prepareStartedAt = Date.now();
+                                                                st.navPendingUntil = Date.now() + 3000;
                                                                 saveNameState(st);
                                                                 location.href = canonicalNameSearchUrl();
                                                                 return;}
