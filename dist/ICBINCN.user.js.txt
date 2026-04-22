@@ -842,6 +842,7 @@ async function trackTick() {const st = loadTrackState();
                                                                                                       return entry;}
                                                                  entry.attorney = extractAttorney(party);
                                                                  let docket;
+                                                                 let docketUnavailable = false;
                                                                  try {docket = await postFormJsonRetry_tryCourtIds('/casenet/cases/docketEntriesSearch.do',{caseNumber,courtId: resolvedCourtId,isTicket:'',tabName:'Docket',},{qs:'displayOption=A&sortOption=D&hasChange=false'});}
                                                                  catch (e) {const unavailableNeedles = ['location unavailable',
                                                                                                        'court location is currently unavailable',
@@ -850,28 +851,28 @@ async function trackTick() {const st = loadTrackState();
                                                                             const msg = String(e?.message || '').toLowerCase();
                                                                             const isDocketUnavailable = unavailableNeedles.some((needle) => preview.includes(needle) || msg.includes(needle));
                                                                             if (!isDocketUnavailable) throw e;
-                                                                            entry.nextDocketDate = 'Case DOcket Unavailable';
+                                                                            docketUnavailable = true;
+                                                                            entry.nextDocketDate = 'Case Docket Unavailable';
                                                                             entry._skipReason = 'docket_unavailable';
-                                                                            dbg('skip_docket_unavailable',{caseKey: entry.caseKey,caseNumber,courtId: resolvedCourtId,msg:String(e?.message || e)});
-                                                                            return entry;}
+                                                                            dbg('skip_docket_unavailable',{caseKey: entry.caseKey,caseNumber,courtId: resolvedCourtId,msg:String(e?.message || e)});}
                                                                  const docketList = docket?.docketTabModelList || [];
                                                                  const hit = findFirstWarrantOrSummons(docketList);
                                                                  const f = countFtas(docketList);
                                                                  const docketStatus = analyzeDocketStatus(docketList);
-                                                                 if (docketStatus.paidInFull) {entry._skipReason = 'paid_in_full';
-                                                                                               return entry;}
-                                                                 entry.ftaDates = f.count === 0 ? ['- - -'] : f.dates;
-                                                                 entry.nextDocketDate = findFirstCurrentOrFutureScheduledLine(docketList);
-                                                                 entry.licenseHoldDate = findLicenseHoldDate(docketList) || '';
-                                                                 if (!hit) {entry.warrantSummary = '- - -';
-                                                                            entry.initialAppearanceDate = findInitialAppearanceDate(docketList) || '';}
-                                                                 else if (hit.scheduledFor) {entry.warrantSummary = [hit.filingDate ? `Date: ${hit.filingDate}` : '',`Event: ${hit.event}`,`Scheduled For: ${hit.scheduledFor}`].filter(Boolean).join('\n');
-                                                                                             entry.initialAppearanceDate = '';}
-                                                                 else {entry.warrantSummary = [hit.filingDate ? `${hit.filingDate}` : '',`Event: ${hit.event}`,hit.bond ? hit.bond : ''].filter(Boolean).join('\n');
-                                                                       entry.initialAppearanceDate = '';}
-                                                                 const hasRecallOrServedLanguage = Boolean(hit?.hasRecallOrServedLanguage);
-                                                                 const baseStatus = (!hit || hasRecallOrServedLanguage) ? 'nonwarrant' : (hit.kind === 'warrant' ? 'warrant' : 'nonwarrant');
-                                                                 entry.summaryStatus = docketStatus.hasActiveHold ? `${baseStatus} and HOLD placed on license` : baseStatus;
+                                                                 if (!docketUnavailable) {if (docketStatus.paidInFull) {entry._skipReason = 'paid_in_full';
+                                                                                                                         return entry;}
+                                                                                      entry.ftaDates = f.count === 0 ? ['- - -'] : f.dates;
+                                                                                      entry.nextDocketDate = findFirstCurrentOrFutureScheduledLine(docketList);
+                                                                                      entry.licenseHoldDate = findLicenseHoldDate(docketList) || '';
+                                                                                      if (!hit) {entry.warrantSummary = '- - -';
+                                                                                                 entry.initialAppearanceDate = findInitialAppearanceDate(docketList) || '';}
+                                                                                      else if (hit.scheduledFor) {entry.warrantSummary = [hit.filingDate ? `Date: ${hit.filingDate}` : '',`Event: ${hit.event}`,`Scheduled For: ${hit.scheduledFor}`].filter(Boolean).join('\n');
+                                                                                                                  entry.initialAppearanceDate = '';}
+                                                                                      else {entry.warrantSummary = [hit.filingDate ? `${hit.filingDate}` : '',`Event: ${hit.event}`,hit.bond ? hit.bond : ''].filter(Boolean).join('\n');
+                                                                                            entry.initialAppearanceDate = '';}
+                                                                                      const hasRecallOrServedLanguage = Boolean(hit?.hasRecallOrServedLanguage);
+                                                                                      const baseStatus = (!hit || hasRecallOrServedLanguage) ? 'nonwarrant' : (hit.kind === 'warrant' ? 'warrant' : 'nonwarrant');
+                                                                                      entry.summaryStatus = docketStatus.hasActiveHold ? `${baseStatus} and HOLD placed on license` : baseStatus;}
                                                                  let chargesResp = null;
                                                                  try {chargesResp = await postFormJsonRetry_tryCourtIds('/casenet/cases/charges.do',{caseNumber,courtId: resolvedCourtId,isTicket:'',tabName:'Charge',});}
                                                                  catch (e) {dbg('charges_fetch_failed',{caseKey,msg:String(e?.message || e)});}
@@ -883,6 +884,7 @@ async function trackTick() {const st = loadTrackState();
                                                                  const isGuiltyDisposed = /guilty/i.test(String(entry.disposition || ''));
                                                                  const hasStrictZeroBalance = String(entry.caseBalance || '').trim() === '0';
                                                                  const isNonwarrantStatus = /^nonwarrant\b/i.test(String(entry.summaryStatus || '').trim());
+                                                                 const hasRecallOrServedLanguage = Boolean(hit?.hasRecallOrServedLanguage);
                                                                  const hasReliableNonwarrantEvidence = Boolean(hit && (hasRecallOrServedLanguage || hit.kind === 'summons'));
                                                                  if (isGuiltyDisposed && hasStrictZeroBalance && isNonwarrantStatus && hasReliableNonwarrantEvidence) {entry._skipReason = 'guilty_zero_balance_nonwarrant';
                                                                                                                                                                      return entry;}
