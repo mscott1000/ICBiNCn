@@ -1462,51 +1462,7 @@ Court Clerk: ${clerk}` : display;
                                                                                                                                                                                 sections.push('');}}
                                                                   return {sections,hasFreshStartFridaySection};}
 
-  function buildSummaryCopyText() {const log = loadLog();
-                                  const expected = norm(document.getElementById('moNsYob')?.value || '');
-                                  const filteredLog = log.filter((e) => {const m = yobMatchesExpected(expected,e?.yobRaw || e?.yob || '');
-                                                                         return m.ok && !e?._skipReason;});
-                                  const jurisdictionLog = filteredLog.filter((e) => !hasUpcomingCourtDate(e));
-                                  const byJurisdiction = new Map();
-                                  for (const e of jurisdictionLog) {const jurisdiction = norm(e?.location || '') || '- - -';
-                                                                    if (!byJurisdiction.has(jurisdiction)) byJurisdiction.set(jurisdiction,[]);
-                                                                    byJurisdiction.get(jurisdiction).push(e);}
-
-                                  const sortedJurisdictions = Array.from(byJurisdiction.entries())
-                                                                   .map(([jurisdiction,entries],idx) => ({jurisdiction,entries,idx,score: getJurisdictionScore(entries)}))
-                                                                   .sort((a,b) => {const scoreDiff = b.score - a.score;
-                                                                                   if (scoreDiff) return scoreDiff;
-                                                                                   return a.idx - b.idx;});
-                                  const eligibleJurisdictions = [];
-                                  const ineligibleJurisdictions = [];
-                                  for (const jurisdictionEntry of sortedJurisdictions) {if (isEligibleSummaryJurisdiction(jurisdictionEntry.jurisdiction)) eligibleJurisdictions.push(jurisdictionEntry);
-                                                                                         else ineligibleJurisdictions.push(jurisdictionEntry);}
-                                  const {sections: eligibleSections,hasFreshStartFridaySection: eligibleHasFreshStartFridaySection} = buildJurisdictionSummarySections(eligibleJurisdictions);
-                                  const {sections: ineligibleSections,hasFreshStartFridaySection: ineligibleHasFreshStartFridaySection} = buildJurisdictionSummarySections(ineligibleJurisdictions);
-                                  const sections = [...eligibleSections];
-                                  if (eligibleSections.length && ineligibleSections.length) sections.push('');
-                                  sections.push(...ineligibleSections);
-                                  const hasFreshStartFridaySection = eligibleHasFreshStartFridaySection || ineligibleHasFreshStartFridaySection;
-
-                                  if (hasFreshStartFridaySection) {sections.push(FRESH_START_FRIDAY_TEXT);
-                                                                   sections.push('');
-                                                                   sections.push('');}
-
-                                  const upcomingByJurisdiction = new Map();
-                                  for (const e of filteredLog) {const next = parseUpcomingCourtDate(e);
-                                                               if (!next) continue;
-                                                               const jurisdiction = norm(e?.location || '') || '- - -';
-                                                               if (!upcomingByJurisdiction.has(jurisdiction)) upcomingByJurisdiction.set(jurisdiction,[]);
-                                                               upcomingByJurisdiction.get(jurisdiction).push(next);}
-
-                                  if (upcomingByJurisdiction.size) {sections.push('');
-                                                                   sections.push('Here are the upcoming court dates we were able to find:');
-                                                                   sections.push('');
-                                                                   for (const [jurisdiction,dates] of upcomingByJurisdiction.entries()) {sections.push(jurisdiction);
-                                                                                                                              for (const d of dates) sections.push(d);
-                                                                                                                              sections.push('');}}
-
-                                  return sections.join('\n').trim();}
+  function buildSummaryCopyText() {return buildGroupedCopyText();}
 /************************************************************
    * Concurrency runner
    ************************************************************/
@@ -2350,14 +2306,37 @@ function render() {const log = loadLog();
                                                                    const m = raw.match(regex);
                                                                    return m?.[1] ? norm(m[1]) : '';}
 
-  function mapMuniStatus(rawStatus,rawWarrant) {const blob = `${norm(rawStatus)} ${norm(rawWarrant)}`.toLowerCase();
-                                                if (!blob) return 'nonwarrant';
-                                                const hasHold = /hold/.test(blob);
-                                                const hasActiveWarrant = /warrant|capias|failure to appear/.test(blob) && !/recalled|served|withdrawn|canceled|cancelled/.test(blob);
-                                                if (hasActiveWarrant && hasHold) return 'warrant and HOLD placed on license';
-                                                if (hasActiveWarrant) return 'warrant';
-                                                if (hasHold) return 'nonwarrant and HOLD placed on license';
-                                                return 'nonwarrant';}
+  function muniLineDateTs(line,index = 0) {const m = norm(line || '').match(/\b(\d{1,2}\/\d{1,2}\/\d{2,4})\b/);
+                                            if (!m?.[1]) return Number.NaN;
+                                            const dt = parseUsDateToDate(m[1]);
+                                            if (!(dt instanceof Date) || Number.isNaN(dt.getTime())) return Number.NaN;
+                                            return dt.getTime() + (index / 10000);}
+
+  function mapMuniStatus(rawStatus,rawWarrant,detailText = '') {const blob = `${norm(rawStatus)} ${norm(rawWarrant)}`.toLowerCase();
+                                                                const detail = String(detailText || '');
+                                                                let warrantSeenTs = Number.NEGATIVE_INFINITY;
+                                                                let holdSeenTs = Number.NEGATIVE_INFINITY;
+                                                                let clearSeenTs = Number.NEGATIVE_INFINITY;
+                                                                const lines = detail ? detail.split(/\r?\n/) : [];
+                                                                for (let i = 0;i < lines.length;i++) {const line = norm(lines[i] || '');
+                                                                                                       if (!line) continue;
+                                                                                                       const t = line.toLowerCase();
+                                                                                                       const ts = muniLineDateTs(line,i);
+                                                                                                       const markTs = Number.isFinite(ts) ? ts : i;
+                                                                                                       if (/\bwarrant\b|\bcapias\b|\bfailure to appear\b/.test(t) && !/\brecalled\b|\bserved\b|\bwithdrawn\b|\bcanceled\b|\bcancelled\b/.test(t)) warrantSeenTs = Math.max(warrantSeenTs,markTs);
+                                                                                                       if (/\bhold\b|\bheld\b|\bhold\s+order\b/.test(t) && !/\breleased\b|\blifted\b|\bremoved\b/.test(t)) holdSeenTs = Math.max(holdSeenTs,markTs);
+                                                                                                       if (/\bsentenced\b|\bdestroy\b|\breleased\b|\brecalled\b|\bserved\b|\bwithdrawn\b|\bcanceled\b|\bcancelled\b|\blifted\b|\bremoved\b/.test(t)) clearSeenTs = Math.max(clearSeenTs,markTs);}
+
+                                                                if (blob) {if (/\bwarrant\b|\bcapias\b|\bfailure to appear\b/.test(blob) && !/\brecalled\b|\bserved\b|\bwithdrawn\b|\bcanceled\b|\bcancelled\b/.test(blob)) warrantSeenTs = Math.max(warrantSeenTs,-0.25);
+                                                                          if (/\bhold\b|\bheld\b|\bhold\s+order\b/.test(blob) && !/\breleased\b|\blifted\b|\bremoved\b/.test(blob)) holdSeenTs = Math.max(holdSeenTs,-0.25);
+                                                                          if (/\bsentenced\b|\bdestroy\b|\breleased\b|\brecalled\b|\bserved\b|\bwithdrawn\b|\bcanceled\b|\bcancelled\b|\blifted\b|\bremoved\b/.test(blob)) clearSeenTs = Math.max(clearSeenTs,-0.25);}
+
+                                                                const hasActiveWarrant = warrantSeenTs > clearSeenTs;
+                                                                const hasActiveHold = holdSeenTs > clearSeenTs;
+                                                                if (hasActiveWarrant && hasActiveHold) return 'warrant and HOLD placed on license';
+                                                                if (hasActiveWarrant) return 'warrant';
+                                                                if (hasActiveHold) return 'nonwarrant and HOLD placed on license';
+                                                                return 'nonwarrant';}
 
   function htmlDocFromText(txt) {return new DOMParser().parseFromString(String(txt || ''),'text/html');}
 
@@ -2640,7 +2619,7 @@ function render() {const log = loadLog();
                                                                        const nextDocketDate = valueFromAny(rec,['current_court_date','nextCourtDate','courtDate','upcomingCourtDate','nextDocketDate']) || '- - -';
                                                                        const warrantRaw = valueFromAny(rec,['warrantStatus','warrantSummary','warrant']);
                                                                        const summaryRaw = valueFromAny(rec,['status','caseStatus']);
-                                                                       const summaryStatus = mapMuniStatus(summaryRaw,warrantRaw);
+                                                                       const summaryStatus = mapMuniStatus(summaryRaw,warrantRaw,detail);
                                                                        const caseUrl = valueFromAny(rec,['caseUrl','url']) || sourceLabel;
                                                                        const entryKeyBase = (caseNo || valueFromAny(rec,['button']) || '- - -').toUpperCase();
                                                                        const summaryRow = norm(rec?.resultRowText || `${caseTitle}   ${caseNo}   ${location}   ${chargeDescription}   ${summaryRaw || summaryStatus}`);
@@ -2774,6 +2753,12 @@ function render() {const log = loadLog();
                                                                             middle: middleRaw,
                                                                             label: middleRaw ? `${caseType} / ${middleRaw}` : `${caseType} / all middle names`}));}
 
+  function getPassPrepMessage(passKey,passIndex,totalPasses) {if (passKey === 'criminal') return `Preparing Criminal pass (${passIndex}/${totalPasses})`;
+                                                          if (passKey === 'traffic') return `Preparing Traffic/Municipal pass (${passIndex}/${totalPasses})`;
+                                                          if (passKey === 'infraction') return `Preparing Infraction pass (${passIndex}/${totalPasses})`;
+                                                          if (passKey === 'municourt') return `Preparing Municourt.net pass (${passIndex}/${totalPasses})`;
+                                                          return `Preparing ${passKey} pass (${passIndex}/${totalPasses})`;}
+
   dock.addEventListener('click',async (e) => {const id = e?.target?.id;
                                              if (id === 'moJsonNameSearch') {const params = {first: norm(document.getElementById('moNsFirst')?.value || ''),
                                                                                            middle: norm(document.getElementById('moNsMiddle')?.value || ''),
@@ -2783,7 +2768,7 @@ function render() {const log = loadLog();
                                                                             setRun(false);
                                                                             saveDraft({...params});
                                                                             const passes = buildNameSearchPasses(params);
-                                                                            saveNameState({active:true,passIndex:0,passes,step:'go_search',params,});
+                                                                            saveNameState({active:true,passIndex:0,passes,step:'go_search',params,caseNetAddedTotal:0,municourtAddedTotal:0,});
                                                                             uiStatus('Searching…');
                                                                             dbg('namesearch_start',{params});
                                                                             if (!isNameSearchPage()) {location.href = canonicalNameSearchUrl();}
@@ -2914,7 +2899,7 @@ function render() {const log = loadLog();
                                                 st.finalizingStartedAt = Date.now();
                                                 saveNameState(st);
                                                 let muniAdded = 0;
-                                                try {uiStatus('Final pass complete. Reading Municourt...');
+                                                try {uiStatus(getPassPrepMessage('municourt',4,4));
                                                      render();
                                                      const nextLog = loadLog();
                                                      const muniEntries = await searchMunicourtEntriesByName(st.params || {});
@@ -2925,9 +2910,12 @@ function render() {const log = loadLog();
                                                      saveLog(nextLog);
                                                      dbg('namesearch_municourt_final_pass_done',{count: muniAdded});}
                                                 catch (e) {dbg('namesearch_municourt_final_pass_error',{msg:String(e?.message || e)});}
-                                                dbg('namesearch_done',{muniAdded});
+                                                st.municourtAddedTotal = Number(st.municourtAddedTotal || 0) + muniAdded;
+                                                dbg('namesearch_done',{caseNetAddedTotal: Number(st.caseNetAddedTotal || 0),muniAddedTotal: Number(st.municourtAddedTotal || 0)});
+                                                const caseNetAddedTotal = Number(st.caseNetAddedTotal || 0);
+                                                const municourtAddedTotal = Number(st.municourtAddedTotal || 0);
                                                 clearNameState();
-                                                uiStatus(`Done. Added ${muniAdded} Municourt case(s) on final pass.`);
+                                                uiStatus(`Done. Case.net: ${caseNetAddedTotal}   Municourt.net: ${municourtAddedTotal}`);
                                                 render();
                                                 return;}
                                  if (isNameSearchPage()) {if (st.step === 'submitted_waiting_results') {const age = Date.now() - Number(st.submittedAt || 0);
@@ -2935,7 +2923,7 @@ function render() {const log = loadLog();
                                                                                                         dbg('namesearch_resubmit',{passKey,ageMs:age});
                                                                                                         st.step = 'go_search';
                                                                                                         saveNameState(st);}
-                                                          uiStatus(`Searching ${st.passIndex + 1}/${(st.passes || []).length} (${passLabel})…`);
+                                                          uiStatus(getPassPrepMessage(passKey,Math.min((st.passIndex || 0) + 1,4),4));
                                                           dbg('namesearch_submit',{passKey,passMiddle});
                                                           fillNameSearchForm({...st.params,middle: passMiddle},passKey);
                                                           const ok = submitNameSearchForm();
@@ -2960,14 +2948,18 @@ function render() {const log = loadLog();
                                                                 st.step = 'pulling_results';
                                                                 st.pullStartedAt = Date.now();
                                                                 saveNameState(st);
-                                                                try {await pullJsonFromResultsPage();}
+                                                                try {const beforeCount = loadLog().length;
+                                                                     await pullJsonFromResultsPage();
+                                                                     const afterCount = loadLog().length;
+                                                                     const addedThisPass = Math.max(0,afterCount - beforeCount);
+                                                                     st.caseNetAddedTotal = Number(st.caseNetAddedTotal || 0) + addedThisPass;}
                                                                 catch (e) {dbg('namesearch_pull_fatal',{passKey,msg:String(e?.message || e)});
                                                                            setRun(false);}
                                                                 dbg('namesearch_pull_done',{passKey});
                                                                 st.passIndex = (st.passIndex || 0) + 1;
                                                                 st.step = 'go_search';
                                                                 st.pullStartedAt = 0;
-                                                                st.navPendingUntil = Date.now() + 5000;
+                                                                st.navPendingUntil = Date.now() + 3000;
                                                                 saveNameState(st);
                                                                 location.href = canonicalNameSearchUrl();
                                                                 return;}
