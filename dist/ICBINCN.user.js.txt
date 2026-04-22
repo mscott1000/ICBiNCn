@@ -1463,7 +1463,7 @@ Court Clerk: ${clerk}` : display;
   function buildSummaryCopyText() {const log = loadLog();
                                   const expected = norm(document.getElementById('moNsYob')?.value || '');
                                   const filteredLog = log.filter((e) => {const m = yobMatchesExpected(expected,e?.yobRaw || e?.yob || '');
-                                                                         return m.ok && !e?._skipReason;});
+                                                                         return m.ok;});
                                   const jurisdictionLog = filteredLog.filter((e) => !hasUpcomingCourtDate(e));
                                   const byJurisdiction = new Map();
                                   for (const e of jurisdictionLog) {const jurisdiction = norm(e?.location || '') || '- - -';
