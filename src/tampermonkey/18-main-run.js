@@ -195,10 +195,10 @@
                                            const ready = await waitForResultsReady();
                                            if (ready?.noMatches) {uiStatus('No matches found for this search.');
                                                                   render();
-                                                                  return;}
+                                                                  return {appendedCount: 0};}
                                            if (!ready?.ready) {uiStatus('Results are still loading. Try again in a moment.');
                                                                render();
-                                                               return;}
+                                                               return {appendedCount: 0};}
                                            setShowEntriesTo100();
                                            const ns = loadNameState();
                                            const searchParams = ns?.params || {};
@@ -221,7 +221,7 @@
                                            dbg('harvest_done',{count: cases.length});
                                            if (!cases.length) {uiStatus('No case links found.');
                                                                render();
-                                                               return;}
+                                                               return {appendedCount: 0};}
                                            setStop(false);
                                            setRun(true);
                                            uiStatus('Reading...');
@@ -244,12 +244,14 @@
                                                                                                                  if (out && (out._skipReason === 'blank_title' || out._skipReason === 'transferred_case')) return null;
                                                                                                                  return out;});
                                                 const nextLog = loadLog();
+                                                let appendedCount = 0;
                                                 for (const r of results) {if (!r || !r.caseKey) continue;
                                                                          if (r._skipReason === 'paid_in_full' || r._skipReason === 'guilty_zero_balance_nonwarrant') {const idx = nextLog.findIndex((x) => x.caseKey === r.caseKey);
                                                                                                                                                                                   if (idx >= 0) nextLog.splice(idx,1);
                                                                                                                                                                                   continue;}
                                                                          if (nextLog.some((x) => x.caseKey === r.caseKey)) continue;
-                                                                         nextLog.push(r);}
+                                                                         nextLog.push(r);
+                                                                         appendedCount += 1;}
                                                 saveLog(nextLog);
                                                 const okCount = results.filter(Boolean).length;
                                                 const skipCount = results.filter((r) => r && r._skipReason === 'backend_jndi_error').length;
@@ -257,8 +259,10 @@
                                                 if (isStop()) {uiStatus('Stopped.');
                                                                dbg('run_stopped',{okCount,skipCount,errCount});}
                                                 else {uiStatus(`${okCount} Case.net cases added. YOB mismatches: ${yobMismatchCount}. Errors: ${errors.length}.`);}
-                                                if (errCount) dbg('run_errors',{errors: errors.slice(0,12)});}
+                                                if (errCount) dbg('run_errors',{errors: errors.slice(0,12)});
+                                                return {appendedCount};}
                                            catch (err) {dbg('fatal_pull',{msg: String(err?.message || err),stack: String(err?.stack || ''),});
                                                        uiStatus('*error*: ' + String(err?.message || err));}
                                            finally {setRun(false);
-                                                    render();}}
+                                                    render();}
+                                           return {appendedCount: 0};}
