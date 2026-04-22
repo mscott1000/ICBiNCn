@@ -194,7 +194,7 @@
                                          await sleep(RESULTS_READY_POLL_MS);}
                                        return {ready:false,noMatches:false};}
 /************************************************************
-   * Name Search (multi-pass) state machine
+   * Name Search (two-pass) state machine
    ************************************************************/
   function loadNameState() {return loadJson(KEY_NAMESEARCH,null);}
 
@@ -228,10 +228,7 @@
 
   function setCaseTypeForPass(passKey) {const sel = document.querySelector('#caseType');
                                         if (!sel) return false;
-                                        const wantByPass = {criminal:'Criminal',
-                                                            traffic:'Traffic/Municipal',
-                                                            infraction:'Infraction',};
-                                        const wantValue = wantByPass[passKey] || 'Traffic/Municipal';
+                                        const wantValue = passKey === 'criminal' ? 'Criminal' : 'Traffic/Municipal';
                                         const opt = Array.from(sel.options || []).find((o) => (o.value || '') === wantValue);
                                         if (!opt) return false;
                                         sel.value = wantValue;
@@ -881,11 +878,10 @@ async function trackTick() {const st = loadTrackState();
                                                                  entry.chargeClass = chargeParts.cls || '- - -';
                                                                  entry.caseBalance = await getCaseBalanceIfGuiltyViaApi(entry.disposition,basics.header_meta,caseNumber,resolvedCourtId);
                                                                  const isGuiltyDisposed = /guilty/i.test(String(entry.disposition || ''));
-                                                                 const hasStrictZeroBalance = String(entry.caseBalance || '').trim() === '0';
+                                                                 const hasZeroBalance = /^\$?0(?:\.0+)?$/.test(String(entry.caseBalance || '').replace(/,/g,'').trim());
                                                                  const isNonwarrantStatus = /^nonwarrant\b/i.test(String(entry.summaryStatus || '').trim());
-                                                                 const hasReliableNonwarrantEvidence = Boolean(hit && (hasRecallOrServedLanguage || hit.kind === 'summons'));
-                                                                 if (isGuiltyDisposed && hasStrictZeroBalance && isNonwarrantStatus && hasReliableNonwarrantEvidence) {entry._skipReason = 'guilty_zero_balance_nonwarrant';
-                                                                                                                                                                     return entry;}
+                                                                 if (isGuiltyDisposed && hasZeroBalance && isNonwarrantStatus) {entry._skipReason = 'guilty_zero_balance_nonwarrant';
+                                                                                                                           return entry;}
                                                                  return entry;}
   function getMuniFieldFromDetail(detailText,label,nextLabels = []) {const raw = norm(detailText || '');
                                                                      if (!raw || !label) return '';
@@ -2191,7 +2187,7 @@ function render() {const log = loadLog();
                                                              const {results,errors} = await runPool(resolved,DEFAULT_CONCURRENCY,async (item) => {if (isStop()) return null;
                                                                                                                                                  await sleep(80);
                                                                                                                                                  const out = await scrapeCaseViaApi(item,'');
-                                                                                                                                                 if (out && (out._skipReason === 'blank_title' || out._skipReason === 'transferred_case')) return null;
+                                                                                                                                                 if (out && (out._skipReason === 'blank_title' || out._skipReason === 'paid_in_full' || out._skipReason === 'guilty_zero_balance_nonwarrant' || out._skipReason === 'transferred_case')) return null;
                                                                                                                                                  return out;});
                                                              const nextLog = loadLog();
                                                              for (const r of results) {if (!r || !r.caseKey) continue;
@@ -2272,10 +2268,14 @@ function render() {const log = loadLog();
                                                                                                                  const out = await scrapeCaseViaApi(item,yobExpected,searchParams);
                                                                                                                  if (out && out._skipReason === 'yob_mismatch') {yobMismatchCount += 1;
                                                                                                                                                                  return null;}
+                                                                                                                 if (out && out._skipReason === 'paid_in_full') return out;
                                                                                                                  if (out && (out._skipReason === 'blank_title' || out._skipReason === 'transferred_case')) return null;
                                                                                                                  return out;});
                                                 const nextLog = loadLog();
                                                 for (const r of results) {if (!r || !r.caseKey) continue;
+                                                                         if (r._skipReason === 'paid_in_full' || r._skipReason === 'guilty_zero_balance_nonwarrant') {const idx = nextLog.findIndex((x) => x.caseKey === r.caseKey);
+                                                                                                                                                                                  if (idx >= 0) nextLog.splice(idx,1);
+                                                                                                                                                                                  continue;}
                                                                          if (nextLog.some((x) => x.caseKey === r.caseKey)) continue;
                                                                          nextLog.push(r);}
                                                 saveLog(nextLog);
@@ -2768,7 +2768,7 @@ function render() {const log = loadLog();
 /************************************************************
    * Buttons
    ************************************************************/
-  function buildNameSearchPasses(params) {const caseTypePasses = ['criminal','traffic','infraction'];
+  function buildNameSearchPasses(params) {const caseTypePasses = ['criminal','traffic'];
                                    const middleRaw = norm(params?.middle || '');
                                    return caseTypePasses.map((caseType) => ({caseType,
                                                                             middle: middleRaw,
