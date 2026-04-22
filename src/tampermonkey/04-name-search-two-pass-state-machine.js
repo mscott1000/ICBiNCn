@@ -1,5 +1,5 @@
 /************************************************************
-   * Name Search (two-pass) state machine
+   * Name Search (multi-pass) state machine
    ************************************************************/
   function loadNameState() {return loadJson(KEY_NAMESEARCH,null);}
 
@@ -33,7 +33,10 @@
 
   function setCaseTypeForPass(passKey) {const sel = document.querySelector('#caseType');
                                         if (!sel) return false;
-                                        const wantValue = passKey === 'criminal' ? 'Criminal' : 'Traffic/Municipal';
+                                        const wantByPass = {criminal:'Criminal',
+                                                            traffic:'Traffic/Municipal',
+                                                            infraction:'Infraction',};
+                                        const wantValue = wantByPass[passKey] || 'Traffic/Municipal';
                                         const opt = Array.from(sel.options || []).find((o) => (o.value || '') === wantValue);
                                         if (!opt) return false;
                                         sel.value = wantValue;
