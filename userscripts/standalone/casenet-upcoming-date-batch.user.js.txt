@@ -451,14 +451,14 @@
             result: upcoming
           });
           await sleep(100);
-          return `${item.caseNumber}: ${upcoming}`;
+          return `${upcoming} ; ${item.caseNumber}`;
         } catch (err) {
           appendDebug('batch_case_error', {
             caseNumber: item.caseNumber,
             message: String(err?.message || err)
           });
           await sleep(100);
-          return `${item.caseNumber}: Error (${String(err?.message || err)})`;
+          return `Error (${String(err?.message || err)}) ; ${item.caseNumber}`;
         } finally {
           appendDebug('batch_case_progress', {
             index: i + 1,
