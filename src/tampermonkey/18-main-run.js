@@ -176,7 +176,7 @@
                                                                                               muniAdded += 1;}
                                                                   saveLog(nextLog);
                                                                   if (muniAdded) dbg('municourt_case_batch_added',{count: muniAdded});}
-                                                             catch (e) {dbg('municourt_case_batch_error',{msg:String(e?.message || e)});} 
+                                                             catch (e) {dbg('municourt_case_batch_error',{msg:String(e?.message || e)});}
                                                              const okCount = results.filter(Boolean).length;
                                                              const errCount = (errors || []).length;
                                                              const unresolvedMsg = unresolved.length ? ` Unresolved case numbers: ${unresolved.length}.` : '';
