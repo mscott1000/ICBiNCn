@@ -366,7 +366,7 @@ Court Clerk: ${clerk}` : display;
                                            for (const line of merged) {const parsed = parseMunicipalityLine(line);
                                                                        if (!parsed) continue;
                                                                        if (!map.has(parsed.key)) map.set(parsed.key,[]);
-                                                                       map.get(parsed.key).push(parsed);} 
+                                                                       map.get(parsed.key).push(parsed);}
                                            return map;}
 
 
