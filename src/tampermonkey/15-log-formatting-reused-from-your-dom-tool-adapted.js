@@ -97,6 +97,14 @@
                                                  event: parsedEvent || norm(eventMatch?.[1] || '') || (raw && raw !== '- - -' ? raw : fallback.event),
                                                  bond: parsedBond || norm(bondMatch?.[1] || '') || fallback.bond};}
 
+  function appendDocketHash(url) {const raw = norm(url || '');
+                                  if (!raw) return '';
+                                  if (/^javascript:/i.test(raw)) return raw;
+                                  try {const parsed = new URL(raw);
+                                       parsed.hash = 'docket';
+                                       return parsed.toString();}
+                                  catch (_) {return raw.endsWith('#docket') ? raw : `${raw}#docket`;}}
+
   function formatEntry(e) {const warrantFields = parseWarrantSummaryFields(e);
                            const lines = [e.caseTitle || '(- - -)','',
                                          `Location: ${e.location || ''}`,
@@ -117,7 +125,7 @@
                                          `Charge Type: ${e.chargeType || ''}`,
                                          `Charge Class: ${e.chargeClass || ''}`,
                                          `Judge: ${e.judge || ''}`,'');
-                         if (e?._source !== 'municourt') lines.push(`CaseNet:\n${e.caseUrl || ''}\n`);
+                         if (e?._source !== 'municourt') lines.push(`CaseNet:\n${appendDocketHash(e.caseUrl || '')}\n`);
                          lines.push('','','');
                          if (e?._source === 'municourt' && norm(e?.muniCaseDetailText || '')) lines.push('MuniCourt Detail:',e.muniCaseDetailText,'','','');
                          return lines.join('\n');}
