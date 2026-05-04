@@ -479,9 +479,13 @@ Court Clerk: ${clerk}` : display;
                                      if (!raw || raw === '- - -') return '';
                                      const parts = raw.split(';').map((x) => norm(x));
                                      if (!parts.length || !parts[0]) return '';
-                                     const dt = `${parts[0]}${parts[1] ? `; ${parts[1]}` : ''}`;
-                                     const caseNo = getCaseNumberForSummary(e);
-                                     return `${dt} (for ${caseNo})`;}
+                                     return `${parts[0]}${parts[1] ? `; ${parts[1]}` : ''}`;}
+
+  function formatCaseNumberList(caseNos) {const clean = caseNos.map((x) => norm(String(x || ''))).filter(Boolean);
+                                          if (!clean.length) return '';
+                                          if (clean.length === 1) return clean[0];
+                                          if (clean.length === 2) return `${clean[0]} and ${clean[1]}`;
+                                          return `${clean.slice(0,-1).join(', ')} and ${clean[clean.length - 1]}`;}
 
   function getSummaryStatusPriority(e) {const label = getWarrantLabelForSummary(e);
                                        const normalized = norm(String(label || '')).toLowerCase();
@@ -615,14 +619,15 @@ Court Clerk: ${clerk}` : display;
                                   for (const e of filteredLog) {const next = parseUpcomingCourtDate(e);
                                                                if (!next) continue;
                                                                const jurisdiction = norm(e?.location || '') || '- - -';
-                                                               if (!upcomingByJurisdiction.has(jurisdiction)) upcomingByJurisdiction.set(jurisdiction,[]);
-                                                               upcomingByJurisdiction.get(jurisdiction).push(next);}
+                                                               if (!upcomingByJurisdiction.has(jurisdiction)) upcomingByJurisdiction.set(jurisdiction,new Map());
+                                                               if (!upcomingByJurisdiction.get(jurisdiction).has(next)) upcomingByJurisdiction.get(jurisdiction).set(next,[]);
+                                                               upcomingByJurisdiction.get(jurisdiction).get(next).push(getCaseNumberForSummary(e));}
 
                                   if (upcomingByJurisdiction.size) {sections.push('');
                                                                    sections.push('Here are the upcoming court dates we were able to find:');
                                                                    sections.push('');
-                                                                   for (const [jurisdiction,dates] of upcomingByJurisdiction.entries()) {sections.push(jurisdiction);
-                                                                                                                              for (const d of dates) sections.push(d);
+                                                                   for (const [jurisdiction,dateMap] of upcomingByJurisdiction.entries()) {sections.push(jurisdiction);
+                                                                                                                              for (const [dt,caseNos] of dateMap.entries()) {sections.push(`${dt} (for ${formatCaseNumberList(caseNos)})`);}
                                                                                                                               sections.push('');}}
 
                                   return sections.join('\n').trim();}
