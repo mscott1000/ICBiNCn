@@ -336,10 +336,17 @@
                                                                                               out.push(item);}}
                                                   return out;}
 
+  function primaryMuniCaseNumber(raw) {const text = norm(raw || '');
+                                   if (!text) return '';
+                                   const parts = text.split(/\n|\r|<br\s*\/?>(?:\s*)?/i).map((v) => norm(v)).filter(Boolean);
+                                   const first = parts.find((v) => /\d/.test(v)) || '';
+                                   return first || text;}
+
   function mapMuniRecordToEntry(rec,sourceLabel,caseNumberHint = '') {const detail = norm(rec?.muniCaseDetailText || '');
                                                                        const ticketFromDetail = muniFieldFromDetail(detail,'Ticket #',['OCN','Court Name','Bond Set Amount']);
                                                                        const statusFromDetail = muniFieldFromDetail(detail,'Status',['Case #','Ticket #']);
-                                                                       const caseNo = valueFromAny(rec,['ticketNumber','ticket_','caseNumber','case_','caseNo','caseNum','citationNo','citationNumber']) || ticketFromDetail || norm(caseNumberHint).toUpperCase() || '- - -';
+                                                                       const caseTicketNumber = valueFromAny(rec,['case_ticket_number','case_ticket_no','case__ticket_number']);
+                                                                       const caseNo = primaryMuniCaseNumber(valueFromAny(rec,['ticketNumber','ticket_','caseNumber','case_','caseNo','caseNum','citationNo','citationNumber']) || caseTicketNumber) || ticketFromDetail || norm(caseNumberHint).toUpperCase() || '- - -';
                                                                        const location = valueFromAny(rec,['courtName','court_name','court','municipality','city','location']) || '- - -';
                                                                        const chargeDescription = valueFromAny(rec,['chargeDescription','charge_description','offenseDescription','offense','violationDescription','charge']) || '- - -';
                                                                        const disposition = statusFromDetail || valueFromAny(rec,['status','caseStatus','disposition','caseDisposition','dispositionText']) || '- - -';
