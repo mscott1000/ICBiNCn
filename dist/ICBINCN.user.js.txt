@@ -1271,12 +1271,16 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
                                       const key = municipalityKey(base);
                                       if (!key) return null;
                                       const display = judgeTag ? `${base} - Judge ${judgeTag}` : baseLine;
+                                      const stlCountyCircuitWithBreak = /^ST\.?\s+LOUIS\s+COUNTY\s+CIRCUIT\b/i.test(base) ? display.replace(/^(.*?\bJudge\s+[^-]+?)\s+- - -\s+/, '$1 \n- - - ') : display;
                                       const displayWithClerk = clerk ? `${display}
 Court Clerk: ${clerk}` : display;
+                                      const displayWithClerkBreak = clerk ? `${stlCountyCircuitWithBreak}
+Court Clerk: ${clerk}` : stlCountyCircuitWithBreak;
                                       const divisionMatch = base.match(/\bDIV(?:ISION)?\s+(\d+[A-Z]?)\b/i);
                                       return {raw: trimmed,
                                               display: displayWithClerk,
                                               displayWithJudge: displayWithClerk,
+                                              displayWithJudgeBreak: displayWithClerkBreak,
                                               key,
                                               looseKey: municipalityLooseKey(base),
                                               matchKey: municipalityMatchKey(base),
@@ -1317,7 +1321,7 @@ Court Clerk: ${clerk}` : display;
                                                                         const judgeKey = normalizeJudgeName(judgeName);
                                                                         if (!pool.length) return judgeKey && shouldIncludeJudgeDetails(jurisdiction) ? `${key} - Judge ${formatJudgeDisplayName(judgeKey)}` : key;
                                                                         if (judgeKey) {const matched = pool.find((x) => x.judgeKey && x.judgeKey === judgeKey);
-                                                                                       if (matched) return matched.displayWithJudge || matched.display;}
+                                                                                       if (matched) return matched.displayWithJudgeBreak || matched.displayWithJudge || matched.display;}
                                                                         if (pool.length === 1) return pool[0].displayWithJudge || pool[0].display;
                                                                         if (looseKey) {const operatingMatch = pool.find((x) => (x.looseKey || '').startsWith(`${looseKey} `) && /\bOPERATES IN\b/i.test(x.display));
                                                                                       if (operatingMatch) return operatingMatch.displayWithJudge || operatingMatch.display;}
