@@ -106,6 +106,8 @@
                                                                  const hasUnknownBalance = /^-\s*-\s*-$/.test(caseBalanceText);
                                                                  const hasZeroBalance = !hasUnknownBalance && /^\$?0(?:\.0+)?$/.test(caseBalanceText.replace(/,/g,''));
                                                                  const isNonwarrantStatus = /^nonwarrant\b/i.test(String(entry.summaryStatus || '').trim());
-                                                                 if (isGuiltyDisposed && hasZeroBalance && isNonwarrantStatus) {entry._skipReason = 'guilty_zero_balance_nonwarrant';
-                                                                                                                           return entry;}
+                                                                 const locationText = String(entry.location || '').toLowerCase();
+                                                                 const isCityOfStLouisMunicipal = /city\s+of\s+st\.?\s*louis/.test(locationText) && /municipal/.test(locationText);
+                                                                 if (isGuiltyDisposed && hasZeroBalance && isNonwarrantStatus && !isCityOfStLouisMunicipal) {entry._skipReason = 'guilty_zero_balance_nonwarrant';
+                                                                                                                                                        return entry;}
                                                                  return entry;}
