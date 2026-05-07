@@ -50,7 +50,7 @@
                                                                                                       dbg('skip_blank_title',{caseKey: entry.caseKey,caseNumber,courtId: resolvedCourtId});
                                                                                                       return entry;}
                                                                  const party = await postFormJsonRetry_tryCourtIds('/casenet/cases/party.do',{caseNumber,courtId: resolvedCourtId,isTicket:'',});
-                                                                 const addrYob = extractDefendantAddressYob(party,targetName);
+                                                                 const addrYob = extractDefendantAddressYob(party,targetName,expectedYob4);
                                                                  entry.address = addrYob.address;
                                                                  entry.yob = addrYob.yob;
                                                                  entry.yobRaw = addrYob.yobRaw || entry.yob;
