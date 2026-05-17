@@ -93,9 +93,11 @@
                                          const dateMatch = raw.match(/(?:^|\n)\s*Date:\s*([^\n]+)/i);
                                          const eventMatch = raw.match(/(?:^|\n)\s*Event:\s*([^\n]+)/i);
                                          const bondMatch = raw.match(/(?:^|\n)\s*(?:Bond(?: Amount)?):\s*([^\n]+)/i);
-                                         return {date: parsedDate || norm(dateMatch?.[1] || '') || fallback.date,
+                                         const eventDateMatch = raw.match(/(?:^|\n)\s*Event:\s*(\d{2}\/\d{2}\/\d{4})\b/i);
+                                         const eventBondMatch = raw.match(/\bBond\s*Amount\s*:\s*([0-9,]+(?:\.[0-9]{1,2})?)/i);
+                                         return {date: parsedDate || norm(dateMatch?.[1] || '') || norm(eventDateMatch?.[1] || '') || fallback.date,
                                                  event: parsedEvent || norm(eventMatch?.[1] || '') || (raw && raw !== '- - -' ? raw : fallback.event),
-                                                 bond: parsedBond || norm(bondMatch?.[1] || '') || fallback.bond};}
+                                                 bond: parsedBond || norm(bondMatch?.[1] || '') || norm(eventBondMatch?.[1] || '') || fallback.bond};}
 
   function appendDocketHash(url) {const raw = norm(url || '');
                                   if (!raw) return '';
@@ -111,7 +113,10 @@
                                                   const chargeDescription = e.chargeDescription || '- - -';
                                                   const bondRaw = norm(String(warrantFields.bond || '- - -'));
                                                   const bond = /^-\s*-\s*-$/.test(bondRaw) ? '- - -' : (parseBondNumeric(bondRaw) || bondRaw || '- - -');
-                                                  return [caseNo,warrantDate,judge,chargeDescription,bond].join('\t');}
+                                                  const t3 = '\t\t\t';
+                                                  const t4 = '\t\t\t\t';
+                                                  const t2 = '\t\t';
+                                                  return `${caseNo}${t3}${warrantDate}${t3}${judge}${t4}${chargeDescription}${t2}${bond}`;}
 
   function formatEntry(e) {const warrantFields = parseWarrantSummaryFields(e);
                            const lines = [e.caseTitle || '(- - -)','',
