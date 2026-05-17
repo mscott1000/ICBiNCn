@@ -105,6 +105,14 @@
                                        return parsed.toString();}
                                   catch (_) {return raw.endsWith('#docket') ? raw : `${raw}#docket`;}}
 
+  function buildCopyFormatLine(e,warrantFields) {const caseNo = getMuniPrimaryCaseNumber(e) || getCaseNumberForSummary(e).replace(/\s*\(municourt\)$/i,'') || '- - -';
+                                                  const warrantDate = warrantFields.date || '- - -';
+                                                  const judge = e.judge || '- - -';
+                                                  const chargeDescription = e.chargeDescription || '- - -';
+                                                  const bondRaw = norm(String(warrantFields.bond || '- - -'));
+                                                  const bond = /^-\s*-\s*-$/.test(bondRaw) ? '- - -' : (parseBondNumeric(bondRaw) || bondRaw || '- - -');
+                                                  return [caseNo,warrantDate,judge,chargeDescription,bond].join('\t');}
+
   function formatEntry(e) {const warrantFields = parseWarrantSummaryFields(e);
                            const lines = [e.caseTitle || '(- - -)','',
                                          `Location: ${e.location || ''}`,
@@ -126,7 +134,7 @@
                                          `Charge Class: ${e.chargeClass || ''}`,
                                          `Judge: ${e.judge || ''}`,'');
                          if (e?._source !== 'municourt') lines.push(`CaseNet:\n${appendDocketHash(e.caseUrl || '')}\n`);
-                         lines.push('','','');
+                         lines.push('Copy Format:',buildCopyFormatLine(e,warrantFields),'','','');
                          if (e?._source === 'municourt' && norm(e?.muniCaseDetailText || '')) lines.push('MuniCourt Detail:',e.muniCaseDetailText,'','','');
                          return lines.join('\n');}
 
