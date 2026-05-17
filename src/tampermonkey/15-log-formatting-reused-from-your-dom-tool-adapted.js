@@ -110,8 +110,9 @@
                                                   const judge = e.judge || '- - -';
                                                   const chargeDescription = e.chargeDescription || '- - -';
                                                   const bondRaw = norm(String(warrantFields.bond || '- - -'));
-                                                  const bond = /^-\s*-\s*-$/.test(bondRaw) ? '- - -' : (parseBondNumeric(bondRaw) || bondRaw || '- - -');
-                                                  return [caseNo,warrantDate,judge,chargeDescription,bond].join('\t');}
+                                                  const bondValue = /^-\s*-\s*-$/.test(bondRaw) ? '- - -' : (parseBondNumeric(bondRaw) || bondRaw || '- - -');
+                                                  const bond = /^\d+\.00$/.test(bondValue) ? String(parseInt(bondValue,10)) : bondValue;
+                                                  return `${caseNo}\t\t\t${warrantDate}\t\t\t${judge}\t\t\t\t${chargeDescription}\t\t${bond}`;}
 
   function formatEntry(e) {const warrantFields = parseWarrantSummaryFields(e);
                            const lines = [e.caseTitle || '(- - -)','',
