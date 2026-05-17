@@ -35,7 +35,8 @@
                                         const titleMatch = fromTitle.match(/^(\d[\d-]*)\b/);
                                         return titleMatch?.[1] || '';}
 
-  function getMuniCopyHeader(e) {const caseNo = getMuniPrimaryCaseNumber(e) || getCaseNumberForSummary(e).replace(/\s*\(municourt\)$/i,'');
+  function getMuniCopyHeader(e) {const summaryCaseNo = norm(getCaseNumberForSummary(e) || '').replace(/\s*\(municourt\)$/i,'');
+                                 const caseNo = getMuniPrimaryCaseNumber(e) || summaryCaseNo;
                                  const location = norm(e?.location || '');
                                  const locationBase = location.replace(/\s+MUNICIPAL\s+COURT$/i,'')
                                                               .replace(/\s+MUNICIPAL$/i,'')
@@ -107,7 +108,8 @@
                                        return parsed.toString();}
                                   catch (_) {return raw.endsWith('#docket') ? raw : `${raw}#docket`;}}
 
-  function buildCopyFormatLine(e,warrantFields) {const caseNo = getMuniPrimaryCaseNumber(e) || getCaseNumberForSummary(e).replace(/\s*\(municourt\)$/i,'') || '- - -';
+  function buildCopyFormatLine(e,warrantFields) {const summaryCaseNo = norm(getCaseNumberForSummary(e) || '').replace(/\s*\(municourt\)$/i,'');
+                                                  const caseNo = getMuniPrimaryCaseNumber(e) || summaryCaseNo || '- - -';
                                                   const warrantDate = warrantFields.date || '- - -';
                                                   const judge = e.judge || '- - -';
                                                   const chargeDescription = e.chargeDescription || '- - -';
