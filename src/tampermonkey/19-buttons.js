@@ -7,6 +7,30 @@
                                                                             middle: middleRaw,
                                                                             label: middleRaw ? `${caseType} / ${middleRaw}` : `${caseType} / all middle names`}));}
 
+
+
+  async function copyTextToClipboard(text) {const normalized = String(text ?? '');
+                                         try {if (typeof GM_setClipboard === 'function') {GM_setClipboard(normalized,'text');
+                                                                                          return true;}}
+                                         catch (e) {dbg('clipboard_gm_error',{msg:String(e?.message || e)});}
+                                         try {if (navigator?.clipboard?.writeText) {await navigator.clipboard.writeText(normalized);
+                                                                                    return true;}}
+                                         catch (e) {dbg('clipboard_navigator_error',{msg:String(e?.message || e)});}
+                                         try {const ta = document.createElement('textarea');
+                                              ta.value = normalized;
+                                              ta.setAttribute('readonly','');
+                                              ta.style.position = 'fixed';
+                                              ta.style.opacity = '0';
+                                              ta.style.pointerEvents = 'none';
+                                              document.body.appendChild(ta);
+                                              ta.focus();
+                                              ta.select();
+                                              const ok = document.execCommand('copy');
+                                              ta.remove();
+                                              return !!ok;}
+                                         catch (e) {dbg('clipboard_exec_error',{msg:String(e?.message || e)});}
+                                         return false;}
+
   dock.addEventListener('click',async (e) => {const id = e?.target?.id;
                                              if (id === 'moJsonNameSearch') {const params = {first: norm(document.getElementById('moNsFirst')?.value || ''),
                                                                                            middle: norm(document.getElementById('moNsMiddle')?.value || ''),
@@ -38,13 +62,13 @@
                                                                       render();
                                                                       return;}
                                              if (id === 'moJsonCopy') {const out = buildGroupedCopyText();
-                                                                      GM_setClipboard(out || '','text');
-                                                                      uiStatus('Copied to Clipboard');
+                                                                      const ok = await copyTextToClipboard(out || '');
+                                                                      uiStatus(ok ? 'Copied to Clipboard' : 'Copy failed: clipboard blocked');
                                                                       render();
                                                                       return;}
                                              if (id === 'moJsonSummary') {const out = buildSummaryCopyText();
-                                                                         GM_setClipboard(out || '','text');
-                                                                         uiStatus('Summary copied to clipboard');
+                                                                         const ok = await copyTextToClipboard(out || '');
+                                                                         uiStatus(ok ? 'Summary copied to clipboard' : 'Summary copy failed: clipboard blocked');
                                                                          render();
                                                                          return;}
                                              if (id === 'moJsonClear') {saveLog([]);
@@ -60,8 +84,8 @@
                                                                        return;}
                                              if (id === 'moJsonCopyDebug') {const rows = loadDebug();
                                                                            const out = rows.map((r) => JSON.stringify(r)).join('\n');
-                                                                           GM_setClipboard(out || '(no debug rows)','text');
-                                                                           uiStatus('Debug Copied');
+                                                                           const ok = await copyTextToClipboard(out || '(no debug rows)');
+                                                                           uiStatus(ok ? 'Debug Copied' : 'Debug copy failed: clipboard blocked');
                                                                            render();
                                                                            return;}
                                              if (id === 'moJsonCopyCebug') {const rows = loadDebug();
@@ -73,8 +97,8 @@
                                                                                           nameSearchState: ns,
                                                                                           municourtDiag: diag,
                                                                                           debugTail: rows.slice(-80),};
-                                                                           GM_setClipboard(JSON.stringify(cebug,null,2),'text');
-                                                                           uiStatus('Cebug Copied');
+                                                                           const ok = await copyTextToClipboard(JSON.stringify(cebug,null,2));
+                                                                           uiStatus(ok ? 'Cebug Copied' : 'Cebug copy failed: clipboard blocked');
                                                                            render();
                                                                            return;}
                                              if (id === 'moJsonClearDebug') {saveDebug([]);
