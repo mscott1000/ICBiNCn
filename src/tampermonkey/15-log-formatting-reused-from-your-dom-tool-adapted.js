@@ -35,8 +35,7 @@
                                         const titleMatch = fromTitle.match(/^(\d[\d-]*)\b/);
                                         return titleMatch?.[1] || '';}
 
-  function getMuniCopyHeader(e) {const summaryCaseNo = norm(getCaseNumberForSummary(e) || '').replace(/\s*\(municourt\)$/i,'');
-                                 const caseNo = getMuniPrimaryCaseNumber(e) || summaryCaseNo;
+  function getMuniCopyHeader(e) {const caseNo = getMuniPrimaryCaseNumber(e) || getCaseNumberForSummary(e).replace(/\s*\(municourt\)$/i,'');
                                  const location = norm(e?.location || '');
                                  const locationBase = location.replace(/\s+MUNICIPAL\s+COURT$/i,'')
                                                               .replace(/\s+MUNICIPAL$/i,'')
@@ -94,11 +93,9 @@
                                          const dateMatch = raw.match(/(?:^|\n)\s*Date:\s*([^\n]+)/i);
                                          const eventMatch = raw.match(/(?:^|\n)\s*Event:\s*([^\n]+)/i);
                                          const bondMatch = raw.match(/(?:^|\n)\s*(?:Bond(?: Amount)?):\s*([^\n]+)/i);
-                                         const eventDateMatch = raw.match(/(?:^|\n)\s*Event:\s*(\d{2}\/\d{2}\/\d{4})\b/i);
-                                         const eventBondMatch = raw.match(/\bBond\s*Amount\s*:\s*([0-9,]+(?:\.[0-9]{1,2})?)/i);
-                                         return {date: parsedDate || norm(dateMatch?.[1] || '') || norm(eventDateMatch?.[1] || '') || fallback.date,
+                                         return {date: parsedDate || norm(dateMatch?.[1] || '') || fallback.date,
                                                  event: parsedEvent || norm(eventMatch?.[1] || '') || (raw && raw !== '- - -' ? raw : fallback.event),
-                                                 bond: parsedBond || norm(bondMatch?.[1] || '') || norm(eventBondMatch?.[1] || '') || fallback.bond};}
+                                                 bond: parsedBond || norm(bondMatch?.[1] || '') || fallback.bond};}
 
   function appendDocketHash(url) {const raw = norm(url || '');
                                   if (!raw) return '';
@@ -108,17 +105,13 @@
                                        return parsed.toString();}
                                   catch (_) {return raw.endsWith('#docket') ? raw : `${raw}#docket`;}}
 
-  function buildCopyFormatLine(e,warrantFields) {const summaryCaseNo = norm(getCaseNumberForSummary(e) || '').replace(/\s*\(municourt\)$/i,'');
-                                                  const caseNo = getMuniPrimaryCaseNumber(e) || summaryCaseNo || '- - -';
+  function buildCopyFormatLine(e,warrantFields) {const caseNo = getMuniPrimaryCaseNumber(e) || getCaseNumberForSummary(e).replace(/\s*\(municourt\)$/i,'') || '- - -';
                                                   const warrantDate = warrantFields.date || '- - -';
                                                   const judge = e.judge || '- - -';
                                                   const chargeDescription = e.chargeDescription || '- - -';
                                                   const bondRaw = norm(String(warrantFields.bond || '- - -'));
                                                   const bond = /^-\s*-\s*-$/.test(bondRaw) ? '- - -' : (parseBondNumeric(bondRaw) || bondRaw || '- - -');
-                                                  const t3 = '\t\t\t';
-                                                  const t4 = '\t\t\t\t';
-                                                  const t2 = '\t\t';
-                                                  return `${caseNo}${t3}${warrantDate}${t3}${judge}${t4}${chargeDescription}${t2}${bond}`;}
+                                                  return [caseNo,warrantDate,judge,chargeDescription,bond].join('\t');}
 
   function formatEntry(e) {const warrantFields = parseWarrantSummaryFields(e);
                            const lines = [e.caseTitle || '(- - -)','',
