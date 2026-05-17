@@ -130,6 +130,9 @@
                          if (e?._source === 'municourt' && norm(e?.muniCaseDetailText || '')) lines.push('MuniCourt Detail:',e.muniCaseDetailText,'','','');
                          return lines.join('\n');}
 
+  function getCopySectionHeader(jurisdiction) {const rawHeader = getMunicipalityHeaderForSummary(jurisdiction,'') || jurisdiction.toUpperCase();
+                                               return norm(rawHeader.replace(/\s*-\s*(?:\(?\d{3}\)?[\s\d\-\.\(\)A-Z;']+|FRESH START FRIDAY)\s*$/i,'')) || rawHeader;}
+
   function buildGroupedCopyText() {const log = loadLog();
                                   const expected = norm(document.getElementById('moNsYob')?.value || '');
                                   const filteredLog = log.filter((e) => {const m = yobMatchesExpected(expected,e?.yobRaw || e?.yob || '');
@@ -147,18 +150,19 @@
                                   const ineligibleJurisdictions = [];
                                   for (const jurisdictionEntry of sortedJurisdictions) {if (isEligibleSummaryJurisdiction(jurisdictionEntry.jurisdiction)) eligibleJurisdictions.push(jurisdictionEntry);
                                                                                          else ineligibleJurisdictions.push(jurisdictionEntry);}
-                                  const orderedEntries = [];
-                                  function appendEntries(jurisdictions) {for (const {entries} of jurisdictions) {const sortedEntries = entries.map((entry,idx) => ({entry,idx}))
-                                                                                                                               .sort((a,b) => {const judgeA = normalizeJudgeName(a.entry?.judge || '');
-                                                                                                                                               const judgeB = normalizeJudgeName(b.entry?.judge || '');
-                                                                                                                                               const judgeDiff = judgeA.localeCompare(judgeB);
-                                                                                                                                               if (judgeDiff) return judgeDiff;
-                                                                                                                                               return a.idx - b.idx;})
-                                                                                                                               .map(({entry}) => entry);
-                                                                                 orderedEntries.push(...sortedEntries);}}
-                                  appendEntries(eligibleJurisdictions);
-                                  appendEntries(ineligibleJurisdictions);
-                                  return orderedEntries.map((e) => formatEntry(applyMuniDetailFormatting(e))).join('\n').trim();}
+                                  const sections = [];
+                                  function appendSections(jurisdictions) {for (const {jurisdiction,entries} of jurisdictions) {const header = getCopySectionHeader(jurisdiction);
+                                                                                                                                const sortedEntries = entries.map((entry,idx) => ({entry,idx}))
+                                                                                                                                                           .sort((a,b) => {const priorityDiff = getSummaryStatusPriority(a.entry) - getSummaryStatusPriority(b.entry);
+                                                                                                                                                                           if (priorityDiff) return priorityDiff;
+                                                                                                                                                                           return a.idx - b.idx;})
+                                                                                                                                                           .map(({entry}) => entry);
+                                                                                                                                sections.push(header,'');
+                                                                                                                                for (const entry of sortedEntries) sections.push(formatEntry(applyMuniDetailFormatting(entry)));
+                                                                                                                                sections.push('','');}}
+                                  appendSections(eligibleJurisdictions);
+                                  appendSections(ineligibleJurisdictions);
+                                  return sections.join('\n').trim();}
 
 
 
@@ -428,14 +432,14 @@ Court Clerk: ${clerk}` : display;
                                       return '- - -';}
 
   function getWarrantLabelForSummary(e) {const explicit = norm(String(e?.summaryStatus || '')).toLowerCase();
-                                        if (explicit) return explicit;
+                                        if (explicit) return explicit.replace(/^nonwarrant\b/,'open (no warrant found)');
                                         const upcoming = norm(String(e?.nextDocketDate || '')).toLowerCase();
                                         if (upcoming && upcoming !== '- - -') return 'upcoming';
                                         const ws = norm(String(e?.warrantSummary || '')).toLowerCase();
-                                        if (!ws || ws === '- - -') return 'nonwarrant';
-                                        if (/\brecall\w*\b|\bserv\w*\b/.test(ws)) return 'nonwarrant';
+                                        if (!ws || ws === '- - -') return 'open (no warrant found)';
+                                        if (/\brecall\w*\b|\bserv\w*\b/.test(ws)) return 'open (no warrant found)';
                                         if (ws.includes('warrant')) return 'warrant';
-                                        return 'nonwarrant';}
+                                        return 'open (no warrant found)';}
 
   function getFineSuffixForSummary(e) {const raw = norm(String(e?.caseBalance || ''));
                                       if (!raw || raw === '- - -') return '';
