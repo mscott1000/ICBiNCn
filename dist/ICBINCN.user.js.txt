@@ -980,6 +980,25 @@ async function trackTick() {const st = loadTrackState();
   function parseWarrantSummaryFields(e) {const raw = norm(String(e?.warrantSummary || ''));
                                          const normalizeExtracted = (v) => {const out = norm(String(v || ''));
                                                                             return /^-\s*-\s*-$/.test(out) ? '' : out;};
+                                         const toComparableDate = (rawDate) => {const m = String(rawDate || '').match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+                                                                                 if (!m) return null;
+                                                                                 const mm = Number(m[1]);
+                                                                                 const dd = Number(m[2]);
+                                                                                 const yyyy = Number(m[3]);
+                                                                                 const d = new Date(yyyy,mm - 1,dd);
+                                                                                 if (d.getFullYear() !== yyyy || d.getMonth() !== mm - 1 || d.getDate() !== dd) return null;
+                                                                                 return d;};
+                                         const today = new Date();
+                                         today.setHours(0,0,0,0);
+                                         const collectDates = (text) => {const out = [];
+                                                                        const rx = /\b\d{1,2}\/\d{1,2}\/\d{4}\b/g;
+                                                                        let m;
+                                                                        while ((m = rx.exec(String(text || '')))) out.push(m[0]);
+                                                                        return out;};
+                                         const mostRecentNonFutureDate = (dates) => {const valid = dates.map((d) => ({raw: d,dateObj: toComparableDate(d)}))
+                                                                                                  .filter((x) => x.dateObj && x.dateObj <= today)
+                                                                                                  .sort((a,b) => b.dateObj - a.dateObj);
+                                                                                      return valid[0]?.raw || '';};
                                          const parsedDate = normalizeExtracted(e?.mostRecentWarrantDate);
                                          const parsedEvent = normalizeExtracted(e?.warrantEvent);
                                          const parsedBond = normalizeExtracted(e?.bondAmount);
@@ -989,9 +1008,12 @@ async function trackTick() {const st = loadTrackState();
                                          const eventMatch = raw.match(/(?:^|\n)\s*Event:\s*([^\n]+)/i);
                                          const bondMatch = raw.match(/(?:^|\n)\s*(?:Bond(?: Amount)?):\s*([^\n]+)/i);
                                          const eventRaw = norm(eventMatch?.[1] || '');
-                                         const eventDateMatch = eventRaw.match(/^(\d{1,2}\/\d{1,2}\/\d{4})\b/);
                                          const eventBondMatch = eventRaw.match(/\bBond Amount:\s*([0-9][\d,]*(?:\.\d{2})?)/i);
-                                         return {date: parsedDate || norm(dateMatch?.[1] || '') || norm(eventDateMatch?.[1] || '') || fallback.date,
+                                         const ftaDates = Array.isArray(e?.ftaDates) ? e.ftaDates : [];
+                                         const allDateCandidates = [parsedDate,norm(dateMatch?.[1] || ''),...collectDates(eventRaw),...collectDates(raw),...ftaDates.flatMap((v) => collectDates(v))]
+                                                                  .filter(Boolean);
+                                         const resolvedDate = mostRecentNonFutureDate(allDateCandidates);
+                                         return {date: resolvedDate || fallback.date,
                                                  event: parsedEvent || norm(eventMatch?.[1] || '') || (raw && raw !== '- - -' ? raw : fallback.event),
                                                  bond: parsedBond || norm(bondMatch?.[1] || '') || norm(eventBondMatch?.[1] || '') || fallback.bond};}
 
@@ -1009,7 +1031,7 @@ async function trackTick() {const st = loadTrackState();
                                                   const chargeDescription = e.chargeDescription || '- - -';
                                                   const bondRaw = norm(String(warrantFields.bond || '- - -'));
                                                   const bondValue = /^-\s*-\s*-$/.test(bondRaw) ? '- - -' : (parseBondNumeric(bondRaw) || bondRaw || '- - -');
-                                                  const bond = /^\d+\.00$/.test(bondValue) ? String(parseInt(bondValue,10)) : bondValue;
+                                                  const bond = /^-\s*-\s*-$/.test(bondValue) ? '- - -' : (parseBondNumeric(bondValue) || bondValue || '- - -');
                                                   return `${caseNo}\t\t\t${warrantDate}\t\t\t${judge}\t\t\t\t${chargeDescription}\t\t${bond}`;}
 
   function formatEntry(e) {const warrantFields = parseWarrantSummaryFields(e);
