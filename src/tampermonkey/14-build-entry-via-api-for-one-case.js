@@ -16,6 +16,7 @@
                                                                                                   yobRaw:'',
                                                                                                   attorney:'- - -',
                                                                                                   warrantSummary:'- - -',
+                                                                                                  bondAmount:'- - -',
                                                                                                   summaryStatus:'',
                                                                                                   initialAppearanceDate:'',
                                                                                                   licenseHoldDate:'',
@@ -78,10 +79,12 @@
                                                                  const docketList = docket?.docketTabModelList || [];
                                                                  const hit = findFirstWarrantOrSummons(docketList);
                                                                  const f = countFtas(docketList);
+                                                                 const docketBondAmount = findBondAmountInDocketEntries(docketList);
                                                                  const docketStatus = analyzeDocketStatus(docketList);
                                                                  if (docketStatus.paidInFull) {entry._skipReason = 'paid_in_full';
                                                                                                return entry;}
                                                                  entry.ftaDates = f.count === 0 ? ['- - -'] : f.dates;
+                                                                 entry.bondAmount = docketBondAmount || '- - -';
                                                                  entry.nextDocketDate = findFirstCurrentOrFutureScheduledLine(docketList);
                                                                  entry.licenseHoldDate = findLicenseHoldDate(docketList) || '';
                                                                  if (!hit) {entry.warrantSummary = '- - -';

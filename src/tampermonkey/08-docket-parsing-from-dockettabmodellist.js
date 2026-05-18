@@ -19,6 +19,23 @@
                                         const prettyTail = tail ? toTitleish(tail) : '';
                                         return `Bond Amount: ${amt}${prettyTail ? ` ${prettyTail}` : ''}`;}
 
+
+
+  function formatBondAmountValue(rawValue) {const digits = String(rawValue || '').replace(/,/g,'').trim();
+                                            if (!/^\d+(?:\.\d+)?$/.test(digits)) return '';
+                                            const amount = Number(digits);
+                                            if (!Number.isFinite(amount)) return '';
+                                            return amount.toFixed(2);}
+
+  function findBondAmountInDocketEntries(docketList) {let latest = '';
+                                                      for (const e of docketList || []) {const hay = norm([e?.docketDesc || '',e?.docketText || ''].join(' '));
+                                                                                        if (!/\bBond\s*Amount\b/i.test(hay)) continue;
+                                                                                        const m = hay.match(/\bBond\s*Amount\s*:\s*([0-9][\d,]*(?:\.\d+)?)/i);
+                                                                                        if (!m?.[1]) continue;
+                                                                                        const formatted = formatBondAmountValue(m[1]);
+                                                                                        if (formatted) latest = formatted;}
+                                                      return latest;}
+
   function docketEntryText(e) {const desc = norm(e?.docketDesc || '');
                                const txt = norm(e?.docketText || '');
                                return norm([desc,txt].filter(Boolean).join(' — '));}
