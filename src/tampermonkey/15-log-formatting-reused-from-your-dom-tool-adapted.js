@@ -118,16 +118,18 @@
                                          const eventMatch = raw.match(/(?:^|\n)\s*Event:\s*([^\n]+)/i);
                                          const bondMatch = raw.match(/(?:^|\n)\s*(?:Bond(?: Amount)?):\s*([^\n]+)/i);
                                          const eventRaw = norm(eventMatch?.[1] || '');
-                                         const eventBondMatch = eventRaw.match(/\bBond Amount:\s*([0-9][\d,]*(?:\.\d{2})?)/i);
+                                         const eventBondMatch = eventRaw.match(/\bBond Amount:\s*\$?\s*([0-9][\d,]*(?:\.\d{1,2})?)/i);
+                                         const rawBondMatch = raw.match(/\bBond Amount:\s*\$?\s*([0-9][\d,]*(?:\.\d{1,2})?)/i);
                                          const bondFromLine = normalizeExtracted(bondMatch?.[1] || '');
                                          const bondFromEvent = normalizeExtracted(eventBondMatch?.[1] || '');
+                                         const bondFromRaw = normalizeExtracted(rawBondMatch?.[1] || '');
                                          const ftaDates = Array.isArray(e?.ftaDates) ? e.ftaDates : [];
                                          const allDateCandidates = [parsedDate,norm(dateMatch?.[1] || ''),...collectDates(eventRaw),...collectDates(raw),...ftaDates.flatMap((v) => collectDates(v))]
                                                                   .filter(Boolean);
                                          const resolvedDate = mostRecentNonFutureDate(allDateCandidates);
                                          return {date: resolvedDate || fallback.date,
                                                  event: parsedEvent || norm(eventMatch?.[1] || '') || (raw && raw !== '- - -' ? raw : fallback.event),
-                                                 bond: parsedBond || bondFromLine || bondFromEvent || fallback.bond};}
+                                                 bond: parsedBond || bondFromLine || bondFromEvent || bondFromRaw || fallback.bond};}
 
   function appendDocketHash(url) {const raw = norm(url || '');
                                   if (!raw) return '';
