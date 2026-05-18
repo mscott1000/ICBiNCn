@@ -477,17 +477,6 @@
                                           if (/\bplace\b/.test(t)) return 'placed';
                                           return 'placed';}
 
-
-
-  function findBondAmountFromDocketEntries(docketList) {for (const e of docketList || []) {const combined = `${norm(e?.docketDesc || '')} ${norm(e?.docketText || '')}`.trim();
-                                                     if (!/bond\s*amount/i.test(combined)) continue;
-                                                     const m = combined.match(/bond\s*amount\s*:?\s*\$?\s*([0-9][\d,]*(?:\.\d{1,2})?)/i);
-                                                     if (!m) continue;
-                                                     const n = Number(String(m[1] || '').replace(/,/g,''));
-                                                     if (!Number.isFinite(n)) continue;
-                                                     return n.toFixed(2);}
-                                            return '';}
-
   function findFirstWarrantOrSummons(docketList) {const hasRecallOrServedLanguage = (t) => /\brecall\w*\b|\bserv\w*\b/i.test(t);
                                                  const isWarrant = (t) => /\bwarrant\b/i.test(t);
                                                  const isSummons = (t) => /\bsummons?\b|\bsummon\b|\bsummoned\b/i.test(t);
@@ -868,21 +857,18 @@ async function trackTick() {const st = loadTrackState();
                                                                             return entry;}
                                                                  const docketList = docket?.docketTabModelList || [];
                                                                  const hit = findFirstWarrantOrSummons(docketList);
-                                                                 const bondAmount = findBondAmountFromDocketEntries(docketList);
                                                                  const f = countFtas(docketList);
                                                                  const docketStatus = analyzeDocketStatus(docketList);
                                                                  if (docketStatus.paidInFull) {entry._skipReason = 'paid_in_full';
                                                                                                return entry;}
                                                                  entry.ftaDates = f.count === 0 ? ['- - -'] : f.dates;
-                                                                 entry.bondAmount = bondAmount || '';
                                                                  entry.nextDocketDate = findFirstCurrentOrFutureScheduledLine(docketList);
                                                                  entry.licenseHoldDate = findLicenseHoldDate(docketList) || '';
                                                                  if (!hit) {entry.warrantSummary = '- - -';
                                                                             entry.initialAppearanceDate = findInitialAppearanceDate(docketList) || '';}
                                                                  else if (hit.scheduledFor) {entry.warrantSummary = [hit.filingDate ? `Date: ${hit.filingDate}` : '',`Event: ${hit.event}`,`Scheduled For: ${hit.scheduledFor}`].filter(Boolean).join('\n');
                                                                                              entry.initialAppearanceDate = '';}
-                                                                 else {const renderedBond = bondAmount ? `Bond Amount: ${bondAmount}` : (hit.bond ? hit.bond : '');
-                                                                       entry.warrantSummary = [hit.filingDate ? `${hit.filingDate}` : '',`Event: ${hit.event}`,renderedBond].filter(Boolean).join('\n');
+                                                                 else {entry.warrantSummary = [hit.filingDate ? `${hit.filingDate}` : '',`Event: ${hit.event}`,hit.bond ? hit.bond : ''].filter(Boolean).join('\n');
                                                                        entry.initialAppearanceDate = '';}
                                                                  const hasRecallOrServedLanguage = Boolean(hit?.hasRecallOrServedLanguage);
                                                                  const baseStatus = (!hit || hasRecallOrServedLanguage) ? 'nonwarrant' : (hit.kind === 'warrant' ? 'warrant' : 'nonwarrant');

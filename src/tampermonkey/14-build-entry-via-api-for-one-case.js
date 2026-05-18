@@ -77,21 +77,18 @@
                                                                             return entry;}
                                                                  const docketList = docket?.docketTabModelList || [];
                                                                  const hit = findFirstWarrantOrSummons(docketList);
-                                                                 const bondAmount = findBondAmountFromDocketEntries(docketList);
                                                                  const f = countFtas(docketList);
                                                                  const docketStatus = analyzeDocketStatus(docketList);
                                                                  if (docketStatus.paidInFull) {entry._skipReason = 'paid_in_full';
                                                                                                return entry;}
                                                                  entry.ftaDates = f.count === 0 ? ['- - -'] : f.dates;
-                                                                 entry.bondAmount = bondAmount || '';
                                                                  entry.nextDocketDate = findFirstCurrentOrFutureScheduledLine(docketList);
                                                                  entry.licenseHoldDate = findLicenseHoldDate(docketList) || '';
                                                                  if (!hit) {entry.warrantSummary = '- - -';
                                                                             entry.initialAppearanceDate = findInitialAppearanceDate(docketList) || '';}
                                                                  else if (hit.scheduledFor) {entry.warrantSummary = [hit.filingDate ? `Date: ${hit.filingDate}` : '',`Event: ${hit.event}`,`Scheduled For: ${hit.scheduledFor}`].filter(Boolean).join('\n');
                                                                                              entry.initialAppearanceDate = '';}
-                                                                 else {const renderedBond = bondAmount ? `Bond Amount: ${bondAmount}` : (hit.bond ? hit.bond : '');
-                                                                       entry.warrantSummary = [hit.filingDate ? `${hit.filingDate}` : '',`Event: ${hit.event}`,renderedBond].filter(Boolean).join('\n');
+                                                                 else {entry.warrantSummary = [hit.filingDate ? `${hit.filingDate}` : '',`Event: ${hit.event}`,hit.bond ? hit.bond : ''].filter(Boolean).join('\n');
                                                                        entry.initialAppearanceDate = '';}
                                                                  const hasRecallOrServedLanguage = Boolean(hit?.hasRecallOrServedLanguage);
                                                                  const baseStatus = (!hit || hasRecallOrServedLanguage) ? 'nonwarrant' : (hit.kind === 'warrant' ? 'warrant' : 'nonwarrant');

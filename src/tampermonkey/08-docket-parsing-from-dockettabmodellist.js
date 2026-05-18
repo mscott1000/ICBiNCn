@@ -53,17 +53,6 @@
                                           if (/\bplace\b/.test(t)) return 'placed';
                                           return 'placed';}
 
-
-
-  function findBondAmountFromDocketEntries(docketList) {for (const e of docketList || []) {const combined = `${norm(e?.docketDesc || '')} ${norm(e?.docketText || '')}`.trim();
-                                                     if (!/bond\s*amount/i.test(combined)) continue;
-                                                     const m = combined.match(/bond\s*amount\s*:?\s*\$?\s*([0-9][\d,]*(?:\.\d{1,2})?)/i);
-                                                     if (!m) continue;
-                                                     const n = Number(String(m[1] || '').replace(/,/g,''));
-                                                     if (!Number.isFinite(n)) continue;
-                                                     return n.toFixed(2);}
-                                            return '';}
-
   function findFirstWarrantOrSummons(docketList) {const hasRecallOrServedLanguage = (t) => /\brecall\w*\b|\bserv\w*\b/i.test(t);
                                                  const isWarrant = (t) => /\bwarrant\b/i.test(t);
                                                  const isSummons = (t) => /\bsummons?\b|\bsummon\b|\bsummoned\b/i.test(t);
