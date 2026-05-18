@@ -443,6 +443,23 @@
                                         const prettyTail = tail ? toTitleish(tail) : '';
                                         return `Bond Amount: ${amt}${prettyTail ? ` ${prettyTail}` : ''}`;}
 
+
+
+  function formatBondAmountValue(rawValue) {const digits = String(rawValue || '').replace(/,/g,'').trim();
+                                            if (!/^\d+(?:\.\d+)?$/.test(digits)) return '';
+                                            const amount = Number(digits);
+                                            if (!Number.isFinite(amount)) return '';
+                                            return amount.toFixed(2);}
+
+  function findBondAmountInDocketEntries(docketList) {let latest = '';
+                                                      for (const e of docketList || []) {const hay = norm([e?.docketDesc || '',e?.docketText || ''].join(' '));
+                                                                                        if (!/\bBond\s*Amount\b/i.test(hay)) continue;
+                                                                                        const m = hay.match(/\bBond\s*Amount\s*:\s*([0-9][\d,]*(?:\.\d+)?)/i);
+                                                                                        if (!m?.[1]) continue;
+                                                                                        const formatted = formatBondAmountValue(m[1]);
+                                                                                        if (formatted) latest = formatted;}
+                                                      return latest;}
+
   function docketEntryText(e) {const desc = norm(e?.docketDesc || '');
                                const txt = norm(e?.docketText || '');
                                return norm([desc,txt].filter(Boolean).join(' — '));}
@@ -796,6 +813,7 @@ async function trackTick() {const st = loadTrackState();
                                                                                                   yobRaw:'',
                                                                                                   attorney:'- - -',
                                                                                                   warrantSummary:'- - -',
+                                                                                                  bondAmount:'- - -',
                                                                                                   summaryStatus:'',
                                                                                                   initialAppearanceDate:'',
                                                                                                   licenseHoldDate:'',
@@ -858,10 +876,12 @@ async function trackTick() {const st = loadTrackState();
                                                                  const docketList = docket?.docketTabModelList || [];
                                                                  const hit = findFirstWarrantOrSummons(docketList);
                                                                  const f = countFtas(docketList);
+                                                                 const docketBondAmount = findBondAmountInDocketEntries(docketList);
                                                                  const docketStatus = analyzeDocketStatus(docketList);
                                                                  if (docketStatus.paidInFull) {entry._skipReason = 'paid_in_full';
                                                                                                return entry;}
                                                                  entry.ftaDates = f.count === 0 ? ['- - -'] : f.dates;
+                                                                 entry.bondAmount = docketBondAmount || '- - -';
                                                                  entry.nextDocketDate = findFirstCurrentOrFutureScheduledLine(docketList);
                                                                  entry.licenseHoldDate = findLicenseHoldDate(docketList) || '';
                                                                  if (!hit) {entry.warrantSummary = '- - -';
@@ -1011,16 +1031,18 @@ async function trackTick() {const st = loadTrackState();
                                          const eventMatch = raw.match(/(?:^|\n)\s*Event:\s*([^\n]+)/i);
                                          const bondMatch = raw.match(/(?:^|\n)\s*(?:Bond(?: Amount)?):\s*([^\n]+)/i);
                                          const eventRaw = norm(eventMatch?.[1] || '');
-                                         const eventBondMatch = eventRaw.match(/\bBond Amount:\s*([0-9][\d,]*(?:\.\d{2})?)/i);
+                                         const eventBondMatch = eventRaw.match(/\bBond Amount:\s*\$?\s*([0-9][\d,]*(?:\.\d{1,2})?)/i);
+                                         const rawBondMatch = raw.match(/\bBond Amount:\s*\$?\s*([0-9][\d,]*(?:\.\d{1,2})?)/i);
                                          const bondFromLine = normalizeExtracted(bondMatch?.[1] || '');
                                          const bondFromEvent = normalizeExtracted(eventBondMatch?.[1] || '');
+                                         const bondFromRaw = normalizeExtracted(rawBondMatch?.[1] || '');
                                          const ftaDates = Array.isArray(e?.ftaDates) ? e.ftaDates : [];
                                          const allDateCandidates = [parsedDate,norm(dateMatch?.[1] || ''),...collectDates(eventRaw),...collectDates(raw),...ftaDates.flatMap((v) => collectDates(v))]
                                                                   .filter(Boolean);
                                          const resolvedDate = mostRecentNonFutureDate(allDateCandidates);
                                          return {date: resolvedDate || fallback.date,
                                                  event: parsedEvent || norm(eventMatch?.[1] || '') || (raw && raw !== '- - -' ? raw : fallback.event),
-                                                 bond: parsedBond || bondFromLine || bondFromEvent || fallback.bond};}
+                                                 bond: parsedBond || bondFromLine || bondFromEvent || bondFromRaw || fallback.bond};}
 
   function appendDocketHash(url) {const raw = norm(url || '');
                                   if (!raw) return '';
