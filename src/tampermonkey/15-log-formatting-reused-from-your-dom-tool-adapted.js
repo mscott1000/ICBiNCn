@@ -93,14 +93,13 @@
                                          const fallback = {date: parsedDate || '- - -',event: parsedEvent || '- - -',bond: parsedBond || '- - -'};
                                          if (!raw || raw === '- - -') return fallback;
                                          const dateMatch = raw.match(/(?:^|\n)\s*Date:\s*([^\n]+)/i);
-                                         const eventLineMatch = raw.match(/(?:^|\n)\s*(?:(\d{1,2}\/\d{1,2}\/\d{4})\s+)?Event:\s*([^\n]+)/i);
-                                         const eventMatch = eventLineMatch?.[2] || '';
+                                         const eventMatch = raw.match(/(?:^|\n)\s*Event:\s*([^\n]+)/i);
                                          const bondMatch = raw.match(/(?:^|\n)\s*(?:Bond(?: Amount)?):\s*([^\n]+)/i);
-                                         const eventRaw = norm(eventMatch || '');
-                                         const eventDateMatch = norm(eventLineMatch?.[1] || '') || norm(eventRaw.match(/^(\d{1,2}\/\d{1,2}\/\d{4})\b/)?.[1] || '');
+                                         const eventRaw = norm(eventMatch?.[1] || '');
+                                         const eventDateMatch = eventRaw.match(/^(\d{1,2}\/\d{1,2}\/\d{4})\b/);
                                          const eventBondMatch = eventRaw.match(/\bBond Amount:\s*([0-9][\d,]*(?:\.\d{2})?)/i);
-                                         return {date: parsedDate || norm(dateMatch?.[1] || '') || norm(eventDateMatch || '') || fallback.date,
-                                                 event: parsedEvent || norm(eventMatch || '') || (raw && raw !== '- - -' ? raw : fallback.event),
+                                         return {date: parsedDate || norm(dateMatch?.[1] || '') || norm(eventDateMatch?.[1] || '') || fallback.date,
+                                                 event: parsedEvent || norm(eventMatch?.[1] || '') || (raw && raw !== '- - -' ? raw : fallback.event),
                                                  bond: parsedBond || norm(bondMatch?.[1] || '') || norm(eventBondMatch?.[1] || '') || fallback.bond};}
 
   function appendDocketHash(url) {const raw = norm(url || '');
