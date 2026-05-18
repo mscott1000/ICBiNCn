@@ -1,0 +1,59 @@
+Fail to drive on right half of roadway	$60.50	$60.50	$121.00
+Improper Lane Use	$60.50	$60.50	$121.00
+Lane Violation causing immediate threat of accident	$60.50	$60.50	$121.00
+Drove wrong direction on street	$60.50	$60.50	$121.00
+Drove wrong direction on street causing immediate threat of accident	$60.50	$60.50	$121.00
+Drove Vehicle to Left Side of Roadway when View Obstructed	$130.50	$60.50	$191.00
+legal / improper turn	$60.50	$60.50	$121.00
+Fail to signal	$60.50	$60.50	$121.00
+Improper Backing	$60.50	$60.50	$121.00
+Improper/Prohibited U-turn	$60.50	$60.50	$121.00
+Followed another vehicle too closely SI21.00	$60.50	None	$60.50
+Truck over 18000 Ibs followed another vehicle too closely	$130.50	$60.50	$191.00
+Changed lanes when movement could not be made w/ safety	$60.50	$60.50	$121.00
+Changed lanes when movement could not be made w/ safety- threat of accident	$60.50	$60.50	$121.00
+Passed vehicle on right/traveled off main portion of road	$80.50	$60.50	$141.00
+Pass Vehicle/Interfered with approaching traffic	$130.50	$60.50	$191.00
+Fail to stop for school bus receiving / discharging children	$130.50	$60.50	$191.00
+Drove commercial vehicle w/ willful / wanton disregard for safety	$130.50	$60.50	$191.00
+Fail to obey traffic control device	$60.50	$60.50	$121.00
+Fail to stop at stop sign	$60.50	$60.50	$121.00
+Fail to obey traffic signal temporarily designating lanes - threat of accident	$60.50	$60.50	$121.00
+Cut in on overtaken vehicle	$80.50	$60.50	$141.00
+Fail to yield	$60.50	$60.50	$121.00
+Fail to yield to emergency vehicle	$150.50	$60.50	$211.00
+Fail to slow to reasonable speed for existing conditions	$60.50	$60.50	$121.00
+Railroad Crossing Violations	$50.50	$60.50	$111.00
+No headlights when required	$50.50	$60.50	$111.00
+Failure to dim lights	$50.50	$60.50	$111.00
+No headlights when wipers in use =	$10.00	None	$10.00
+Expired driver's license	$50.50	$60.50	$111.00
+Operate ATV carrying passenger	$50.50	$60.50	$111.00
+Operate ATV upon highway / street not authorized	$50.50	$60.50	$111.00
+Operate ATV within a stream/river	$149.50	$60.50	$211.00
+Followed Another Bus/Truck Closer than 300 Ft	$130.50	$60.50	$191.00
+Operate Motorized Bicycle w/out Valid Drivers License	$50.50	$60.50	$111.00
+Obstructing Traffic	$50.50	$60.50	$111.00
+Speeding (1-5 mph over)	$50.50	$60.50	$111.00
+Speeding (6-10 mph over)	$60.50	$60.50	$121.00
+Speeding (11-15 mph over)	$80.50	$60.50	$141.00
+Speeding (16-19 mph over)	$120.50	$60.50	$181.00
+Speeding (20-25 mph over)	$200.50	$60.50	$261.00
+Increased Speed While Being Passed	$80.50	$60.50	$141.00
+License Plate/Registration Violations	$50.50	$60.50	$111.00
+Defective Equipment	$50.50	$60.50	$111.00
+Excessive Noise - Vehicular	$50.50	$60.50	$111.06
+Seatbelt Violation	$10.00	None	$10.00
+Fail to secure child 80 pounds or more or over 4'9" in restraint or booster	$10.00	None	$10.00
+Fail to secure child less than 8yrs old in a child restraint or booster	$49.50	$58.50	$108.00
+Operate ATV w/o proper bicycle safety flag	$50.50	$60.50	$111.00
+Handicapped Parking Violation	$100.50	$58.50	$159.00
+Illegally Parked Vehicle	$15.50	$58.50	$74.00
+Bicycle Violation	$15.50	$58.50	$74.00
+Pedestrian Violation	$15.50	$58.50	$74.00
+Abandoned Vehicle	$50.50	$58.50	$109.00
+Nuisance (Property Violation)	$100.50	$58.50	$159.00
+Violation of Restrictions Regarding Tow Trucks	$130.50	$58.50	$191.00
+Operate ATV within a stream/river	$149.50	$60.50	$210.00
+Excessive Noise - Vehicular	$50.50	$60.50	$111.00
+Violation of Restrictions Regarding Tow Trucks	$130.50	$58.50	$189.00

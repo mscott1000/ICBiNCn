@@ -1,0 +1,136 @@
+MOVING VIOLATIONS	Fine	Court Costs	Total
+Activated Siren/Warning lights on Emergency Vehicle when not in pursuit/on an emergency mission	$80.50	$31.50	$112.00
+Blocking intersection	$50.50	$31.50	$82.00
+Changed lanes when movement couldn't be made safely	$60.50	$31.50	$92.00
+Changed lanes when movement couldn't be made safely- cause immediate threat of accident	$60.50	$31.50	$92.00
+Cruising	$22.50	$31.50	$54.00
+Drive on Closed roadway	$60.50	$31.50	$92.00
+Drive at such slow speed to impede/block normal reasonable traffic movement	$60.50	$31.50	$92.00
+Drive in center lane of 3 lane road when view obstructed/not clear for traffic	$60.50	$31.50	
+$92.00
+
+Drive in Center of 3 lane road when view obstructed/ not clear of traffic- cause immediate threat of accident	$60.50	$31.50	$92.00
+Drove vehicle to left side of roadway when view obstructed by hill/curve	$130.50	$31.50	$162.00
+Drove vehicle to left side of  roadway within 1-- feet of bridge/viaduct/tunnel when view obstructed	$130.50	$31.50	$162.00
+Drove wrong direction on street	$60.50	$31.50	$92.00
+Drove wrong direction on street- cause immediate threat of accident	$60.50	$31.50	$92.00
+Entered/traveled in a lane over which a red signal was shown	$60.50	$31.50	$92.00
+Excessive vehicle noise (spinning tires)	$60.50	$31.50	$92.00
+Fail to obey official signs temporarily designating lanes	$60.50	$31.50	$92.00
+Fail to obey official signs temporarily designation signs- cause immediate threat of accident	$60.50	$31.50	$92.00
+Fail to proceed with Caution past flashing yellow light	$60.50	$31.50	$92.00
+Fail to slow to reasonable speed for existing conditions for yield sign	$60.50	$31.50	$92.00
+Fail to Stop for School bus Receiving/discharging school children	$130.50	$31.50	$162.00
+Fail to stop for steady red signal at crosswalk/ stop line/ point nearest intersection	$60.50	$31.50	$92.00
+Fail to turn as directed or required by intersection traffic control device	$60.50	$31.50	$92.00
+Fail to yield after stopping vehicle that entered intersection/so close to cause hazard	$60.50	$31.50	$92.00
+Fail to yield right of way to vehicle/pedestrian lawfully in controlled intersection or crosswalk	$60.50	$31.50	$92.00
+Fail to yield to approaching vehicle when turning left into alley/private road/driveway	$60.50	$31.50
+$92.00
+Fail to drive on right half of roadway when roadway was id sufficient width	$60.50
+$31.50
+$92.00
+Fail to drive on right half of roadway when roadway was of sufficient width- cause of immediate threat of accident.	$60.50
+$31.50
+$92.00
+Fail to drive within single lane	$60.50
+$31.50
+$92.00
+Fail to make/approach for left turn within proper lane
+$60.50
+$31.50
+$92.00
+Failed to yield to vehicle approaching from opposite direction when turning left	$60.50
+$31.50
+$92.00
+Failed to yield to vehicle on the right that entered intersection at approximately same time
+$60.50	$31.50	$92.00
+Failure to dim headlights	$60.50	$31.50	$92.00
+Failure to keep to the right
+$60.50
+$31.50	$92.00
+Failure to obey stop sign	$60.50
+$31.50
+$92.00
+Failure to obey traffic control device	$60.50
+$31.50
+$92.00
+Failure to proceed with Caution/yield right of way/reduce speed when approaching a stationary emergency vehicle displaying emergency lights	$80.50
+$31.50
+$112.00
+Failure to signal before changing lanes	$60.50	$31.50	$92.00
+Failure to stay on pavement	$60.50	$31.50	$92.00
+Failure to wear protective headgear on a motorcycle in motion/wear approved gear	$50.50	$31.50	$82.00
+Failure to yield the right of way	$60.50	$31.50	$92.00
+Failure to yield right of way to pedestrian facing walk signal	$60.50	$31.50	$92.00
+Failure to yield to vehicle when entering/crossing highway from alley/driveway
+$60.50	$31.50	$92.00
+Failure to yield to emergency vehicle	$80.50	$31.50	$112.00
+Following too closely	$60.50	$31.50	$92.00
+Follow another bus/truck closer than 300 feet	$130.50	$31.50	$162.00
+Impede flow of traffic	$60.50	$31.50	$92.00
+Improper backing	$60.50	$31.50	$92.00
+Improper lane use	$60.50	$31.50	$92.00
+Improper passing	$60.50	$31.50	$92.00
+Improper passing of streetcar	$80.50	$31.50	$92.00
+Improper turn	$60.50	$31.50	$92.00
+Improper U-turn	$60.50	$31.50	$92.00
+Made U-turn at intersection controlled by traffic signal/police officer	$60.50	$31.50	$92.00
+Made U-turn/interfered with traffic where vision less than 300 feet- traffic hazard created	$60.50	$31.50	$92.00
+Made U-turn Not at Crossover	$60.50	$31.50	$92.00
+Made U-turn Not at Crossover-Cause of immediate threat of accident	$60.50	$31.50	$92.00
+No headlights when required- when using windshield wipers	$10.00	N/A	N/A
+Obstructing Traffic	$50.50	$31.50	$82.00
+Operate All-Terrain Vehicle carrying passenger	$50.50	$31.50	$82.00
+Operate All-Terrain vehicle on hwy in excess of 30 miles per hour	$60.50	$31.50	$92.00
+Operate All- Terrain vehicle on hwy without operator or Chauffeur license	$60.50	$31.50	$92.00
+Operate All-Terrain vehicle upon hwy/street not authorized	$50.50	$31.50	$82.00
+Operate All-terrain vehicle within stream or river	$149.50	$31.50	$181.00
+Operate All-terrain vehicle without proper bicycle safety flag	$50.50	$31.50	$82.00
+Operate Motorized bicycle on hwy/street without valid rivers license	$50.50	$31.50	$82.00
+Operate Motorized bicycle on interstate	$50.50	$31.50	$82.00
+Operate/transport implements of husbandry on roadway between Sunset and Sunrise	$80.50	$31.50	$112.00
+Pass vehicle/interfered with approaching traffic	$130.50	$31.50	$162.00
+Pass vehicle on right/ traveled off man portion of road	$80.50	$31.50	$112.00
+Permitted invalid licensee to operate a motorcycle	$70.50	$31.50	$102.00
+Person 21 years old or less operate moving motor vehicle while sending/reading/texting on mobile device.	$80.50	$31.50	$112.00
+Person under 18 years of age operate ATV without securely fastened safety helmet on head	$50.50	$31.50	$82.00
+Red light violation	$60.50	$31.50	$92.00
+Stopped/slowed speed/turned from direct course/moved veh right/left when unsafe truck over 18000 lbs. followed another vehicle too closely.	$130.50	$31.50	$162.00
+Turned right on red signal where prohibited	$60.50	$31.50	$92.00
+Violation of restrictions/regulations regarding tow trucks	$130.50	$31.50	$162.00
+Weaving	$60.50	$31.50	$92.00
+Wrong way	$60.50	$31.50	$92.00
+ 			
+ 			
+NON-MOVING VIOLATIONS [return to top]	Fine	Court costs	Total
+ 	 	 	 
+Defective Equipment	$50.50	$31.50	$82.00
+Display/Possess Plates of another	$50.50	$31.50	$82.00
+Display Unlawful tabs	$50.50	$31.50	$82.00
+Driver failed secure child less than 8yrs old child restraint or booster seat	$49.50	$31.50	$81.00
+Equipment Violation	$50.50	$31.50	$82.00
+Expired Plates	$50.50	$31.50	$82.00
+Failed to Register Vehicle	$50.50	$31.50	$82.00
+Failed to use seatbelt	$50.50	$31.50	$82.00
+No License Plates	$50.50	$31.50	$82.00
+Person Less Than 18yrs of Age operating/riding ridging in truck failed wear properly adjusted seatbelt	$10.00	N/A	$10.00
+Seatbelt violation OTHER	$10.00	N/A	$10.00
+Vehicle License/Inspection/Title	$50.50	$31.50	$82.00
+Violate Out-of-service Order while transporting hazardous materials 1st offense	$130.50	$31.50	$162.00
+Violate-Out--f State Order while Operating a vehicle designed to transport more than 15 passengers including drive- 1st offense	$130.50	$31.50	$162.00
+Fail to Park as near to the right as possible	$50.50	$31.50	       $82.00
+Fail to Park as near to the right as possible causing immediate threat oa an accident	$50.50	$31.50	       $82.00
+Parking in Handicapped Zone	$50.50	$31.50	       $82.00
+Parked in a "no Parking zone"	$50.50	$31.50	       $82.00
+ORDINANCE VIOLATIONS [return to top]			
+Fine	Court Costs	Total
+Animal license	$50.50	$31.50	$82.00
+Animal at large	$50.50	$31.50	$82.00
+SPEEDING FINE SCHEDULE FOR 1ST OFFENSES [return to top]
+
+Miles Over Limit	Fine	Court cost	Total
+1-5 mph over	$50.50	$31.50	$82.00
+6-10 mph over	$60.50	$31.50	$92.00
+11-15 mph over	$70.50	$31.50	$102.00
+16-19 mph over	$100.50	$31.50	$132.00

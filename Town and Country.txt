@@ -1,0 +1,25 @@
+SPEEDING - 10MPH	$60.50	$33.50	$94.00
+SPEEDING - 11-15 MPH over speed limit	$80.50	$33.50	$114.00
+SPEEDING - 16-19 MPH over speed limit	$120.50	$33.50	$154.00
+SPEEDING - 20-25 MPH over speed limit	$200.50	$33.50	$234.00
+Failure to Obey Electric Signal	$60.50	$33.50	$94.00
+Failure to Obey Stop Sign	$60.50	$33.50	$94.00
+Failure to Yield	$100.50	$33.50	$134.00
+Failed to Yield to Emergency Vehicle	$150.50	$33.50	$184.00
+Following to Closely	$60.50	$33.50	$94.00
+Improper Lane Usage	$60.50	$33.50	$94.00
+Improper/Prohibited Turn	$60.50	$33.50	$94.00
+Traffic Turn Signal	$60.50	$33.50	$94.00
+Failure to Dim Headlights	$50.50	$33.50	$84.00
+Violation School Bus Stop Signal	$130.50	$33.50	$164.00
+Expired Operator's License	$50.50	$33.50	$84.00
+Expired or Illegal License Plates	$50.50	$33.50	$84.00
+Improper Registration (Fail to Register)	$50.50	$33.50	$84.00
+Child Restraint Seat Violation (child under 8 yrs of age)	$49.50	$33.50	$83.00
+Defective Equipment	$50.50	$33.50	$84.00
+No License Plates	$50.50	$33.50	$84.00
+Parking Violation	$50.50	$33.50	$84.00
+No Motorcycle Helmet	$50.50	$33.50	$84.00
+Seat Belt Violation	$10.00	None	$10.00
+Handicapped Parking	$100.50	$33.50	$134.00
+Animal at Large (1st offense, no bite)	$50.50	$33.50	$84.00

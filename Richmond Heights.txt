@@ -1,0 +1,67 @@
+SPEEDING - 1-5 miles over speed limit	$50.50	$35.50	$86.00
+SPEEDING - 6 -10 miles over speed limit	$60.50	$35.50	$96.00
+SPEEDING - 11-15 miles over speed limit	$70.50	$35.50	$106.00
+SPEEDING - 16-19 miles over speed limit	$100.50	$35.50	$136.00
+SPEEDING - 20-25 miles over speed limit	$155.50	$35.50	$191.00
+Increased Speed while Being Passed	$80.50	$35.50	$116.00
+Operate All-Terrain Vehicle upon Highway/Street not Authorized	$50.50	$35.50	$86.00
+Operate All-Terrain Vehicle Carrying a Passenger	$50.50	$35.50	$86.00
+Operate All-Terrain Vehicle within a Stream or River	$149.50	$35.50	$185.00
+Operate All-Terrain Vehicle w/o Operator or Chauffer License	$60.50	$35.50	$96.00
+Operate All-Terrain on HWY in Excess of 30 Miles per Hour	$60.50	$35.50	$96.00
+Expired Driver's License	$50.50	$35.50	$96.00
+Permitted Invalidated Licensee to Operate Motorcycle	$70.50	$35.50	$106.00
+Improper Backing	$60.50	$35.50	$96.00
+Fail to Drive on Right Half of Roadway	$60.50	$35.50	$96.00
+Failed to Drive within a Single Lane	$60.50	$35.50	$96.00
+Fail to Drive on Left Side of Roadway when View Obstructed by Hill/Curve or within 100ft of Bridge/Viaduct/Tunnel	$130.50	$35.50	$166.00
+Drove in Center Lane of 3 Lane Road when View Obstructed	$60.50	$35.50	$96.00
+Drove Wrong Direction on Street	$60.50	$35.50	$96.00
+Illegal/Improper Turning	$60.50	$35.50	$96.00
+Turned Right on Red Signal where Prohibited by Sign	$60.50	$35.50	$96.00
+Fail to Signal/Gave Improper Signal when Stopping/Turning	$60.50	$35.50	$96.00
+Made U-turn at Intersection Controlled by Traffic Signal/Police Officer	$60.50	$35.50	$96.00
+Following Another Vehicle Too Closely	$860.50	$35.50	$896.00
+Improper Lane Use	$60.50	$35.50	$96.00
+Fail to Yield after Stopping to Vehicle that Entered Intersection	$60.50	$35.50	$96.00
+Changed Lanes when Movement Could not be Made with Safety	$60.50	$35.50	$96.00
+Fail to Stop for School Bus Receiving/Discharging School Children	$130.50	$35.50	$166.00
+Person 21 years old or Less Operate Moving Motor Vehicle while Sending/Reading/Texting on Mobile Electronic Device	$80.50	$35.50	$116.00
+Fail to Dim Lights	$50.50	$35.50	$86.00
+Operate a Motorized Bicycle on HWY/Street w/o Valid Driver's License	$50.50	$35.50	$86.00
+Operate a Motorized Bicycle on Interstate Highway	$50.50	$35.50	$86.00
+Fail to Obey Traffic Control Device _	$60.50	$35.50	$96.00
+Red Light Violation	$60.50	$35.50	$96.00
+Fail to Stop at Stop Sign	$60.50	$35.50	$96.00
+Fail to Turn as Directed or Required by Traffic Control Device «	$60.50	$35.50	$96.00
+Fail to Proceed with Caution Past Flashing Yellow Signal _	$60.50	$35.50	$96.00
+Fail to Stop for Flashing/Steady Red Signal at Stop Line/Crosswalk	$60.50	$35.50	$96.00
+Cut in on Overtaken Vehicle	$80.50	$35.50	$116.00
+Failed to Yield	$60.50	$35.50	$96.00
+Fail to Slow to Reasonable Speed for Existing Conditions for Yield Sign	$60.50	$35.50	$96.00
+Fail to Yield to Emergency Vehicle Sounding Audible Siren Signal/Display Lighted Visible Red/Blue Light	$80.50	$35.50	$116.00
+Fail to Proceed with Caution/Yield Right-of-Way/Reduce Speed when Approaching a Stationary Emergency Vehicle Displaying Emergency Lights	$80.50	$35.50	$116.00
+Drove at Such Slow Speed to Impede/Block Normal Traffic Movements	$60.50	$35.50	$96.00
+Obstructing Traffic	$60.50	$35.50	$96.00
+Cruising	$20.50	$35.50	$56.00
+Animal at Large	$50.50	$35.50	$86.00
+Operate All-Terrain Vehicle without Proper Bicycle Safety Flag	$50.50	$35.50	$86.00
+Person Under 18 Years of Age Operate All-Terrain Vehicle w/o Securely Fastened Safety Helmet on Head	$50.50	$35.50	$96.00
+Defective Equipment	$50.50	$35.50	$96.00
+Failure to Wear Protective Headgear on a Motorcycle in Motion	$25.00	None	$25.00
+Equipment Violation ~ Unapproved Lighting Device or Equipment on Motor Vehicle or Motorcycle	$50.50	$35.50	$86.00
+Handicapped Parking Violation	$100.50	$35.50	$136.00
+Parking Violation	$15.50	$35.50	$51.00
+Bicycle Violation	$15.50	$35.50	$51.00
+Miscellaneous Pedestrian Violation	$15.50	$35.50	$51.00
+Expired License Plate	$50.50	$35.50	$86.00
+Failed to Register Vehicle	$50.50	$35.50	$86.00
+Display Unlawful Plates	$50.50	$35.50	$86.00
+Driver Fail to Secure a Child Less than 8 Years Old in a Child Restraint/Booster	$49.50	$35.50	$85.00
+Seatbelt Violation	$10.00	None	$10.00
+Nuisance - Abandoned Vehicle	$50.50	$35.50	$96.00
+Nuisance	$100.50	$35.50	$136.00
+Expired Driver's License	$50.50	$35.50	$86.00
+Person Under 18 Years of Age Operate All-Terrain Vehicle w/o Securely Fastened Safety Helmet on Head	$50.50	$35.50	$86.00
+Defective Equipment	$50.50	$35.50	$86.00
+Nuisance - Abandoned Vehicle	$50.50	$35.50	$86.00

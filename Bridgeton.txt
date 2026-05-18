@@ -1,0 +1,65 @@
+Speeding 1-5 MPH Over	$50.50	$23.50	$74.00
+Speeding 6-10 MPH Over	$60.50	$23.50	$84.00
+Speeding 11-15 MPH Over	$70.50	$23.50	$94.00
+Speeding 16-19 MPH Over	$100.50	$23.50	$124.00
+Speeding 20-25 MPH Over	$155.50	$23.50	$179.00
+Driving on Closed Road	$60.50	$23.50	$84.00
+Driving Over Curb/Off Pavement	$60.50	$23.50	$84.00
+Driving Wrong Side of Road	$60.50	$23.50	$84.00
+Driving Wrong Way (One Way Street)	$60.50	$23.50	$84.00
+Failure to Keep to the Right	$60.50	$23.50	$84.00
+Improper Backing	$60.50	$23.50	$84.00
+Failure to Obey Electric Signal	$60.50	$23.50	$84.00
+Failure to Obey Stop Sign	$60.50	$23.50	$84.00
+Failure to Signal	$60.50	$23.50	$84.00
+Failure to Yield	$60.50	$23.50	$84.00
+Following Too Closely	$60.50	$23.50	$84.00
+Impede Traffic	$60.50	$23.50	$84.00
+Improper Lane Usage	$60.50	$23.50	$84.00
+Improper/Prohibited Turn	$60.50	$23.50	$84.00
+Prohibited U-Turn	$60.50	$23.50	$84.00
+Traffic Control Device	$60.50	$23.50	$84.00
+Fail Obey Signs Temporarily Designating Lanes	$60.50	$23.50	$84.00
+Op ATV upon Highway/Street	$50.50	$23.50	$74.00
+Op ATV Carrying Passenger	$50.50	$23.50	$74.00
+Operate Motorized Bicycle on Highway/Street without valid Driver's License	$50.50	$23.50	$74.00
+Expired Driver's License	$50.50	$23.50	$74.00
+Drive to Left side of Roadway When View Obstructed by Hill/Curve	$130.50	$23.50	$154.00
+Drive to Left side of Roadway within 100 feet of Bridge/Viaduct/Tunnel when Obstructed	$130.50	$23.50	$154.00
+Pass Vehicle on Right/Travel off Main Portion of Road	$80.50	$23.50	$104.00
+Pass Vehicle/Interfered with Approaching Traffic	$130.50	$23.50	$154.00
+Fail to Stop for School Bus Receiving/Discharging Children	$130.50	$23.50	$154.00
+Violate Out-Of-State Order While Operating M/V Designed to Transport more than 15 passengers - 1st offense	$130.50	$23.50	$154.00
+Cut in on Overtaken Vehicle	$80.50	$23.50	$104.00
+Fail to Yield Emergency Vehicle Sounding Siren/Lights	$80.50	$23.50	$104.00
+Violation of Restrictions/Regulations for Tow Trucks	$130.50	$23.50	$154.00
+Seat Belt Violation	$10.00	None	$10.00
+Child Restraint Seat Violation	$49.50	$23.50	$73.00
+No Motorcycle Helmet	$25.00	None	$25.00
+Op ATV within Stream/River	$149.50	$23.50	$173.00
+Op ATV without Op/Chauffeur Lic	$60.50	$23.50	$84.00
+Expired License Plates (Tags)	$50.50	$23.50	$74.00
+Fake Temporary Tags (temp tags) Fictitious	$50.50	$23.50	$74.00
+License Tabs/Plate	$50.50	$23.50	$74.00
+No Inspection Sticker	$50.50	$23.50	$74.00
+Improper/Fail to Registration M/V	$50.50	$23.50	$74.00
+No License Plates	$50.50	$23.50	$74.00
+Plates of Another	$50.50	$23.50	$74.00
+Improper Exhaust or Muffler	$50.50	$23.50	$74.00
+License Plate not Illuminated	$50.50	$23.50	$74.00
+One Headlight and/or Taillight	$50.50	$23.50	$74.00
+Taillights/Brake Lights	$50.50	$23.50	$74.00
+Tinted Windows	$50.50	$23.50	$74.00
+Operated MV w/Defective Parts	$50.50	$23.50	$74.00
+Operate ATV without Safety Flag	$50.50	$23.50	$74.00
+Operate ATV without Helmet	$50.50	$23.50	$74.00
+No Headlights	$50.50	$23.50	$74.00
+Failure to Dim Headlights	$50.50	$23.50	$74.00
+Excessive Vehicle Noise	$50.50	$23.50	$74.00
+Obstruct Traffic	$50.50	$23.50	$74.00
+Nuisance - Abandoned Vehicle	$50.50	$23.50	$74.00
+Handicapped Parking	$100.50	$23.50	$124.00
+Misc Parking / Bicycle / Pedestrian Violations	$15.50	$23.50	$39.00
+Dog at Large (no bite, 1st offense)	$50.50	$23.50	$74.00
+No Dog Tags/License	$50.50	$23.50	$74.00
+Nuisance (Violation Bureau)	$100.50	$23.50	$124.00
