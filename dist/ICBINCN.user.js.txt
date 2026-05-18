@@ -1030,13 +1030,22 @@ async function trackTick() {const st = loadTrackState();
                                        return parsed.toString();}
                                   catch (_) {return raw.endsWith('#docket') ? raw : `${raw}#docket`;}}
 
+  function extractBondAmountNumeric(rawValue) {const raw = norm(String(rawValue || ''));
+                                               if (!raw || /^-\s*-\s*-$/.test(raw)) return '';
+                                               const labelledMatch = raw.match(/\bBond Amount:\s*\$?\s*([0-9][\d,]*(?:\.\d{1,2})?)/i);
+                                               const numberMatch = labelledMatch || raw.match(/\$?\s*([0-9][\d,]*(?:\.\d{1,2})?)/);
+                                               const numericRaw = norm(numberMatch?.[1] || '').replace(/,/g,'');
+                                               if (!numericRaw) return '';
+                                               const amount = Number.parseFloat(numericRaw);
+                                               if (!Number.isFinite(amount)) return '';
+                                               return amount % 1 === 0 ? String(amount) : amount.toFixed(2).replace(/\.00$/,'');}
+
   function buildCopyFormatLine(e,warrantFields) {const caseNo = getMuniPrimaryCaseNumber(e) || norm(getCaseNumberForSummary(e)).replace(/\s*\(municourt\)$/i,'') || '- - -';
                                                   const warrantDate = warrantFields.date || '- - -';
                                                   const judge = e.judge || '- - -';
                                                   const chargeDescription = e.chargeDescription || '- - -';
                                                   const bondRaw = norm(String(warrantFields.bond || '- - -'));
-                                                  const bondValue = /^-\s*-\s*-$/.test(bondRaw) ? '- - -' : (parseBondNumeric(bondRaw) || bondRaw || '- - -');
-                                                  const bond = /^-\s*-\s*-$/.test(bondValue) ? '- - -' : (parseBondNumeric(bondValue) || bondValue || '- - -');
+                                                  const bond = extractBondAmountNumeric(bondRaw) || (bondRaw && !/^-\s*-\s*-$/.test(bondRaw) ? bondRaw : '- - -');
                                                   return `${caseNo}\t\t\t${warrantDate}\t\t\t${judge}\t\t\t\t${chargeDescription}\t\t${bond}`;}
 
   function formatEntry(e) {const warrantFields = parseWarrantSummaryFields(e);
