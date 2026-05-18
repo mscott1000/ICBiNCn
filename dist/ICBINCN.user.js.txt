@@ -1009,13 +1009,15 @@ async function trackTick() {const st = loadTrackState();
                                          const bondMatch = raw.match(/(?:^|\n)\s*(?:Bond(?: Amount)?):\s*([^\n]+)/i);
                                          const eventRaw = norm(eventMatch?.[1] || '');
                                          const eventBondMatch = eventRaw.match(/\bBond Amount:\s*([0-9][\d,]*(?:\.\d{2})?)/i);
+                                         const bondFromLine = normalizeExtracted(bondMatch?.[1] || '');
+                                         const bondFromEvent = normalizeExtracted(eventBondMatch?.[1] || '');
                                          const ftaDates = Array.isArray(e?.ftaDates) ? e.ftaDates : [];
                                          const allDateCandidates = [parsedDate,norm(dateMatch?.[1] || ''),...collectDates(eventRaw),...collectDates(raw),...ftaDates.flatMap((v) => collectDates(v))]
                                                                   .filter(Boolean);
                                          const resolvedDate = mostRecentNonFutureDate(allDateCandidates);
                                          return {date: resolvedDate || fallback.date,
                                                  event: parsedEvent || norm(eventMatch?.[1] || '') || (raw && raw !== '- - -' ? raw : fallback.event),
-                                                 bond: parsedBond || norm(bondMatch?.[1] || '') || norm(eventBondMatch?.[1] || '') || fallback.bond};}
+                                                 bond: parsedBond || bondFromLine || bondFromEvent || fallback.bond};}
 
   function appendDocketHash(url) {const raw = norm(url || '');
                                   if (!raw) return '';
