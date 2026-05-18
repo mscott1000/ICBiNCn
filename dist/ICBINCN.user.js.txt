@@ -986,12 +986,11 @@ async function trackTick() {const st = loadTrackState();
                                          const fallback = {date: parsedDate || '- - -',event: parsedEvent || '- - -',bond: parsedBond || '- - -'};
                                          if (!raw || raw === '- - -') return fallback;
                                          const dateMatch = raw.match(/(?:^|\n)\s*Date:\s*([^\n]+)/i);
-                                         const eventMatch = raw.match(/(?:^|\n)\s*(?:\d{1,2}\/\d{1,2}\/\d{4}\s+)?Event:\s*([^\n]+)/i);
+                                         const eventMatch = raw.match(/(?:^|\n)\s*Event:\s*([^\n]+)/i);
                                          const bondMatch = raw.match(/(?:^|\n)\s*(?:Bond(?: Amount)?):\s*([^\n]+)/i);
                                          const eventRaw = norm(eventMatch?.[1] || '');
-                                         const eventDateMatch = raw.match(/(?:^|\n)\s*(\d{1,2}\/\d{1,2}\/\d{4})\s+Event:\s*/i) || eventRaw.match(/^(\d{1,2}\/\d{1,2}\/\d{4})\b/);
-                                         const eventBondMatch = raw.match(/(?:^|\n)\s*(?:\d{1,2}\/\d{1,2}\/\d{4}\s+)?Event:\s*[^\n]*?\bBond Amount:\s*([0-9][\d,]*(?:\.\d{2})?)/i)
-                                                             || eventRaw.match(/\bBond Amount:\s*([0-9][\d,]*(?:\.\d{2})?)/i);
+                                         const eventDateMatch = eventRaw.match(/^(\d{1,2}\/\d{1,2}\/\d{4})\b/);
+                                         const eventBondMatch = eventRaw.match(/\bBond Amount:\s*([0-9][\d,]*(?:\.\d{2})?)/i);
                                          return {date: parsedDate || norm(dateMatch?.[1] || '') || norm(eventDateMatch?.[1] || '') || fallback.date,
                                                  event: parsedEvent || norm(eventMatch?.[1] || '') || (raw && raw !== '- - -' ? raw : fallback.event),
                                                  bond: parsedBond || norm(bondMatch?.[1] || '') || norm(eventBondMatch?.[1] || '') || fallback.bond};}
