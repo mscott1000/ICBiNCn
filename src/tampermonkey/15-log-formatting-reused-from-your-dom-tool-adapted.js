@@ -85,9 +85,11 @@
    * Log formatting (reused from your DOM tool, adapted)
    ************************************************************/
   function parseWarrantSummaryFields(e) {const raw = norm(String(e?.warrantSummary || ''));
-                                         const parsedDate = norm(String(e?.mostRecentWarrantDate || ''));
-                                         const parsedEvent = norm(String(e?.warrantEvent || ''));
-                                         const parsedBond = norm(String(e?.bondAmount || ''));
+                                         const normalizeExtracted = (v) => {const out = norm(String(v || ''));
+                                                                            return /^-\s*-\s*-$/.test(out) ? '' : out;};
+                                         const parsedDate = normalizeExtracted(e?.mostRecentWarrantDate);
+                                         const parsedEvent = normalizeExtracted(e?.warrantEvent);
+                                         const parsedBond = normalizeExtracted(e?.bondAmount);
                                          const fallback = {date: parsedDate || '- - -',event: parsedEvent || '- - -',bond: parsedBond || '- - -'};
                                          if (!raw || raw === '- - -') return fallback;
                                          const dateMatch = raw.match(/(?:^|\n)\s*Date:\s*([^\n]+)/i);
