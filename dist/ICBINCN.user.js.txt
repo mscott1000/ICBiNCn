@@ -2569,12 +2569,14 @@ async function trackTick() {const st = loadTrackState();
                          if (e.licenseHoldDate) lines.push(`License Hold: ${e.licenseHoldDate}`);
                          lines.push(`Upcoming Court Dates: ${e.nextDocketDate || ''}`,'',
                                          `Charge Description: ${e.chargeDescription || ''}`,
-                                         `Charge Type: ${e.chargeType || ''}`,
-                                         `Charge Class: ${e.chargeClass || ''}`,
-                                         `Judge: ${e.judge || ''}`,
-                                         `Plead and Pay Total: ${(e.pleadAndPayTotal || lookupPleadAndPayTotal(e) || '- - -')}`,'');
+                                         `Charge Type: ${e.chargeType || ''}`);
+                         if (!/^-\s*-\s*-$/.test(norm(String(e.chargeClass || '')))) lines.push(`Charge Class: ${e.chargeClass || ''}`);
+                         lines.push(`Judge: ${e.judge || ''}`);
+                         const pleadAndPayTotal = e.pleadAndPayTotal || lookupPleadAndPayTotal(e) || '- - -';
+                         if (!/^-\s*-\s*-$/.test(norm(String(pleadAndPayTotal)))) lines.push(`Plead and Pay Total: ${pleadAndPayTotal}`);
+                         lines.push('','Copy Format:',buildCopyFormatLine(e,warrantFields),'');
                          if (e?._source !== 'municourt') lines.push(`CaseNet:\n${appendDocketHash(e.caseUrl || '')}\n`);
-                         lines.push('Copy Format:',buildCopyFormatLine(e,warrantFields),'','','');
+                         lines.push('','','');
                          if (e?._source === 'municourt' && norm(e?.muniCaseDetailText || '')) lines.push('MuniCourt Detail:',e.muniCaseDetailText,'','','');
                          return lines.join('\n');}
 
@@ -2606,7 +2608,7 @@ async function trackTick() {const st = loadTrackState();
                                                                                                                                                                            return a.idx - b.idx;})
                                                                                                                                                            .map(({entry}) => entry);
                                                                                                                                 for (const entry of sortedEntries) sections.push(formatEntry(applyMuniDetailFormatting(entry)));
-                                                                                                                                sections.push('','');}}
+                                                                                                                                sections.push('','','','');}}
                                   appendSections(eligibleJurisdictions);
                                   appendSections(ineligibleJurisdictions);
                                   return sections.join('\n').trim();}
