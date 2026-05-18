@@ -1116,13 +1116,12 @@ async function trackTick() {const st = loadTrackState();
                                   for (const jurisdictionEntry of sortedJurisdictions) {if (isEligibleSummaryJurisdiction(jurisdictionEntry.jurisdiction)) eligibleJurisdictions.push(jurisdictionEntry);
                                                                                          else ineligibleJurisdictions.push(jurisdictionEntry);}
                                   const sections = [];
-                                  function appendSections(jurisdictions) {for (const {jurisdiction,entries} of jurisdictions) {const header = getCopySectionHeader(jurisdiction);
+                                  function appendSections(jurisdictions) {for (const {entries} of jurisdictions) {
                                                                                                                                 const sortedEntries = entries.map((entry,idx) => ({entry,idx}))
                                                                                                                                                            .sort((a,b) => {const priorityDiff = getSummaryStatusPriority(a.entry) - getSummaryStatusPriority(b.entry);
                                                                                                                                                                            if (priorityDiff) return priorityDiff;
                                                                                                                                                                            return a.idx - b.idx;})
                                                                                                                                                            .map(({entry}) => entry);
-                                                                                                                                sections.push(header,'');
                                                                                                                                 for (const entry of sortedEntries) sections.push(formatEntry(applyMuniDetailFormatting(entry)));
                                                                                                                                 sections.push('','');}}
                                   appendSections(eligibleJurisdictions);
