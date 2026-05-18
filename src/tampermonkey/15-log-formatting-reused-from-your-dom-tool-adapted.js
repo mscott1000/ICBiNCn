@@ -176,7 +176,8 @@
                                          `Charge Description: ${e.chargeDescription || ''}`,
                                          `Charge Type: ${e.chargeType || ''}`,
                                          `Charge Class: ${e.chargeClass || ''}`,
-                                         `Judge: ${e.judge || ''}`,'');
+                                         `Judge: ${e.judge || ''}`,
+                                         `Plead and Pay Total: ${(e.pleadAndPayTotal || lookupPleadAndPayTotal(e) || '- - -')}`,'');
                          if (e?._source !== 'municourt') lines.push(`CaseNet:\n${appendDocketHash(e.caseUrl || '')}\n`);
                          lines.push('Copy Format:',buildCopyFormatLine(e,warrantFields),'','','');
                          if (e?._source === 'municourt' && norm(e?.muniCaseDetailText || '')) lines.push('MuniCourt Detail:',e.muniCaseDetailText,'','','');

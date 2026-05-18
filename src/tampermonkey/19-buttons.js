@@ -162,7 +162,7 @@
                                                      const muniEntries = await searchMunicourtEntriesByName(st.params || {});
                                                      for (const m of muniEntries) {if (!m?.caseKey) continue;
                                                                                  if (nextLog.some((x) => x.caseKey === m.caseKey)) continue;
-                                                                                 nextLog.push(m);
+                                                                                 nextLog.push(withPleadAndPayTotal(m));
                                                                                  muniAdded += 1;}
                                                      saveLog(nextLog);
                                                      dbg('namesearch_municourt_final_pass_done',{count: muniAdded});}

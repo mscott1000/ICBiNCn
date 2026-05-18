@@ -164,7 +164,7 @@
                                                              const nextLog = loadLog();
                                                              for (const r of results) {if (!r || !r.caseKey) continue;
                                                                                       if (nextLog.some((x) => x.caseKey === r.caseKey)) continue;
-                                                                                      nextLog.push(r);}
+                                                                                      nextLog.push(withPleadAndPayTotal(r));}
                                                              saveLog(nextLog);
                                                              let muniAdded = 0;
                                                              try {uiStatus(`Resolved ${resolved.length}. Reading Municourt supplement...`);
@@ -172,7 +172,7 @@
                                                                   const muniEntries = await searchMunicourtEntriesByCaseNumbers(requested);
                                                                   for (const m of muniEntries) {if (!m?.caseKey) continue;
                                                                                               if (nextLog.some((x) => x.caseKey === m.caseKey)) continue;
-                                                                                              nextLog.push(m);
+                                                                                              nextLog.push(withPleadAndPayTotal(m));
                                                                                               muniAdded += 1;}
                                                                   saveLog(nextLog);
                                                                   if (muniAdded) dbg('municourt_case_batch_added',{count: muniAdded});}
@@ -250,7 +250,7 @@
                                                                                                                                                                                   if (idx >= 0) nextLog.splice(idx,1);
                                                                                                                                                                                   continue;}
                                                                          if (nextLog.some((x) => x.caseKey === r.caseKey)) continue;
-                                                                         nextLog.push(r);
+                                                                         nextLog.push(withPleadAndPayTotal(r));
                                                                          appendedCount += 1;}
                                                 saveLog(nextLog);
                                                 const okCount = results.filter(Boolean).length;
