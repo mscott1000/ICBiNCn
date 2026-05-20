@@ -357,10 +357,12 @@
                                                                        const summaryRaw = valueFromAny(rec,['status','caseStatus']);
                                                                        const summaryStatus = mapMuniStatus(summaryRaw,warrantRaw);
                                                                        const caseUrl = valueFromAny(rec,['caseUrl','url']) || sourceLabel;
-                                                                       const entryKeyBase = (caseNo || valueFromAny(rec,['button']) || '- - -').toUpperCase();
-                                                                       const summaryRow = norm(rec?.resultRowText || `${caseTitle}   ${caseNo}   ${location}   ${chargeDescription}   ${summaryRaw || summaryStatus}`);
                                                                        const parsedDetail = parseMuniFullCaseDetails(rec?.muniCaseDetailText || '');
                                                                        const muniLocation = parsedDetail.courtName !== '- - -' ? parsedDetail.courtName : location;
+                                                                       const keyCaseNo = (caseNo || valueFromAny(rec,['button']) || '- - -').toUpperCase();
+                                                                       const keyLocation = norm(muniLocation || '- - -').toUpperCase();
+                                                                       const entryKeyBase = `${keyCaseNo}|${keyLocation}`;
+                                                                       const summaryRow = norm(rec?.resultRowText || `${caseTitle}   ${caseNo}   ${location}   ${chargeDescription}   ${summaryRaw || summaryStatus}`);
                                                                        const muniCaseTitle = deriveMuniCaseHeader(caseNo,muniLocation);
                                                                        return {caseKey: `${entryKeyBase}|MUNICOURT`,
                                                                                caseTitle: muniCaseTitle,
@@ -457,15 +459,20 @@
                                                       if (!candidates.length) candidates = await fetchMunicourtCandidates(params || {});
                                                       const entries = [];
                                                       const seen = new Set();
+                                                      const duplicateCaseKeys = [];
                                                       for (const c of candidates) {const entry = mapMuniRecordToEntry(c.record,c.source || MUNI_BASE_URL,'');
-                                                                                 if (!entry.caseKey || seen.has(entry.caseKey)) continue;
+                                                                                 if (!entry.caseKey) continue;
+                                                                                 if (seen.has(entry.caseKey)) {duplicateCaseKeys.push(entry.caseKey);
+                                                                                                            continue;}
                                                                                  seen.add(entry.caseKey);
                                                                                  entries.push(entry);}
                                                       setMuniDiag({phase:'done',
                                                                    params: {...params},
                                                                    candidateCount: candidates.length,
                                                                    entryCount: entries.length,
-                                                           sampleCaseKeys: entries.slice(0,5).map((e) => e.caseKey)});
+                                                           sampleCaseKeys: entries.slice(0,5).map((e) => e.caseKey),
+                                                                   duplicateCaseKeyCount: duplicateCaseKeys.length,
+                                                                   duplicateCaseKeySample: duplicateCaseKeys.slice(0,5)});
                                                       return entries;}
 
   if (/municourt\.net$/i.test(location.hostname || '')) setTimeout(() => {runMunicourtRemoteWorkerIfNeeded().catch(() => {});},300);
