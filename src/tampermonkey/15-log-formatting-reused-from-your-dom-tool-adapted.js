@@ -574,7 +574,6 @@ Court Clerk: ${clerk}` : display;
                                                         return false;}
 
   function buildJurisdictionSummarySections(sortedJurisdictions) {const sections = [];
-                                                                  let hasFreshStartFridaySection = false;
                                                                   for (const {jurisdiction,entries} of sortedJurisdictions) {const includeJudgeDetails = shouldIncludeJudgeDetails(jurisdiction);
                                                                                                                               const grouped = new Map();
                                                                                                                               if (includeJudgeDetails) {for (const entry of entries) {const header = getMunicipalityHeaderForSummary(jurisdiction,entry?.judge || '') || jurisdiction.toUpperCase();
@@ -638,10 +637,10 @@ Court Clerk: ${clerk}` : display;
                                                                                                                                                                                                              const charge = norm(e?.chargeDescription || '') || 'No Charges Found';
                                                                                                                                                                                                              const lineStatus = getSummaryLineStatus(e);
                                                                                                                                                                                                              sections.push(`${caseNo}: ${charge} - ${lineStatus}`);}
-                                                                                                                                                                                if (header.includes('FRESH START FRIDAY')) hasFreshStartFridaySection = true;
+                                                                                                                                                                                if (header.includes('FRESH START FRIDAY')) sections.push(FRESH_START_FRIDAY_TEXT);
                                                                                                                                                                                 sections.push('');
                                                                                                                                                                                 sections.push('');}}
-                                                                  return {sections,hasFreshStartFridaySection};}
+                                                                  return {sections};}
 
   function buildSummaryCopyText() {const log = loadLog();
                                   const expected = norm(document.getElementById('moNsYob')?.value || '');
@@ -662,16 +661,11 @@ Court Clerk: ${clerk}` : display;
                                   const ineligibleJurisdictions = [];
                                   for (const jurisdictionEntry of sortedJurisdictions) {if (isEligibleSummaryJurisdiction(jurisdictionEntry.jurisdiction)) eligibleJurisdictions.push(jurisdictionEntry);
                                                                                          else ineligibleJurisdictions.push(jurisdictionEntry);}
-                                  const {sections: eligibleSections,hasFreshStartFridaySection: eligibleHasFreshStartFridaySection} = buildJurisdictionSummarySections(eligibleJurisdictions);
-                                  const {sections: ineligibleSections,hasFreshStartFridaySection: ineligibleHasFreshStartFridaySection} = buildJurisdictionSummarySections(ineligibleJurisdictions);
+                                  const {sections: eligibleSections} = buildJurisdictionSummarySections(eligibleJurisdictions);
+                                  const {sections: ineligibleSections} = buildJurisdictionSummarySections(ineligibleJurisdictions);
                                   const sections = [...eligibleSections];
                                   if (eligibleSections.length && ineligibleSections.length) sections.push('');
                                   sections.push(...ineligibleSections);
-                                  const hasFreshStartFridaySection = eligibleHasFreshStartFridaySection || ineligibleHasFreshStartFridaySection;
-
-                                  if (hasFreshStartFridaySection) {sections.push(FRESH_START_FRIDAY_TEXT);
-                                                                   sections.push('');
-                                                                   sections.push('');}
 
                                   const upcomingByJurisdiction = new Map();
                                   for (const e of filteredLog) {const next = parseUpcomingCourtDate(e);
