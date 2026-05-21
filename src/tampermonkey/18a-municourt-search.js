@@ -247,7 +247,8 @@
                                                    const recaptchaSiteKey = findRecaptchaSiteKey(homeResp.responseText);
                                                    if (!recaptchaResponse && options?.allowBrowserRecaptcha && /municourt\.net$/i.test(location.hostname || '')) recaptchaResponse = await getRecaptchaTokenForSubmit(recaptchaSiteKey);
                                                    if (!token) throw new Error('Municourt verification token not found');
-                                                   if (!recaptchaResponse) dbg('municourt_recaptcha_missing',{url: MUNI_NAME_SEARCH_URL});
+                                                   if (!recaptchaResponse) {dbg('municourt_recaptcha_missing',{url: MUNI_NAME_SEARCH_URL});
+                                                                        throw new Error('Municourt recaptcha token not found');}
 
                                                    const records = [];
                                                    const seen = new Set();
