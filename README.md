@@ -29,14 +29,3 @@ The source parts are numbered so they concatenate in the correct order. The curr
 ## Design notes
 
 - Case-number batch UI discovery checklist: `docs/case-number-batch-ui-requirements.md`
-
-## Headless service scaffold
-
-A starter service-mode migration scaffold is available in `headless/` for running recurring cycles outside the browser extension runtime. It includes:
-
-- env-based + interactive credential input
-- JSON-backed storage adapter as a `GM_*` replacement
-- retry/backoff loop and scheduled execution options
-- Google Sheets endpoint POST flow compatible with current architecture
-
-See `headless/README.md` for details.
