@@ -258,7 +258,11 @@
                                                 const errCount = (errors || []).length;
                                                 if (isStop()) {uiStatus('Stopped.');
                                                                dbg('run_stopped',{okCount,skipCount,errCount});}
-                                                else {uiStatus(`${okCount} Case.net cases added. YOB mismatches: ${yobMismatchCount}. Errors: ${errors.length}.`);}
+                                                else {const ns = loadNameState();
+                                                      if (ns?.active) {const nextPassIndex = Number(ns.passIndex || 0) + 1;
+                                                                        const nextPrepMessages = ['Preparing pass 1/3 (criminal)','Preparing pass 2/3 (traffic/municipal)','Preparing pass 3/3 (Municourt)'];
+                                                                        uiStatus(nextPrepMessages[nextPassIndex] || `Preparing pass ${nextPassIndex + 1}/3`);}
+                                                      else uiStatus(`${okCount} Case.net cases added. YOB mismatches: ${yobMismatchCount}. Errors: ${errors.length}.`);}
                                                 if (errCount) dbg('run_errors',{errors: errors.slice(0,12)});
                                                 return {appendedCount};}
                                            catch (err) {dbg('fatal_pull',{msg: String(err?.message || err),stack: String(err?.stack || ''),});

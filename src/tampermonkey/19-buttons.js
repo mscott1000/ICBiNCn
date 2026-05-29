@@ -137,7 +137,7 @@
                                  const passKey = typeof pass === 'string' ? pass : pass?.caseType;
                                  const passMiddle = typeof pass === 'string' ? (st.params?.middle || '') : (pass?.middle || '');
                                  const passLabel = typeof pass === 'string' ? passKey : (pass?.label || passKey);
-                                 if (!passKey) {uiStatus('Preparing Municourt.net pass (3/3)');
+                                 if (!passKey) {uiStatus('Preparing pass 3/3 (Municourt)');
                                                 render();
                                                 if (Number(st.prepareStartedAt || 0) === 0) {st.prepareStartedAt = Date.now();
                                                                                              saveNameState(st);
@@ -156,7 +156,7 @@
                                                 st.finalizingStartedAt = Date.now();
                                                 saveNameState(st);
                                                 let muniAdded = 0;
-                                                try {uiStatus('Final pass complete. Reading Municourt...');
+                                                try {uiStatus('Reading Municourt...');
                                                      render();
                                                      const nextLog = loadLog();
                                                      const muniEntries = await searchMunicourtEntriesByName(st.params || {});
@@ -178,7 +178,7 @@
                                                                                                         dbg('namesearch_resubmit',{passKey,ageMs:age});
                                                                                                         st.step = 'go_search';
                                                                                                         saveNameState(st);}
-                                                          const prepMessages = ['Preparing Criminal pass (1/3)','Preparing Traffic/Municipal pass (2/3)','Preparing Municourt.net pass (3/3)'];
+                                                          const prepMessages = ['Preparing pass 1/3 (criminal)','Preparing pass 2/3 (traffic/municipal)','Preparing pass 3/3 (Municourt)'];
                                                           const prepLabel = prepMessages[st.passIndex || 0] || `Preparing pass (${(st.passIndex || 0) + 1}/3)`;
                                                           uiStatus(prepLabel);
                                                           render();
@@ -189,7 +189,6 @@
                                                           if (prepAge < 3000) return;
                                                           st.prepareStartedAt = 0;
                                                           saveNameState(st);
-                                                          uiStatus(`Searching ${st.passIndex + 1}/${(st.passes || []).length} (${passLabel})…`);
                                                           dbg('namesearch_submit',{passKey,passMiddle});
                                                           fillNameSearchForm({...st.params,middle: passMiddle},passKey);
                                                           const ok = submitNameSearchForm();
@@ -209,7 +208,6 @@
                                                                 setShowEntriesTo100();
                                                                 const dockYob = document.getElementById('moNsYob');
                                                                 if (dockYob) dockYob.value = st.params?.yob || '';
-                                                                uiStatus(`Ready (${passLabel})…`);
                                                                 dbg('namesearch_pull_begin',{passKey});
                                                                 st.step = 'pulling_results';
                                                                 st.pullStartedAt = Date.now();
