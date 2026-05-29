@@ -88,7 +88,7 @@
                                                                           return;}
                                              if (id === 'moJsonHelpClose') {closeHelpPanel();
                                                                             return;}
-                                             if (id === 'moTrackClearEntries') {clearTrackDraft();
+                                             if (SHOW_TRACK_THIS_CASE_UI && id === 'moTrackClearEntries') {clearTrackDraft();
                                                                               clearTrackState();
                                                                               setStop(true);
                                                                               setRun(false);
@@ -96,7 +96,7 @@
                                                                               uiStatus('Track This Case entries cleared');
                                                                               dbg('track_entries_cleared',{});
                                                                               return;}
-                                             if (id === 'moTrackSignup') {const caseNumber = norm(document.getElementById('moTrackCaseNo')?.value || '').toUpperCase();
+                                             if (SHOW_TRACK_THIS_CASE_UI && id === 'moTrackSignup') {const caseNumber = norm(document.getElementById('moTrackCaseNo')?.value || '').toUpperCase();
                                                                           const email = norm(document.getElementById('moTrackEmail')?.value || '');
                                                                           if (!caseNumber) {uiStatus('Enter a case number to track.');
                                                                                             return;}
@@ -119,7 +119,7 @@
                                                                                                        const now = readUiParams();
                                                                                                        saveDraft({...cur,...now});
                                                                                                        return;}
-                                     if (id === 'moTrackCaseNo' || id === 'moTrackEmail') {const draft = loadTrackDraft();
+                                     if (SHOW_TRACK_THIS_CASE_UI && (id === 'moTrackCaseNo' || id === 'moTrackEmail')) {const draft = loadTrackDraft();
                                                                                          saveTrackDraft({...draft,
                                                                                                          caseNumber: norm(document.getElementById('moTrackCaseNo')?.value || '').toUpperCase(),
                                                                                                          email: norm(document.getElementById('moTrackEmail')?.value || '')});
