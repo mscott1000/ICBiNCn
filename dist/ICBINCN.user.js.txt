@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         ICBiNCn 5.05
+// @name         ICBiNCn 5.29
 // @namespace    http://tampermonkey.net/
 // @version      2026-05-29
 // @description  Background Case.net scraper using JSON/XHR endpoints. Navs to search results pages, pulls case data via POST requests, then writes to a persistent log for copying. Now with Track This Case.
@@ -3977,6 +3977,28 @@ function render() {const log = loadLog();
   const MUNI_DIAG_KEY = '__municourt_diag_v1';
   const MUNI_REMOTE_TASK_KEY = '__muni_remote_name_task_v1';
   const MUNI_REMOTE_RESULT_KEY = '__muni_remote_name_result_v1';
+  const MUNI_REMOTE_CLOSE_FALLBACK_MS = 15000;
+  const MUNI_REMOTE_HASH_PREFIX = '#icbincn-muni-task=';
+
+  function isMuniNameSearchPage() {try {const u = new URL(location.href);
+                                        return /municourt\.net$/i.test(u.hostname || '') && u.pathname === '/' && u.searchParams.get('sel') === '0';}
+                                 catch {return false;}}
+
+  function getMuniRemoteTaskIdFromUrl() {if (!isMuniNameSearchPage()) return '';
+                                         try {const hash = String(location.hash || '');
+                                              if (!hash.startsWith(MUNI_REMOTE_HASH_PREFIX)) return '';
+                                              return decodeURIComponent(hash.slice(MUNI_REMOTE_HASH_PREFIX.length));}
+                                         catch {return '';}}
+
+  function getMuniRemoteOpenUrl(taskId) {return `${MUNI_NAME_SEARCH_URL}${MUNI_REMOTE_HASH_PREFIX}${encodeURIComponent(String(taskId || ''))}`;}
+
+  function closeMuniRemoteTab(reason = 'complete') {if (!getMuniRemoteTaskIdFromUrl()) return;
+                                                    dbg('municourt_remote_tab_close',{reason,url: location.href});
+                                                    try {window.close();}
+                                                    catch {}}
+
+  function scheduleMuniRemoteTabClose(reason,delayMs = 0) {if (!getMuniRemoteTaskIdFromUrl()) return;
+                                                          setTimeout(() => closeMuniRemoteTab(reason),Math.max(0,Number(delayMs || 0)));}
 
   function setMuniDiag(diag = {}) {try {window[MUNI_DIAG_KEY] = {ts: new Date().toISOString(),...diag};}
                                    catch {}}
@@ -4259,25 +4281,33 @@ function render() {const log = loadLog();
                                                    return records;}
 
   async function runMunicourtRemoteWorkerIfNeeded() {if (!/municourt\.net$/i.test(location.hostname || '')) return;
+                                                     const remoteTaskId = getMuniRemoteTaskIdFromUrl();
+                                                     if (!remoteTaskId) return;
                                                      const task = await gmGetValueSafe(MUNI_REMOTE_TASK_KEY,null);
-                                                     if (!task?.id || task?.done) return;
+                                                     if (!task?.id || task?.done) {scheduleMuniRemoteTabClose('no_active_task_fallback',MUNI_REMOTE_CLOSE_FALLBACK_MS);
+                                                                                  return;}
+                                                     if (remoteTaskId !== task.id) return;
                                                      const now = Date.now();
                                                      const createdAt = Number(task?.createdAt || 0);
-                                                     if (createdAt && now - createdAt > 120000) return;
-                                                     if (task?.claimedAt && now - Number(task.claimedAt || 0) < 30000) return;
+                                                     if (createdAt && now - createdAt > 120000) {scheduleMuniRemoteTabClose('stale_task_fallback',MUNI_REMOTE_CLOSE_FALLBACK_MS);
+                                                                                                return;}
+                                                     if (task?.claimedAt && now - Number(task.claimedAt || 0) < 30000) {scheduleMuniRemoteTabClose('claimed_task_fallback',MUNI_REMOTE_CLOSE_FALLBACK_MS);
+                                                                                                                        return;}
                                                      await gmSetValueSafe(MUNI_REMOTE_TASK_KEY,{...task,claimedAt: now,claimedUrl: location.href});
                                                      try {const candidates = await searchMuniViaSubmitByName(task?.params || {},{allowBrowserRecaptcha: true});
                                                           const detailed = await attachMuniFullCaseDetails(candidates);
                                                           const payload = {id: task.id,createdAt: now,candidates: detailed};
                                                           await gmSetValueSafe(MUNI_REMOTE_RESULT_KEY,payload);
-                                                          await gmSetValueSafe(MUNI_REMOTE_TASK_KEY,{...task,done: true,doneAt: Date.now()});}
+                                                          await gmSetValueSafe(MUNI_REMOTE_TASK_KEY,{...task,done: true,doneAt: Date.now()});
+                                                          scheduleMuniRemoteTabClose('completed');}
                                                      catch (e) {await gmSetValueSafe(MUNI_REMOTE_RESULT_KEY,{id: task.id,createdAt: now,error: String(e?.message || e)});
-                                                                 await gmSetValueSafe(MUNI_REMOTE_TASK_KEY,{...task,done: true,doneAt: Date.now(),error: String(e?.message || e)});}}
+                                                                 await gmSetValueSafe(MUNI_REMOTE_TASK_KEY,{...task,done: true,doneAt: Date.now(),error: String(e?.message || e)});
+                                                                 scheduleMuniRemoteTabClose('completed_with_error');}}
 
   async function searchMuniViaRemoteWorker(params) {const taskId = `muni-${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
                                                     await gmSetValueSafe(MUNI_REMOTE_RESULT_KEY,null);
                                                     await gmSetValueSafe(MUNI_REMOTE_TASK_KEY,{id: taskId,createdAt: Date.now(),params: {...params}});
-                                                    try {window.open(MUNI_NAME_SEARCH_URL,'_blank','noopener,noreferrer');}
+                                                    try {window.open(getMuniRemoteOpenUrl(taskId),'_blank','noopener,noreferrer');}
                                                     catch {}
                                                     const waitMs = 45000;
                                                     const start = Date.now();
