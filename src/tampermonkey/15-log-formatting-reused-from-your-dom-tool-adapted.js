@@ -659,7 +659,6 @@ Court Clerk: ${clerk}` : display;
                                   const {sections: eligibleSections} = buildJurisdictionSummarySections(eligibleJurisdictions);
                                   const {sections: ineligibleSections} = buildJurisdictionSummarySections(ineligibleJurisdictions);
                                   const sections = [...eligibleSections];
-                                  if (eligibleSections.length && ineligibleSections.length) sections.push('');
                                   sections.push(...ineligibleSections);
 
                                   const upcomingByJurisdiction = new Map();
