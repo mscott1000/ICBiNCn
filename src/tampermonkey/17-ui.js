@@ -331,8 +331,8 @@ dock.innerHTML = `
   <div id="moJsonHeader">
     <div class="title">I Can't Believe It's Not CaseNet!</div>
     <div class="btnRow">
-      <button class="moBtn" id="moJsonCopy">Copy</button>
       <button class="moBtn" id="moJsonSummary">Summary</button>
+      <button class="moBtn" id="moJsonCopy">Copy</button>
     </div>
     <button id="moJsonCloseX" title="Close">×</button>
   </div>
