@@ -212,7 +212,7 @@
                                                                                                                                                                            if (priorityDiff) return priorityDiff;
                                                                                                                                                                            return a.idx - b.idx;})
                                                                                                                                                            .map(({entry}) => entry);
-                                                                                                                                for (const entry of sortedEntries) sections.push(formatEntry(applyMuniDetailFormatting(entry)));
+                                                                                                                                for (const entry of sortedEntries) sections.push(formatEntry(applyMuniDetailFormatting(entry)),'','');
                                                                                                                                 sections.push('','','','');}}
                                   appendSections(eligibleJurisdictions);
                                   appendSections(ineligibleJurisdictions);
