@@ -387,7 +387,6 @@ helpPanel.innerHTML = `
 
 "Clear Entries" - from the section with the button.
 
-"Send Verification Email" - Click to sign up the case number you entered for Case.net's 'Track This Case' service, and send the verification email to the address listed.
 
 "Stop All" - Emergency stop. Any funny business stops here, and I mean it.
 
@@ -445,6 +444,8 @@ function addBlock(title,htmlInner) {const div = document.createElement('div');
 launcher.addEventListener('click',() => {expandDock();});
 expandDock();
 
+const SHOW_TRACK_THIS_CASE_UI = false; // Temporarily disconnect visible Track This Case UI without removing its automation architecture.
+
 function render() {const log = loadLog();
                    $content.innerHTML = '';
                    const copyBtn = dock.querySelector('#moJsonCopy');
@@ -476,7 +477,7 @@ function render() {const log = loadLog();
         </div>
       </div>
     `);
-                   addBlock('Track This Case',`
+                   if (SHOW_TRACK_THIS_CASE_UI) {addBlock('Track This Case',`
   <div class="moNameRow" style="grid-template-columns:minmax(0, 0.9fr) minmax(0, 1.3fr); align-items:end;">
     <div class="moField">
       <label>Case Number</label>
@@ -491,5 +492,5 @@ function render() {const log = loadLog();
     <button class="moBtn" id="moTrackSignup" style="height:32px;">Send Verification Email</button>
     <button class="moBtn" id="moTrackClearEntries" style="height:32px;">Clear Entries</button>
   </div>
-`);
+`);}
 }
