@@ -80,10 +80,11 @@
                                                                    const m = raw.match(regex);
                                                                    return m?.[1] ? norm(m[1]) : '';}
 
-  function mapMuniStatus(rawStatus,rawWarrant) {const blob = `${norm(rawStatus)} ${norm(rawWarrant)}`.toLowerCase();
-                                                if (!blob) return 'nonwarrant';
-                                                const hasHold = /hold/.test(blob);
-                                                const hasActiveWarrant = /warrant|capias|failure to appear/.test(blob) && !/recalled|served|withdrawn|canceled|cancelled/.test(blob);
+  function isMuniWarrantStatus(rawStatus) {return /^warrant$/i.test(norm(rawStatus || ''));}
+
+  function mapMuniStatus(rawStatus,rawWarrant) {const status = norm(rawStatus || '');
+                                                const hasHold = /hold/i.test(`${status} ${norm(rawWarrant)}`);
+                                                const hasActiveWarrant = isMuniWarrantStatus(status);
                                                 if (hasActiveWarrant && hasHold) return 'warrant and HOLD placed on license';
                                                 if (hasActiveWarrant) return 'warrant';
                                                 if (hasHold) return 'nonwarrant and HOLD placed on license';
@@ -386,7 +387,7 @@
                                                                        const nextDocketDate = valueFromAny(rec,['current_court_date','nextCourtDate','courtDate','upcomingCourtDate','nextDocketDate']) || '- - -';
                                                                        const warrantRaw = valueFromAny(rec,['warrantStatus','warrantSummary','warrant']);
                                                                        const summaryRaw = valueFromAny(rec,['status','caseStatus']);
-                                                                       const summaryStatus = mapMuniStatus(summaryRaw,warrantRaw);
+                                                                       const summaryStatus = mapMuniStatus(statusFromDetail || summaryRaw,warrantRaw);
                                                                        const caseUrl = valueFromAny(rec,['caseUrl','url']) || sourceLabel;
                                                                        const parsedDetail = parseMuniFullCaseDetails(rec?.muniCaseDetailText || '');
                                                                        const muniLocation = parsedDetail.courtName !== '- - -' ? parsedDetail.courtName : location;

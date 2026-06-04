@@ -640,11 +640,19 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
                                    const attorneySuffix = getAttorneySuffixForSummary(e);
                                    return `${warrantLabel}${fineSuffix}${attorneySuffix}`;}
 
-  function getMunicourtSummaryLineStatus(e) {const warrantLabel = getWarrantLabelForSummary(e);
+  function isMuniWarrantStatusForSummary(value) {return /^warrant$/i.test(norm(String(value || '')));}
+
+  function isMuniOpenStatusForSummary(value) {return /^open$/i.test(norm(String(value || '')));}
+
+  function getMunicourtSummaryLineStatus(e) {const statusCandidates = [e?.disposition,e?.warrantEvent,e?.status,e?.caseStatus];
+                                            if (statusCandidates.some(isMuniWarrantStatusForSummary)) return 'warrant';
+                                            const warrantLabel = getWarrantLabelForSummary(e);
                                             const normalized = norm(String(warrantLabel || '')).toLowerCase();
-                                            if (!normalized) return 'nonwarrant';
                                             if (normalized.includes('hold')) return 'hold';
-                                            if (normalized.includes('warrant')) return 'warrant';
+                                            if (statusCandidates.some(isMuniOpenStatusForSummary)) return 'open (no warrant found)';
+                                            if (!normalized) return 'nonwarrant';
+                                            if (/^warrant\b/.test(normalized)) return 'warrant';
+                                            if (/^nonwarrant\b/.test(normalized)) return 'open (no warrant found)';
                                             if (normalized.includes('upcoming')) return 'upcoming';
                                             return normalized;}
 

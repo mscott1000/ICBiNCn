@@ -3035,11 +3035,19 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
                                    const attorneySuffix = getAttorneySuffixForSummary(e);
                                    return `${warrantLabel}${fineSuffix}${attorneySuffix}`;}
 
-  function getMunicourtSummaryLineStatus(e) {const warrantLabel = getWarrantLabelForSummary(e);
+  function isMuniWarrantStatusForSummary(value) {return /^warrant$/i.test(norm(String(value || '')));}
+
+  function isMuniOpenStatusForSummary(value) {return /^open$/i.test(norm(String(value || '')));}
+
+  function getMunicourtSummaryLineStatus(e) {const statusCandidates = [e?.disposition,e?.warrantEvent,e?.status,e?.caseStatus];
+                                            if (statusCandidates.some(isMuniWarrantStatusForSummary)) return 'warrant';
+                                            const warrantLabel = getWarrantLabelForSummary(e);
                                             const normalized = norm(String(warrantLabel || '')).toLowerCase();
-                                            if (!normalized) return 'nonwarrant';
                                             if (normalized.includes('hold')) return 'hold';
-                                            if (normalized.includes('warrant')) return 'warrant';
+                                            if (statusCandidates.some(isMuniOpenStatusForSummary)) return 'open (no warrant found)';
+                                            if (!normalized) return 'nonwarrant';
+                                            if (/^warrant\b/.test(normalized)) return 'warrant';
+                                            if (/^nonwarrant\b/.test(normalized)) return 'open (no warrant found)';
                                             if (normalized.includes('upcoming')) return 'upcoming';
                                             return normalized;}
 
@@ -4083,10 +4091,11 @@ function render() {const log = loadLog();
                                                                    const m = raw.match(regex);
                                                                    return m?.[1] ? norm(m[1]) : '';}
 
-  function mapMuniStatus(rawStatus,rawWarrant) {const blob = `${norm(rawStatus)} ${norm(rawWarrant)}`.toLowerCase();
-                                                if (!blob) return 'nonwarrant';
-                                                const hasHold = /hold/.test(blob);
-                                                const hasActiveWarrant = /warrant|capias|failure to appear/.test(blob) && !/recalled|served|withdrawn|canceled|cancelled/.test(blob);
+  function isMuniWarrantStatus(rawStatus) {return /^warrant$/i.test(norm(rawStatus || ''));}
+
+  function mapMuniStatus(rawStatus,rawWarrant) {const status = norm(rawStatus || '');
+                                                const hasHold = /hold/i.test(`${status} ${norm(rawWarrant)}`);
+                                                const hasActiveWarrant = isMuniWarrantStatus(status);
                                                 if (hasActiveWarrant && hasHold) return 'warrant and HOLD placed on license';
                                                 if (hasActiveWarrant) return 'warrant';
                                                 if (hasHold) return 'nonwarrant and HOLD placed on license';
@@ -4389,7 +4398,7 @@ function render() {const log = loadLog();
                                                                        const nextDocketDate = valueFromAny(rec,['current_court_date','nextCourtDate','courtDate','upcomingCourtDate','nextDocketDate']) || '- - -';
                                                                        const warrantRaw = valueFromAny(rec,['warrantStatus','warrantSummary','warrant']);
                                                                        const summaryRaw = valueFromAny(rec,['status','caseStatus']);
-                                                                       const summaryStatus = mapMuniStatus(summaryRaw,warrantRaw);
+                                                                       const summaryStatus = mapMuniStatus(statusFromDetail || summaryRaw,warrantRaw);
                                                                        const caseUrl = valueFromAny(rec,['caseUrl','url']) || sourceLabel;
                                                                        const parsedDetail = parseMuniFullCaseDetails(rec?.muniCaseDetailText || '');
                                                                        const muniLocation = parsedDetail.courtName !== '- - -' ? parsedDetail.courtName : location;
