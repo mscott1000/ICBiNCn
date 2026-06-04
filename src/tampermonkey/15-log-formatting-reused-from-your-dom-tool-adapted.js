@@ -157,8 +157,39 @@
                                                   const bond = extractBondAmountNumeric(bondRaw) || (bondRaw && !/^-\s*-\s*-$/.test(bondRaw) ? bondRaw : '- - -');
                                                   return `${caseNo}\t\t\t${warrantDate}\t\t\t${judge}\t\t\t\t${chargeDescription}\t\t${bond}`;}
 
+  function parsePineLawnDismissalDate(value) {const raw = norm(String(value || ''));
+                                              const m = raw.match(/\b(?:(\d{4})-(\d{1,2})-(\d{1,2})|(\d{1,2})\/(\d{1,2})\/(\d{2,4}))\b/);
+                                              if (!m) return null;
+                                              const yyyy = Number(m[1] || (String(m[6]).length === 2 ? `20${m[6]}` : m[6]));
+                                              const mm = Number(m[2] || m[4]);
+                                              const dd = Number(m[3] || m[5]);
+                                              const d = new Date(yyyy,mm - 1,dd);
+                                              if (d.getFullYear() !== yyyy || d.getMonth() !== mm - 1 || d.getDate() !== dd) return null;
+                                              return d;}
+
+  function isPineLawnDismissalDate(value) {const d = parsePineLawnDismissalDate(value);
+                                           if (!d) return false;
+                                           const cutoff = new Date(2023,11,31);
+                                           cutoff.setHours(23,59,59,999);
+                                           return d <= cutoff;}
+
+  function isPineLawnCase(e) {const hay = [e?.location,e?.caseTitle,e?.caseKey,e?.muniSummaryRow,e?.muniCaseDetailText].map((v) => norm(String(v || ''))).join(' ');
+                              return /\bPINE\s+LAWN\b/i.test(hay);}
+
+  function getPineLawnDismissalCopyLine(e,warrantFields) {if (!isPineLawnCase(e)) return '';
+                                                          const label = norm(String(getWarrantLabelForSummary(e) || '')).toLowerCase();
+                                                          const explicit = norm(String(e?.summaryStatus || '')).toLowerCase();
+                                                          const hasWarrant = /^warrant\b/.test(label) || /^warrant\b/.test(explicit);
+                                                          const hasHold = label.includes('hold') || explicit.includes('hold');
+                                                          if (hasWarrant && isPineLawnDismissalDate(warrantFields?.date || e?.mostRecentWarrantDate || e?.warrantSummary)) return 'Warrant/Hold dismissed/released';
+                                                          if (hasHold && isPineLawnDismissalDate(e?.licenseHoldDate)) return 'Warrant/Hold dismissed/released';
+                                                          return '';}
+
   function formatEntry(e) {const warrantFields = parseWarrantSummaryFields(e);
-                           const lines = [e.caseTitle || '(- - -)','',
+                           const pineLawnDismissalLine = getPineLawnDismissalCopyLine(e,warrantFields);
+                           const lines = [e.caseTitle || '(- - -)'];
+                           if (pineLawnDismissalLine) lines.push(pineLawnDismissalLine);
+                           lines.push('',
                                          `Location: ${e.location || ''}`,
                                          `Date Filed: ${e.dateFiled || ''}`,
                                          `Disposition: ${e.disposition || ''}`,
@@ -169,7 +200,7 @@
                                          `Most Recent Warrant/Summons: ${warrantFields.date || '- - -'}`,
                                          `Event: ${warrantFields.event || '- - -'}`,
                                          `Bond Amount: ${warrantFields.bond || '- - -'}`,
-                                         `FTA Dates: ${(e.ftaDates || []).join(', ')}`,];
+                                         `FTA Dates: ${(e.ftaDates || []).join(', ')}`);
                          if (e.initialAppearanceDate) lines.push(`Initial Appearance: ${e.initialAppearanceDate}`);
                          if (e.licenseHoldDate) lines.push(`License Hold: ${e.licenseHoldDate}`);
                          lines.push(`Upcoming Court Dates: ${e.nextDocketDate || ''}`,'',
@@ -186,7 +217,7 @@
                          return lines.join('\n');}
 
   function getCopySectionHeader(jurisdiction) {const rawHeader = getMunicipalityHeaderForSummary(jurisdiction,'') || jurisdiction.toUpperCase();
-                                               return norm(rawHeader.replace(/\s*-\s*(?:\(?\d{3}\)?[\s\d\-\.\(\)A-Z;']+|FRESH START FRIDAY)\s*$/i,'')) || rawHeader;}
+                                               return norm(rawHeader.replace(/\s*-\s*(?:\(?\d{3}\)?[\s\d\-\.\(\)A-Z;']+|FRESH START FRIDAYS?)\s*$/i,'')) || rawHeader;}
 
   function buildGroupedCopyText() {const log = loadLog();
                                   const expected = norm(document.getElementById('moNsYob')?.value || '');
@@ -226,7 +257,7 @@ BELLA VILLA MUNICIPAL - (314) 638-8840
 BELLEFONTAINE NEIGHBORS MUNICIPAL - (314) 867-0076
 BEL-RIDGE MUNICIPAL - (314) 429-2878 EXT. 200
 BERKELEY MUNICIPAL - (314) 524-3313
-BELLERIVE ACRES MUNICIPAL - (314) 385-3300
+BELLERIVE ACRES (OPERATES IN NORMANDY MUNICIPAL) - (314) 385-3300
 BEL-NOR MUNICIPAL - (314) 381-2834 EXT 3
 BEVERLY HILLS (OPERATES IN ST. ANN MUNICIPAL) - (314) 428-6811 EXT 5
 BRENTWOOD MUNICIPAL - (314) 963-8623
@@ -241,7 +272,7 @@ CAMDEN CIRCUIT - (573) 346-4440
 CAPE GIRARDEAU MUNICIPAL - (573) 339-6323
 CASS COUNTY CIRCUIT - 816-380-8227
 CHAMP MUNICIPAL - (314) 291-6036
-CHARLACK MUNICIPAL - (314) 427-4715
+CHARLACK MUNICIPAL (OPERATES IN ST. ANN MUNICIPAL) - (314) 428-6811 EXT 5
 CHESTERFIELD MUNICIPAL - (636) 537-4000
 CLARKSON VALLEY MUNICIPAL - (636) 537-4718
 CLAYTON MUNICIPAL - (314) 290-8441
@@ -253,20 +284,20 @@ CREVE COEUR MUNICIPAL - (314) 432-8844
 CRYSTAL LAKE PARK (OPERATES IN FRONTENAC MUNICIPAL) - (314) 994-3204
 DELLWOOD MUNICIPAL - (314) 521-4339
 DES PERES MUNICIPAL - (314) 835-6117
-EDMUNDSON MUNICIPAL - (314) 428-6811 EXT 5
+EDMUNDSON MUNICIPAL (OPERATES IN ST. ANN MUNICIPAL) - (314) 428-6811 EXT 5
 ELLISVILLE MUNICIPAL - (636) 227-3729
 EUREKA MUNICIPAL - (636) 549-1828
 FENTON MUNICIPAL - (636) 343-1007
 FERGUSON MUNICIPAL - (314) 524-5264
 FESTUS MUNICIPAL - (636) 797-5303
 FLORISSANT MUNICIPAL - (314) 921-3322
-FLORDELL HILLS (OPERATES IN PAGEDALE MUNICIPAL) - (314) 726-1200 EXT. 2
+FLORDELL HILLS (OPERATES IN ST. ANN MUNICIPAL) - (314) 428-6811 EXT 5
 FRONTENAC MUNICIPAL - (314) 994-3204
 GLENDALE MUNICIPAL - (314) 909-3003
 GLEN ECHO PARK (OPERATES IN NORMANDY MUNICIPAL) - (314) 333-3200
 GRANTWOOD VILLAGE MUNICIPAL - (314) 842-4409 OPTION 3
-GREENDALE MUNICIPAL - (314) 385-3300
-GREEN PARK (OPERATES IN ST. LOUIS COUNTY MUNICIPAL) - (314) 615-8760
+GREENDALE (OPERATES IN PAGEDALE MUNICIPAL) - (314) 726-1200 EXT. 2
+GREEN PARK (OPERATES IN ST. LOUIS COUNTY MUNICIPAL) - FRESH START FRIDAYS
 HANLEY HILLS (OPERATES IN ST. ANN CONSOLIDATED MUNICIPAL) - (314) 428-6811 EXT 5
 HAZELWOOD MUNICIPAL - (314) 839-2212 EXT 0
 HILLSBORO MUNICIPAL - (636) 797-5303
@@ -276,7 +307,7 @@ JACKSON COUNTY MUNICIPAL - 740-286-2718
 JEFFERSON COUNTY MUNICIPAL - TICKET FROM SHERIFF'S DEPT: (636) 797-6265; TICKET FROM ANY OTHER OFFICER: 636-797-5303
 JENNINGS MUNICIPAL - (314) 385-4670
 KANSAS CITY MUNICIPAL - (816) 513-2700
-KINLOCH (OPERATES IN ST. LOUIS COUNTY MUNICIPAL) - (314) 615-8760
+KINLOCH (OPERATES IN ST. LOUIS COUNTY CIRCUIT, DIV 21) - (314) 615-8029
 KIRKWOOD MUNICIPAL - (314) 822-5840
 LADUE MUNICIPAL - (314) 993-3919
 LAKESHIRE MUNICIPAL - (314) 631-6222
@@ -285,13 +316,13 @@ MACON MUNICIPAL - 660-385-4631
 MADISON CIRCUIT - (618) 692-6240
 MANCHESTER MUNICIPAL - (636) 207-2832
 MAPLEWOOD MUNICIPAL - (314) 646-3636
-MARLBOROUGH (OPERATES IN ST. LOUIS COUNTY MUNICIPAL) - (314) 615-8760
+MARLBOROUGH (OPERATES IN ST. LOUIS COUNTY MUNICIPAL) - FRESH START FRIDAYS
 MARYLAND HEIGHTS MUNICIPAL - (314) 291-6036
 MOLINE ACRES (OPERATES IN BERKELEY MUNICIPAL) - (314) 524-3313
 NEOSHO MUNICIPAL - (417) 451-8007
 NORMANDY MUNICIPAL - (314) 385-3300 EXT. 3029
 NORTHWOODS (OPERATES IN ST. ANN CONSOLIDATED MUNICIPAL) - (314) 428-6811 EXT 5
-NORWOOD COURT (OPERATES IN ST. LOUIS COUNTY MUNICIPAL) - (314) 615-8760
+NORWOOD COURT (OPERATES IN ST. LOUIS COUNTY MUNICIPAL) - FRESH START FRIDAYS
 O'FALLON MUNICIPAL - (636) 240-8766
 OAKLAND (OPERATES IN GLENDALE MUNICIPAL) - (314) 909-3003
 OLIVETTE MUNICIPAL - (314) 991-6047
@@ -300,9 +331,9 @@ OSAGE COUNTY MUNICIPAL - (573) 897-3114
 OVERLAND (OPERATES IN ST. ANN MUNICIPAL) - (314) 428-6811 EXT 5
 PACIFIC MUNICIPAL - (636) 257-4553
 PAGEDALE MUNICIPAL - (314) 726-1200 EXT. 2
-PASADENA HILLS (OPERATES IN ST. LOUIS COUNTY MUNICIPAL) - (314) 615-8760
+PASADENA HILLS (OPERATES IN ST. LOUIS COUNTY MUNICIPAL) - FRESH START FRIDAYS
 PASADENA PARK (OPERATES IN NORMANDY MUNICIPAL) - (314) 385-3300 EXT. 3029
-PINE LAWN (OPERATES IN ST. LOUIS COUNTY MUNICIPAL) - (314) 615-8760
+PINE LAWN (OPERATES IN ST. LOUIS COUNTY CIRCUIT, DIV 21) - (314) 615-4823
 RICHMOND HEIGHTS MUNICIPAL - (314) 645-1982 EXT. 3
 RIVERVIEW MUNICIPAL - (314) 868-0700
 ROCK HILL MUNICIPAL - (314) 962-6265
@@ -313,7 +344,7 @@ ST. CHARLES CITY MUNICIPAL - (636) 949-3378
 ST. CHARLES COUNTY CIRCUIT - (636) 949-3080
 ST. CHARLES COUNTY MUNICIPAL - (314) 949-1833
 ST. FRANCOIS CIRCUIT - (573) 756-5755
-ST. JOHN MUNICIPAL - (314) 427-8700 EXT. 6
+ST. JOHN (OPERATES IN ST. LOUIS COUNTY MUNICIPAL) - FRESH START FRIDAYS
 ST. LOUIS COUNTY CIRCUIT, DIV 1 - Judge BRIAN H. MAY - - Court Clerk: (314) 615-1501 - -
 ST. LOUIS COUNTY CIRCUIT, DIV 2 - Judge RICHARD M. STEWART - - Court Clerk: (314) 615-1502 - -
 ST. LOUIS COUNTY CIRCUIT, DIV 3 - Judge HEATHER R. CUNNINGHAM - - Court Clerk: (314) 615-1503 - -
@@ -360,22 +391,22 @@ ST. LOUIS COUNTY CIRCUIT, DIV 65 - Judge MARY GREAVES - - Court Clerk: (314) 615
 ST. LOUIS COUNTY CIRCUIT, DIV 66 - Judge WILLIAM J. GUST - - Court Clerk: (314) 615-7565 - -
 ST. LOUIS COUNTY CIRCUIT, DIV 67 - Judge MISTY WATSON - - Court Clerk: (314) 615-2624 - -
 ST. LOUIS COUNTY CIRCUIT, DIV 68 - Judge VACANT - - Court Clerk: (314) 615-1568 - -
-ST. LOUIS COUNTY MUNICIPAL - FRESH START FRIDAY
+ST. LOUIS COUNTY MUNICIPAL - FRESH START FRIDAYS
 ST. GENEVIEVE MUNICIPAL - (573)883-2705
-ST. GEORGE (OPERATES IN ST. LOUIS COUNTY MUNICIPAL) - (314) 615-8760
+ST. GEORGE (OPERATES IN ST. LOUIS COUNTY MUNICIPAL) - FRESH START FRIDAYS
 ST. PETERS MUNICIPAL - (314) 279-8280
 TOWN AND COUNTRY MUNICIPAL - (314) 432-1420
 TROY MUNICIPAL - (636) 528-6179
-TWIN OAKS (OPERATES IN ST. LOUIS COUNTY MUNICIPAL) - (314) 615-8760
+TWIN OAKS (OPERATES IN ST. LOUIS COUNTY MUNICIPAL) - FRESH START FRIDAYS
 UNIVERSITY CITY MUNICIPAL - (314) 505-8578
 UPLANDS PARK (OPERATES IN VELDA VILLAGE HILLS MUNICIPAL) - (314) 261-7221
 VALLEY PARK MUNICIPAL - (636) 225-5696
 VELDA CITY (OPERATES IN PAGEDALE MUNICIPAL) - (314) 726-1200 EXT. 2
 VELDA VILLAGE HILLS MUNICIPAL - (314) 261-7221
-VINITA PARK MUNICIPAL (OPERATES IN ST. ANN) - (314) 428-6811 EXT 5
+VINITA PARK (OPERATES IN ST. ANN MUNICIPAL) - (314) 428-6811 EXT 5
 WARSON WOODS (OPERATES IN GLENDALE MUNICIPAL) - (314) 909-3003
 WEBSTER GROVES MUNICIPAL - (314) 963-5416
-WELLSTON (OPERATES IN ST. ANN CONSOLIDATED MUNICIPAL) - (314) 428-6811 EXT 5
+WELLSTON (OPERATES IN ST. ANN MUNICIPAL) - (314) 428-6811 EXT 5
 WENTZVILLE MUNICIPAL - (636) 639-2193
 WESTWOOD (OPERATES IN FRONTENAC MUNICIPAL) - (314) 994-3204
 WILBUR PARK MUNICIPAL - (314) 800-6593
@@ -733,7 +764,7 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
                                                                                                                                                                                                              const charge = norm(e?.chargeDescription || '') || 'No Charges Found';
                                                                                                                                                                                                              const lineStatus = getSummaryLineStatus(e);
                                                                                                                                                                                                              sections.push(`${caseNo}: ${charge} - ${lineStatus}`);}
-                                                                                                                                                                                if (header.includes('FRESH START FRIDAY')) sections.push(FRESH_START_FRIDAY_TEXT);
+                                                                                                                                                                                if (header.includes('FRESH START FRIDAYS')) sections.push(FRESH_START_FRIDAY_TEXT);
                                                                                                                                                                                 sections.push('');
                                                                                                                                                                                 sections.push('');}}
                                                                   return {sections};}
