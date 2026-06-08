@@ -60,6 +60,8 @@
 
   function isPaidInFullText(text) {return /\bpaid\s+in\s+full\b/i.test(String(text || ''));}
 
+  function isWarrantIssuedText(text) {return /\bwarrant\b/i.test(String(text || '')) && /\b(?:issued|iss'?d|issd)\b/i.test(String(text || ''));}
+
   function classifyLicenseHoldEvent(text) {const t = normalizePhraseForMatch(text);
                                           if (!t) return '';
                                           const hasHold = /\bhold\b/.test(t) || /\bheld\b/.test(t) || /\bhold\s+order\b/.test(t);
@@ -108,18 +110,24 @@
                                             return '';}
 
   function analyzeDocketStatus(docketList) {let paidInFull = false;
+                                           let latestPaidInFullTs = Number.NEGATIVE_INFINITY;
+                                           let latestWarrantIssuedTs = Number.NEGATIVE_INFINITY;
                                            let holdPlacedTs = Number.NEGATIVE_INFINITY;
                                            let holdReleasedTs = Number.NEGATIVE_INFINITY;
                                            for (const e of docketList || []) {const line = docketEntryText(e);
                                                                              if (!line) continue;
-                                                                             if (isPaidInFullText(line)) paidInFull = true;
+                                                                             const ts = getDocketEntryTimestamp(e);
+                                                                             if (isPaidInFullText(line)) {paidInFull = true;
+                                                                                                          if (ts >= latestPaidInFullTs) latestPaidInFullTs = ts;}
+                                                                             if (isWarrantIssuedText(line) && ts >= latestWarrantIssuedTs) latestWarrantIssuedTs = ts;
                                                                              const holdState = classifyLicenseHoldEvent(line);
                                                                              if (!holdState) continue;
-                                                                             const ts = getDocketEntryTimestamp(e);
                                                                              if (holdState === 'placed' && ts >= holdPlacedTs) holdPlacedTs = ts;
                                                                              if (holdState === 'released' && ts >= holdReleasedTs) holdReleasedTs = ts;}
-                                           const hasActiveHold = holdPlacedTs > Number.NEGATIVE_INFINITY && holdPlacedTs > holdReleasedTs && !paidInFull;
-                                           return {paidInFull,hasActiveHold};}
+                                           const hasLaterWarrantIssued = latestWarrantIssuedTs > Number.NEGATIVE_INFINITY && latestPaidInFullTs > Number.NEGATIVE_INFINITY && latestWarrantIssuedTs > latestPaidInFullTs;
+                                           const isCurrentPaidInFull = paidInFull && !hasLaterWarrantIssued;
+                                           const hasActiveHold = holdPlacedTs > Number.NEGATIVE_INFINITY && holdPlacedTs > holdReleasedTs && !isCurrentPaidInFull;
+                                           return {paidInFull:isCurrentPaidInFull,hasActiveHold};}
 
   function findInitialAppearanceDate(docketList) {for (const e of docketList || []) {const line = docketEntryText(e);
                                                                                    if (!/Initial\s+Appearance/i.test(line)) continue;
