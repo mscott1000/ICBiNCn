@@ -1,7 +1,7 @@
 // ==UserScript==
-// @name         ICBiNCn 6.04
+// @name         ICBiNCn 6.08
 // @namespace    http://tampermonkey.net/
-// @version      2026-06-04
+// @version      2026-06-08
 // @description  Background Case.net scraper using JSON/XHR endpoints. Navs to search results pages, pulls case data via POST requests, then writes to a persistent log for copying. Now with Track This Case.
 // @author       Mason Scott
 // @match        https://www.courts.mo.gov/casenet/*
