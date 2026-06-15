@@ -86,6 +86,8 @@
                                                                         return;}
                                              if (id === 'moJsonHelpBtn') {openHelpPanel();
                                                                           return;}
+                                             if (id === 'moJsonTextBuilderBtn') {openTextBuilderPanel();
+                                                                                 return;}
                                              if (id === 'moJsonHelpClose') {closeHelpPanel();
                                                                             return;}
                                              if (SHOW_TRACK_THIS_CASE_UI && id === 'moTrackClearEntries') {clearTrackDraft();
