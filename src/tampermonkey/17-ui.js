@@ -339,16 +339,11 @@ GM_addStyle(`:root{ --mo-bg: #f5f7fb;          /* page chrome */
                                     line-height:18px;
                                     font-weight:900;
                                     cursor:pointer;}
-            #moJsonTextBuilderHeading{text-align:center;
-                                      font-size:20px;
-                                      font-weight:950;
-                                      margin:2px 0 10px 0;
-                                      color:#172554;}
             #moJsonTextBuilderBody{display:flex;
                                    flex-direction:column;
                                    gap:10px;}
-            .moTextBuilderOptions.moCentered{width:min(320px,100%);
-                                             align-self:center;}
+            .moTextBuilderOptions.moCentered{width:100%;
+                                             align-self:stretch;}
             .moTextBuilderOptions.moCentered .moTextBuilderOption{text-align:center;}
             .moTextBuilderOptions{display:grid;
                                   grid-template-columns:1fr;
@@ -501,7 +496,6 @@ textBuilderPanel.id = 'moJsonTextBuilderPanel';
 textBuilderPanel.className = 'moHidden';
 textBuilderPanel.innerHTML = `
   <button id="moJsonTextBuilderClose" title="Close Text Builder">×</button>
-  <div id="moJsonTextBuilderHeading">Text Builder</div>
   <div id="moJsonTextBuilderBody"></div>
 `;
 (document.body || document.documentElement).appendChild(textBuilderPanel);
