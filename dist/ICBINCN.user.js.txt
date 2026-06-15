@@ -1,7 +1,7 @@
 // ==UserScript==
-// @name         ICBiNCn 6.08
+// @name         ICBiNCn 6.15
 // @namespace    http://tampermonkey.net/
-// @version      2026-06-08
+// @version      2026-06-15
 // @description  Background Case.net scraper using JSON/XHR endpoints. Navs to search results pages, pulls case data via POST requests, then writes to a persistent log for copying. Now with Track This Case.
 // @author       Mason Scott
 // @match        https://www.courts.mo.gov/casenet/*
@@ -3472,6 +3472,10 @@ GM_addStyle(`:root{ --mo-bg: #f5f7fb;          /* page chrome */
                            border:1.5px solid #ad7f00;
                            color:#ffffff;}
             #moJsonHelpBtn:hover{background:#e0ad1f;}
+            #moJsonTextBuilderBtn{background:#7c3aed;
+                                  border:1.5px solid #5b21b6;
+                                  color:#ffffff;}
+            #moJsonTextBuilderBtn:hover{background:#8b5cf6;}
 
             #moJsonHelpPanel{position:fixed;
                              right:542px;
@@ -3555,6 +3559,87 @@ GM_addStyle(`:root{ --mo-bg: #f5f7fb;          /* page chrome */
                                   height:auto;
                                   display:block;}
 
+            #moJsonTextBuilderPanel{position:fixed;
+                                    right:542px;
+                                    bottom:12px;
+                                    width:500px;
+                                    max-width:min(500px,calc(100vw - 24px));
+                                    max-height:66vh;
+                                    overflow:auto;
+                                    background:#f8fbff;
+                                    border:1px solid #93c5fd;
+                                    border-radius:12px;
+                                    box-shadow:var(--mo-shadow);
+                                    padding:12px;
+                                    z-index:1000001;
+                                    transition:opacity 140ms ease,transform 140ms ease;}
+            #moJsonTextBuilderPanel.moHidden{display:block;
+                                             opacity:0;
+                                             transform:translateX(12px);
+                                             pointer-events:none;}
+            #moJsonTextBuilderClose{position:sticky;
+                                    top:0;
+                                    left:0;
+                                    width:26px;
+                                    height:26px;
+                                    border:none;
+                                    border-radius:8px;
+                                    background:#dbeafe;
+                                    color:#1e3a8a;
+                                    font-size:18px;
+                                    line-height:18px;
+                                    font-weight:900;
+                                    cursor:pointer;}
+            #moJsonTextBuilderHeading{text-align:center;
+                                      font-size:20px;
+                                      font-weight:950;
+                                      margin:2px 0 10px 0;
+                                      color:#172554;}
+            #moJsonTextBuilderBody{display:flex;
+                                   flex-direction:column;
+                                   gap:10px;}
+            .moTextBuilderOptions{display:grid;
+                                  grid-template-columns:1fr;
+                                  gap:8px;}
+            .moTextBuilderOption{background:#fff;
+                                 border:1.5px solid #bfdbfe;
+                                 color:#0f172a;
+                                 padding:9px 10px;
+                                 border-radius:10px;
+                                 font-weight:900;
+                                 cursor:pointer;
+                                 text-align:left;}
+            .moTextBuilderOption:hover{background:#eff6ff;}
+            .moTextBuilderOption.moSelected{background:#dbeafe;
+                                            border-color:#2563eb;}
+            .moTextBuilderTextArea{width:100%;
+                                   min-height:160px;
+                                   resize:vertical;
+                                   border:1px solid #93c5fd;
+                                   border-radius:10px;
+                                   padding:9px;
+                                   font-size:13px;
+                                   line-height:1.35;
+                                   white-space:pre-wrap;
+                                   color:#0f172a;
+                                   background:#fff;}
+            .moTextBuilderMessage{white-space:pre-wrap;
+                                  border:1px solid #93c5fd;
+                                  border-radius:10px;
+                                  padding:10px;
+                                  background:#fff;
+                                  color:#0f172a;
+                                  min-height:180px;
+                                  font-size:13px;
+                                  line-height:1.35;}
+            .moTextBuilderActions{display:flex;
+                                  gap:8px;
+                                  flex-wrap:wrap;
+                                  justify-content:flex-end;}
+            .moTextBuilderNote{font-size:12px;
+                               color:#475569;
+                               font-weight:800;}
+
             .moHidden{display:none;}
 `);
 
@@ -3591,7 +3676,7 @@ dock.innerHTML = `
   <div id="moJsonContent"></div>
   <div id="moJsonFooter">
     <div id="moJsonFooterInner">
-      <button class="moBtn" id="moJsonHelpBtn">Help</button>
+      <div class="moBottomRow"><button class="moBtn" id="moJsonHelpBtn">Help</button><button class="moBtn" id="moJsonTextBuilderBtn">Text Builder</button></div>
       <div class="moBottomRow">
         <button class="moBtn" id="moJsonStop">Stop All</button>
         <button class="moBtn" id="moJsonClear">Clear Log</button>
@@ -3659,12 +3744,122 @@ Don't tell the cops!</div>
 `;
 (document.body || document.documentElement).appendChild(helpPanel);
 
+const textBuilderPanel = document.createElement('div');
+textBuilderPanel.id = 'moJsonTextBuilderPanel';
+textBuilderPanel.className = 'moHidden';
+textBuilderPanel.innerHTML = `
+  <button id="moJsonTextBuilderClose" title="Close Text Builder">×</button>
+  <div id="moJsonTextBuilderHeading">Text Builder</div>
+  <div id="moJsonTextBuilderBody"></div>
+`;
+(document.body || document.documentElement).appendChild(textBuilderPanel);
+const textBuilderBody = textBuilderPanel.querySelector('#moJsonTextBuilderBody');
+const TEXT_BUILDER_STAFF = ['Anna','Dylan','Kyle','Mason','Miranda'];
+const TEXT_BUILDER_COURTS = ['St. Louis County Circuit','St. Louis City Circuit','St. Louis City Municipal','Florissant','University City','Kirkwood','Manchester','Webster Groves'];
+const TEXT_BUILDER_LIMIT_NOTICE = '**GOOGLE VOICE LIMIT - SEPARATE INTO MULTIPLE TEXTS HERE OR EARLIER**';
+let textBuilderState = {screen:'root',history:[],data:{courts:[]}};
+function textBuilderCourtLabel(court) {const map = {'Florissant':'Florissant Municipal','University City':'University City Municipal','Kirkwood':'Kirkwood Municipal','Manchester':'Manchester Municipal','Webster Groves':'Webster Groves Municipal'};
+                                      return map[court] || court;}
+function textBuilderList(items) {if (items.length <= 1) return items[0] || '';
+                                 if (items.length === 2) return `${items[0]} and ${items[1]}`;
+                                 return `${items.slice(0,-1).join(', ')}, and ${items[items.length - 1]}`;}
+function textBuilderLimitMessage(message) {let out = '';
+                                           for (let i = 0; i < message.length; i += 2400) {if (i > 0) out += `\n${TEXT_BUILDER_LIMIT_NOTICE}\n`;
+                                                                                             out += message.slice(i,i + 2400);}
+                                           return out;}
+function textBuilderSet(screen,patch) {textBuilderState.history.push({screen:textBuilderState.screen,data:{...textBuilderState.data,courts:[...(textBuilderState.data.courts || [])]}});
+                                       textBuilderState.screen = screen;
+                                       textBuilderState.data = {...textBuilderState.data,...(patch || {})};
+                                       renderTextBuilder();}
+function textBuilderBack() {const prev = textBuilderState.history.pop();
+                            if (!prev) {textBuilderState = {screen:'root',history:[],data:{courts:[]}};}
+                            else {textBuilderState.screen = prev.screen;
+                                  textBuilderState.data = prev.data;}
+                            renderTextBuilder();}
+function textBuilderOptions(title,options,action,multi) {return `<div class="moBlock"><h3>${escapeHtml(title)}</h3><div class="moTextBuilderOptions">${options.map((opt) => `<button class="moTextBuilderOption ${multi && (textBuilderState.data.courts || []).includes(opt) ? 'moSelected' : ''}" data-tb-action="${escapeHtml(action)}" data-tb-value="${escapeHtml(opt)}">${escapeHtml(opt)}</button>`).join('')}</div></div>`;}
+function textBuilderActions(confirmAction) {return `<div class="moTextBuilderActions"><button class="moBtn" data-tb-action="back">Back</button>${confirmAction ? `<button class="moBtn" data-tb-action="${escapeHtml(confirmAction)}">Confirm</button>` : ''}</div>`;}
+function textBuilderTextarea(title,placeholder,confirmAction,valueKey) {return `<div class="moBlock"><h3>${escapeHtml(title)}</h3><textarea class="moTextBuilderTextArea" data-tb-input="${escapeHtml(valueKey)}" placeholder="${escapeHtml(placeholder)}">${escapeHtml(textBuilderState.data[valueKey] || '')}</textarea></div>${textBuilderActions(confirmAction)}`;}
+function textBuilderAddressLine(canDoPhrase) {if (textBuilderState.data.addressMode === 'Have Address') return `To proceed${canDoPhrase}, can you confirm that ${textBuilderState.data.address || ''} is the best place for the Court to send physical mail?`;
+                                             return `To proceed${canDoPhrase}, what address is best for the Court to send physical mail?`;}
+function textBuilderEligibleIntro() {const labels = (textBuilderState.data.courts || []).map(textBuilderCourtLabel);
+                                     if (labels.length <= 1) return `This is ${textBuilderState.data.staff} with the Tap In Center. Thank you for submitting an intake form! We were able to find a warrant in the ${labels[0] || ''} Court. This court is partnered with us, so we can submit a request to recall:`;
+                                     return `This is ${textBuilderState.data.staff} with the Tap In Center. Thank you for submitting an intake form! We were able to find warrants in the ${textBuilderList(labels)} Courts. These Courts are partnered with us, so we can submit a request to recall:`;}
+function textBuilderBuildMessage() {const d = textBuilderState.data;
+                                    if (d.workflow === 'initial') return `Hi this is ${d.staff}, thank you for contacting the Tap In Center. We assist in recalling warrants issued due to missing a court date in these courts only:\nSt. Louis County Circuit Court (felony and misdemeanor cases only)\nSt. Louis City Circuit Court (felony and misdemeanor cases)\nSt. Louis City Municipal Court \nFlorissant\nKirkwood\nManchester\nUniversity City\nWebster Groves\n\nPlease follow this link to complete an intake form to apply for assistance:\n https://www.slcl.org/library-services/tap-in-center/intake-form\n\nThe Tap In Center operates every Tuesday from 6-8 pm at the Florissant Valley Library Branch (195 S New Florissant Rd). Anyone is welcome to walk in during these hours, text 314-669-6185, or email TapInSTL@gmail.com for assistance.`;
+                                    if (d.researchType === 'Nothing Found') return `Hello, this is ${d.staff} with the Tap In Center. We were unable to find any court records under the information provided. If you feel this is a mistake, please double check this information for accuracy/typos:`;
+                                    if (d.researchType === 'Can’tDo - out of network') return `This is ${d.staff} from the Tap In Center. We can only request a recall for warrants from missing a court date in Courts where the Judge has agreed to work with us. These are the Courts:\n\nSt. Louis County Circuit (felony/misdemeanor cases only)\nSt. Louis City Circuit/Municipal (felony/misdemeanor/ordinance)\nFlorissant\nKirkwood\nManchester\nUniversity City\nWebster Groves\n\nWe were unable to find any warrants in these Courts under your information. If you feel we have missed something, please share the case number for your cases and we will take a look.\n\nHere is a summary of the cases we found that we CANNOT assist with. We have listed the phone number for each Court clerk - we recommend calling before appearing anywhere in person, and they are the best source of information for cases in their Court:\n\n${d.ineligibleCases || ''}`;
+                                    if (d.researchType === 'Can’tDo - repeat attempt') return `This is ${d.staff} from the Tap In Center. After researching your public record, here is what we found:\n\n${d.ineligibleCases || ''}\n\nWe are allowed by the Judge no more than one recall on each case, meaning we cannot submit another request. We recommend calling the Court clerk for information.`;
+                                    if (d.researchType === 'Can’tDo - private attorney') return `This is ${d.staff} with the Tap In Center, thank you for submitting an intake form. After researching your public record, we found at least one case in a Court that is partnered with us, but there appears to be a private attorney entered as counsel:\n\n${d.privateAttorneyCases || ''}\n\nWhen a private attorney is entered, no other party - including us - can affect anything on that case. We recommend getting in contact with them, regardless of how long it has been since you last spoke.\n\n\nHere is a summary of the cases we found under your information that we CANNOT assist with. We have listed the phone number for each Court clerk - we recommend calling before appearing anywhere in person, and they are the best source of information for cases in their Court:\n\n${d.remainingIneligibleCases || ''}`;
+                                    let msg = `${textBuilderEligibleIntro()}\n\n${d.eligibleCases || ''}\n\nDecisions on warrant status are determined by a Court’s judge, and the Court will let us know their decision usually within one week after we submit on Wednesday morning.\n\n`;
+                                    if (d.researchType === 'CanDo + Can’tDo') msg += `Here is a summary of the cases we found under your information that we CANNOT assist with. We have listed the phone number for each Court clerk - we recommend calling before appearing anywhere in person, and they are the best source of information for cases in their Court:\n\n${d.ineligibleCases || ''}\n\n${textBuilderAddressLine(' with the cases that we CAN do')}`;
+                                    else msg += textBuilderAddressLine('');
+                                    return msg;}
+function renderTextBuilder() {let html = '';
+                              const s = textBuilderState.screen;
+                              if (s === 'root') html = textBuilderOptions('Choose a workflow',['Initial Text','Post-Research Response','Follow-Up'],'chooseRoot',false);
+                              else if (s === 'staff') html = textBuilderOptions('Tap In Staff',TEXT_BUILDER_STAFF,'chooseStaff',false) + textBuilderActions();
+                              else if (s === 'researchType') html = textBuilderOptions('Post-Research Response',['CanDo - everything','CanDo + Can’tDo','Can’tDo - private attorney','Can’tDo - out of network','Can’tDo - repeat attempt','Nothing Found'],'chooseResearchType',false) + textBuilderActions();
+                              else if (s === 'eligibleDropin') html = textBuilderTextarea('Eligible Cases Drop-In','Enter summary of eligible cases','confirmEligible','eligibleCases');
+                              else if (s === 'ineligibleDropin') html = textBuilderTextarea('Ineligible Cases Drop-In',textBuilderState.data.ineligiblePlaceholder || 'Enter summary of ineligible cases','confirmIneligible','ineligibleCases');
+                              else if (s === 'privateAttorneyDropin') html = textBuilderTextarea('Ineligible Cases Drop-In','Enter summary of cases in eligible courts, with private attorney','confirmPrivateAttorney','privateAttorneyCases');
+                              else if (s === 'remainingIneligibleDropin') html = textBuilderTextarea('Ineligible Cases Drop-In','Enter summary of remaining ineligible cases','confirmRemainingIneligible','remainingIneligibleCases');
+                              else if (s === 'courts') html = textBuilderOptions('Court Options',TEXT_BUILDER_COURTS,'toggleCourt',true) + `<div class="moTextBuilderNote">Select one or more courts.</div>` + textBuilderActions('confirmCourts');
+                              else if (s === 'address') html = textBuilderOptions('Address',['Have Address','Need Address'],'chooseAddress',false) + textBuilderActions();
+                              else if (s === 'addressInput') html = textBuilderTextarea('Address','Enter address','confirmAddress','address');
+                              else if (s === 'message') {const msg = textBuilderLimitMessage(textBuilderBuildMessage());
+                                                         html = `<div class="moBlock"><h3>Constructed Message</h3><div class="moTextBuilderMessage" id="moTextBuilderConstructed">${escapeHtml(msg)}</div></div><div class="moTextBuilderActions"><button class="moBtn" data-tb-action="back">Back</button><button class="moBtn" data-tb-action="copyMessage">Copy Message</button></div>`;}
+                              else if (s === 'followUp') html = `<div class="moBlock"><h3>Follow-Up</h3><div class="moTextBuilderNote">Follow-Up options have not been defined yet.</div></div>${textBuilderActions()}`;
+                              textBuilderBody.innerHTML = html;}
+function positionTextBuilderPanel() {const rect = dock.getBoundingClientRect();
+                                     const right = Math.max(8,window.innerWidth - rect.left + 10);
+                                     const bottom = Math.max(8,window.innerHeight - rect.bottom);
+                                     textBuilderPanel.style.right = `${right}px`;
+                                     textBuilderPanel.style.bottom = `${bottom}px`;}
+function openTextBuilderPanel() {positionTextBuilderPanel();
+                                 textBuilderPanel.classList.remove('moHidden');
+                                 renderTextBuilder();}
+function closeTextBuilderPanel() {textBuilderPanel.classList.add('moHidden');}
+textBuilderPanel.addEventListener('input',(e) => {const key = e?.target?.dataset?.tbInput;
+                                                 if (key) textBuilderState.data[key] = e.target.value;});
+textBuilderPanel.addEventListener('click',(e) => {const action = e?.target?.dataset?.tbAction || e?.target?.id;
+                                                 const value = e?.target?.dataset?.tbValue;
+                                                 if (action === 'moJsonTextBuilderClose') return closeTextBuilderPanel();
+                                                 if (action === 'back') return textBuilderBack();
+                                                 if (action === 'chooseRoot') {if (value === 'Initial Text') return textBuilderSet('staff',{workflow:'initial'});
+                                                                               if (value === 'Post-Research Response') return textBuilderSet('staff',{workflow:'postResearch'});
+                                                                               return textBuilderSet('followUp',{workflow:'followUp'});}
+                                                 if (action === 'chooseStaff') {if (textBuilderState.data.workflow === 'initial') return textBuilderSet('message',{staff:value});
+                                                                                return textBuilderSet('researchType',{staff:value});}
+                                                 if (action === 'chooseResearchType') {if (value === 'Nothing Found') return textBuilderSet('message',{researchType:value});
+                                                                                      if (value === 'CanDo - everything') return textBuilderSet('eligibleDropin',{researchType:value});
+                                                                                      if (value === 'CanDo + Can’tDo') return textBuilderSet('eligibleDropin',{researchType:value});
+                                                                                      if (value === 'Can’tDo - private attorney') return textBuilderSet('privateAttorneyDropin',{researchType:value});
+                                                                                      if (value === 'Can’tDo - out of network') return textBuilderSet('ineligibleDropin',{researchType:value,ineligiblePlaceholder:'Enter summary of ineligible cases'});
+                                                                                      if (value === 'Can’tDo - repeat attempt') return textBuilderSet('ineligibleDropin',{researchType:value,ineligiblePlaceholder:'Enter summary of ineligible cases - make sure to identify which cases are repeats'});}
+                                                 if (action === 'confirmEligible') {return textBuilderState.data.researchType === 'CanDo + Can’tDo' ? textBuilderSet('ineligibleDropin',{ineligiblePlaceholder:'Enter summary of ineligible cases'}) : textBuilderSet('courts',{courts:[]});}
+                                                 if (action === 'confirmIneligible') {if (['Can’tDo - out of network','Can’tDo - repeat attempt'].includes(textBuilderState.data.researchType)) return textBuilderSet('message');
+                                                                                    return textBuilderSet('courts',{courts:[]});}
+                                                 if (action === 'confirmPrivateAttorney') return textBuilderSet('remainingIneligibleDropin');
+                                                 if (action === 'confirmRemainingIneligible') return textBuilderSet('courts',{courts:[]});
+                                                 if (action === 'toggleCourt') {const courts = new Set(textBuilderState.data.courts || []);
+                                                                               courts.has(value) ? courts.delete(value) : courts.add(value);
+                                                                               textBuilderState.data.courts = [...courts];
+                                                                               return renderTextBuilder();}
+                                                 if (action === 'confirmCourts') {if (textBuilderState.data.researchType === 'Can’tDo - private attorney') return textBuilderSet('message');
+                                                                                 return textBuilderSet('address');}
+                                                 if (action === 'chooseAddress') return value === 'Have Address' ? textBuilderSet('addressInput',{addressMode:value}) : textBuilderSet('message',{addressMode:value});
+                                                 if (action === 'confirmAddress') return textBuilderSet('message');
+                                                 if (action === 'copyMessage') {GM_setClipboard(textBuilderBuildMessage(),'text');
+                                                                                uiStatus('Text Builder message copied to clipboard');}});
+
+
 const $status = dock.querySelector('#moJsonStatus');
 const $content = dock.querySelector('#moJsonContent');
 
 function minimizeDock() {dock.classList.add('moHidden');
                          launcher.classList.remove('moHidden');
-                         closeHelpPanel();}
+                         closeHelpPanel();
+                         closeTextBuilderPanel();}
 
 function expandDock() {dock.classList.remove('moHidden');
                        launcher.classList.add('moHidden');}
@@ -3682,7 +3877,8 @@ function closeHelpPanel() {helpPanel.classList.add('moHidden');}
 
 helpPanel.addEventListener('click',(e) => {if (e?.target?.id === 'moJsonHelpClose') closeHelpPanel();});
 
-window.addEventListener('resize',() => {if (!helpPanel.classList.contains('moHidden')) positionHelpPanel();});
+window.addEventListener('resize',() => {if (!helpPanel.classList.contains('moHidden')) positionHelpPanel();
+                                      if (!textBuilderPanel.classList.contains('moHidden')) positionTextBuilderPanel();});
 
 function uiStatus(msg) {$status.textContent = msg;
                         setStatus(msg);}
@@ -4626,6 +4822,8 @@ function render() {const log = loadLog();
                                                                         return;}
                                              if (id === 'moJsonHelpBtn') {openHelpPanel();
                                                                           return;}
+                                             if (id === 'moJsonTextBuilderBtn') {openTextBuilderPanel();
+                                                                                 return;}
                                              if (id === 'moJsonHelpClose') {closeHelpPanel();
                                                                             return;}
                                              if (SHOW_TRACK_THIS_CASE_UI && id === 'moTrackClearEntries') {clearTrackDraft();
