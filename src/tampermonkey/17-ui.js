@@ -311,8 +311,8 @@ GM_addStyle(`:root{ --mo-bg: #f5f7fb;          /* page chrome */
             #moJsonTextBuilderPanel{position:fixed;
                                     right:542px;
                                     bottom:12px;
-                                    width:500px;
-                                    max-width:min(500px,calc(100vw - 24px));
+                                    width:900px;
+                                    max-width:min(900px,calc(100vw - 24px));
                                     max-height:66vh;
                                     overflow:auto;
                                     background:#f8fbff;
@@ -370,6 +370,14 @@ GM_addStyle(`:root{ --mo-bg: #f5f7fb;          /* page chrome */
                                    white-space:pre-wrap;
                                    color:#0f172a;
                                    background:#fff;}
+            .moTextBuilderDual{display:grid;
+                               grid-template-columns:1fr 1fr;
+                               gap:10px;}
+            .moTextBuilderPane{display:flex;
+                               flex-direction:column;
+                               gap:8px;}
+            .moTextBuilderPane h3{margin:0;}
+            .moTextBuilderPane .moBtn{align-self:flex-start;}
             .moTextBuilderMessage{white-space:pre-wrap;
                                   border:1px solid #93c5fd;
                                   border-radius:10px;
@@ -534,6 +542,11 @@ function textBuilderAddressLine(canDoPhrase) {if (textBuilderState.data.addressM
 function textBuilderEligibleIntro() {const labels = (textBuilderState.data.courts || []).map(textBuilderCourtLabel);
                                      if (labels.length <= 1) return `This is ${textBuilderState.data.staff} with the Tap In Center. Thank you for submitting an intake form! We were able to find a warrant in the ${labels[0] || ''} Court. This court is partnered with us, so we can submit a request to recall:`;
                                      return `This is ${textBuilderState.data.staff} with the Tap In Center. Thank you for submitting an intake form! We were able to find warrants in the ${textBuilderList(labels)} Courts. These Courts are partnered with us, so we can submit a request to recall:`;}
+function textBuilderDropInIneligibleMessage() {const d = textBuilderState.data;
+                                           return `This is ${d.staff} from the Tap In Center, thank you for speaking with me today. Here is a summary of the cases we found and the phone number of the clerk for each court - they are the best source of information in their municipality, especially when their Court does not work with Tap In.\n\n- - -\n\n${d.ineligibleCases || ''}\n\n- - -\n\nThese Courts do not work with the Tap In program, and we recommend contacting them for information.`;}
+function textBuilderDropInEligibleMessage(includeStaffIntro) {const d = textBuilderState.data;
+                                         const intro = includeStaffIntro ? `This is ${d.staff}, thank you for speaking with me today. Here is what we discussed - we are requesting a recall for:` : 'Here is what we discussed today - we are requesting a recall for:';
+                                         return `${intro}\n\n${d.eligibleCases || ''}\n\nWe will prepare our report and submit tomorrow morning, then the Judge makes their decision. This typically takes about one week, but can be longer depending on caseload.\n\nThe Court will send mail to the address provided, and we will update you from this phone number when we hear from the clerk. Feel free to text back with questions!`;}
 function textBuilderFollowUpNewCourtDateMessage() {const d = textBuilderState.data;
                                                    const labels = (d.courts || []).map(textBuilderCourtLabel);
                                                    const courtText = labels.length <= 1 ? `The ${labels[0] || ''} Court has agreed to recall the warrant` : `The ${textBuilderList(labels)} Courts have agreed to recall the warrants`;
@@ -543,6 +556,11 @@ function textBuilderBuildMessage() {const d = textBuilderState.data;
                                     if (d.workflow === 'followUpReady' && d.followUpDay === 'Today is Tuesday') return `Thank you, we should have everything we need. You do NOT need to come in-person to the Tap In Center program this evening - though you are always welcome.\n\nWe will be in touch when we hear from our Court partners, and if the request is granted the Court will mail you a new summons with your court date information.`;
                                     if (d.workflow === 'followUpReady' && d.followUpDay === 'Today is Wed-Sun') return `Thank you, we should have everything we need. You do NOT need to come in-person to the Tap In Center program Tuesday evening - though you are always welcome.\n\nWe submit our request on Wednesday mornings and will be in touch when we hear from our Court partners. If the request is granted the Court will mail you a new summons with your court date information.`;
                                     if (d.workflow === 'followUpNewCourtDate') return textBuilderFollowUpNewCourtDateMessage();
+                                    if (d.workflow === 'walkInDropIn') {const hasEligible = String(d.eligibleCases || '').trim();
+                                                                       const hasIneligible = String(d.ineligibleCases || '').trim();
+                                                                       if (hasEligible && !hasIneligible) return textBuilderDropInEligibleMessage(true);
+                                                                       if (hasIneligible) return textBuilderDropInIneligibleMessage();
+                                                                       return textBuilderDropInEligibleMessage(true);}
                                     if (d.workflow === 'initial') return `Hi this is ${d.staff}, thank you for contacting the Tap In Center. We assist in recalling warrants issued due to missing a court date in these courts only:\n\nSt. Louis County Circuit Court (felony and misdemeanor cases only)\nSt. Louis City Circuit Court (felony and misdemeanor cases)\nSt. Louis City Municipal Court \nFlorissant\nKirkwood\nManchester\nUniversity City\nWebster Groves\n\nPlease follow this link to complete an intake form to apply for assistance:\n https://www.slcl.org/library-services/tap-in-center/intake-form\n\nThe Tap In Center operates every Tuesday from 6-8 pm at the Florissant Valley Library Branch (195 S New Florissant Rd). Anyone is welcome to walk in during these hours, text 314-669-6185, or email TapInSTL@gmail.com for assistance.`;
                                     if (d.researchType === 'Nothing Found') return `Hello, this is ${d.staff} with the Tap In Center. We were unable to find any court records under the information provided. If you feel this is a mistake, please double check this information for accuracy/typos:`;
                                     if (d.researchType === 'Can’tDo - out of network') return `This is ${d.staff} from the Tap In Center. We can only request a recall for warrants from missing a court date in Courts where the Judge has agreed to work with us. These are the Courts:\n\nSt. Louis County Circuit (felony/misdemeanor cases only)\nSt. Louis City Circuit/Municipal (felony/misdemeanor/ordinance)\nFlorissant\nKirkwood\nManchester\nUniversity City\nWebster Groves\n\nWe were unable to find any warrants in these Courts under your information. If you feel we have missed something, please share the case number for your cases and we will take a look.${textBuilderOptionalBlock(d.ineligibleCases,(cases) => `\n\nHere is a summary of the cases we found that we CANNOT assist with. We have listed the phone number for each Court clerk - we recommend calling before appearing anywhere in person, and they are the best source of information for cases in their Court:\n\n${cases}`)}`;
@@ -556,7 +574,7 @@ function renderTextBuilder() {let html = '';
                               const s = textBuilderState.screen;
                               if (s === 'root') html = textBuilderOptions('', ['Initial Text','Post-Research Response','Follow-Up'],'chooseRoot',false,true);
                               else if (s === 'staff') html = textBuilderOptions('Tap In Staff',TEXT_BUILDER_STAFF,'chooseStaff',false) + textBuilderActions();
-                              else if (s === 'researchType') html = textBuilderOptions('Post-Research Response',['CanDo - everything','CanDo + Can’tDo','Can’tDo - private attorney','Can’tDo - out of network','Can’tDo - repeat attempt','Nothing Found'],'chooseResearchType',false) + textBuilderActions();
+                              else if (s === 'researchType') html = textBuilderOptions('Post-Research Response',['CanDo - everything','CanDo + Can’tDo','Can’tDo - private attorney','Can’tDo - out of network','Can’tDo - repeat attempt','Nothing Found','Walk-In Client'],'chooseResearchType',false) + textBuilderActions();
                               else if (s === 'eligibleDropin') html = textBuilderTextarea('Eligible Cases Drop-In','Enter summary of eligible cases','confirmEligible','eligibleCases');
                               else if (s === 'ineligibleDropin') html = textBuilderTextarea('Ineligible Cases Drop-In',textBuilderState.data.ineligiblePlaceholder || 'Enter summary of ineligible cases','confirmIneligible','ineligibleCases');
                               else if (s === 'privateAttorneyDropin') html = textBuilderTextarea('Ineligible Cases Drop-In','Enter summary of cases in eligible courts, with private attorney','confirmPrivateAttorney','privateAttorneyCases');
@@ -567,8 +585,16 @@ function renderTextBuilder() {let html = '';
                               else if (s === 'followUp') html = textBuilderOptions('Follow-Up',['Ready to Submit','New Court Date'],'chooseFollowUp',false) + textBuilderActions();
                               else if (s === 'followUpReadyDay') html = textBuilderOptions('Ready to Submit',['Today is Monday','Today is Tuesday','Today is Wed-Sun'],'chooseFollowUpReadyDay',false) + textBuilderActions();
                               else if (s === 'newCourtDateInput') html = textBuilderTextarea('New Court Date','Enter new court date information','confirmNewCourtDate','newCourtDate');
-                              else if (s === 'message') {const msg = textBuilderLimitMessage(textBuilderBuildMessage());
-                                                         html = `<div class="moBlock"><h3>Constructed Message</h3><div class="moTextBuilderMessage" id="moTextBuilderConstructed">${escapeHtml(msg)}</div></div><div class="moTextBuilderActions"><button class="moBtn" data-tb-action="back">Back</button><button class="moBtn" data-tb-action="copyMessage">Copy Message</button></div>`;}
+                              else if (s === 'message') {if (textBuilderState.data.workflow === 'walkInDropIn') {const hasEligible = String(textBuilderState.data.eligibleCases || '').trim();
+                                                                                           const hasIneligible = String(textBuilderState.data.ineligibleCases || '').trim();
+                                                                                           if (hasEligible && hasIneligible) {const ineligibleMsg = textBuilderLimitMessage(textBuilderDropInIneligibleMessage());
+                                                                                                                             const eligibleMsg = textBuilderLimitMessage(textBuilderDropInEligibleMessage(false));
+                                                                                                                             html = `<div class="moBlock"><h3>Constructed Message</h3><div class="moTextBuilderDual"><div class="moTextBuilderPane"><h3>Ineligible Cases</h3><div class="moTextBuilderMessage" id="moTextBuilderConstructedIneligible">${escapeHtml(ineligibleMsg)}</div><button class="moBtn" data-tb-action="copyIneligibleMessage">Copy Message</button></div><div class="moTextBuilderPane"><h3>Eligible Cases</h3><div class="moTextBuilderMessage" id="moTextBuilderConstructedEligible">${escapeHtml(eligibleMsg)}</div><button class="moBtn" data-tb-action="copyEligibleMessage">Copy Message</button></div></div></div><div class="moTextBuilderActions"><button class="moBtn" data-tb-action="back">Back</button></div>`;}
+                                                                                           else {const msg = textBuilderLimitMessage(textBuilderBuildMessage());
+                                                                                                 const title = hasEligible ? 'Eligible Cases' : 'Ineligible Cases';
+                                                                                                 html = `<div class="moBlock"><h3>Constructed Message</h3><div class="moTextBuilderPane"><h3>${escapeHtml(title)}</h3><div class="moTextBuilderMessage" id="moTextBuilderConstructed">${escapeHtml(msg)}</div></div></div><div class="moTextBuilderActions"><button class="moBtn" data-tb-action="back">Back</button><button class="moBtn" data-tb-action="copyMessage">Copy Message</button></div>`;}}
+                                                         else {const msg = textBuilderLimitMessage(textBuilderBuildMessage());
+                                                               html = `<div class="moBlock"><h3>Constructed Message</h3><div class="moTextBuilderMessage" id="moTextBuilderConstructed">${escapeHtml(msg)}</div></div><div class="moTextBuilderActions"><button class="moBtn" data-tb-action="back">Back</button><button class="moBtn" data-tb-action="copyMessage">Copy Message</button></div>`;}}
                               textBuilderBody.innerHTML = html;}
 function positionTextBuilderPanel() {const rect = dock.getBoundingClientRect();
                                      const right = Math.max(8,window.innerWidth - rect.left + 10);
@@ -594,11 +620,14 @@ textBuilderPanel.addEventListener('click',(e) => {const action = e?.target?.data
                                                  if (action === 'chooseResearchType') {if (value === 'Nothing Found') return textBuilderSet('message',{researchType:value});
                                                                                       if (value === 'CanDo - everything') return textBuilderSet('eligibleDropin',{researchType:value});
                                                                                       if (value === 'CanDo + Can’tDo') return textBuilderSet('eligibleDropin',{researchType:value});
+                                                                                      if (value === 'Walk-In Client') return textBuilderSet('eligibleDropin',{researchType:value,workflow:'walkInDropIn'});
                                                                                       if (value === 'Can’tDo - private attorney') return textBuilderSet('privateAttorneyDropin',{researchType:value});
                                                                                       if (value === 'Can’tDo - out of network') return textBuilderSet('ineligibleDropin',{researchType:value,ineligiblePlaceholder:'Enter summary of ineligible cases'});
                                                                                       if (value === 'Can’tDo - repeat attempt') return textBuilderSet('ineligibleDropin',{researchType:value,ineligiblePlaceholder:'Enter summary of ineligible cases - make sure to identify which cases are repeats'});}
-                                                 if (action === 'confirmEligible') {return textBuilderState.data.researchType === 'CanDo + Can’tDo' ? textBuilderSet('ineligibleDropin',{ineligiblePlaceholder:'Enter summary of ineligible cases'}) : textBuilderSet('courts',{courts:[]});}
-                                                 if (action === 'confirmIneligible') {if (['Can’tDo - out of network','Can’tDo - repeat attempt'].includes(textBuilderState.data.researchType)) return textBuilderSet('message');
+                                                 if (action === 'confirmEligible') {if (textBuilderState.data.workflow === 'walkInDropIn') return textBuilderSet('ineligibleDropin',{ineligiblePlaceholder:'Enter summary of ineligible cases'});
+                                                                                   return textBuilderState.data.researchType === 'CanDo + Can’tDo' ? textBuilderSet('ineligibleDropin',{ineligiblePlaceholder:'Enter summary of ineligible cases'}) : textBuilderSet('courts',{courts:[]});}
+                                                 if (action === 'confirmIneligible') {if (textBuilderState.data.workflow === 'walkInDropIn') return textBuilderSet('message');
+                                                                                    if (['Can’tDo - out of network','Can’tDo - repeat attempt'].includes(textBuilderState.data.researchType)) return textBuilderSet('message');
                                                                                     return textBuilderSet('courts',{courts:[]});}
                                                  if (action === 'confirmPrivateAttorney') return textBuilderSet('remainingIneligibleDropin');
                                                  if (action === 'confirmRemainingIneligible') return textBuilderSet('courts',{courts:[]});
@@ -615,7 +644,11 @@ textBuilderPanel.addEventListener('click',(e) => {const action = e?.target?.data
                                                  if (action === 'confirmNewCourtDate') return textBuilderSet('message');
                                                  if (action === 'confirmAddress') return textBuilderSet('message');
                                                  if (action === 'copyMessage') {GM_setClipboard(textBuilderBuildMessage(),'text');
-                                                                                uiStatus('Text Builder message copied to clipboard');}});
+                                                                                uiStatus('Text Builder message copied to clipboard');}
+                                                 if (action === 'copyIneligibleMessage') {GM_setClipboard(textBuilderDropInIneligibleMessage(),'text');
+                                                                                          uiStatus('Text Builder ineligible cases message copied to clipboard');}
+                                                 if (action === 'copyEligibleMessage') {GM_setClipboard(textBuilderDropInEligibleMessage(false),'text');
+                                                                                        uiStatus('Text Builder eligible cases message copied to clipboard');}});
 
 
 const $status = dock.querySelector('#moJsonStatus');
