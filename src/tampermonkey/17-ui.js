@@ -311,8 +311,8 @@ GM_addStyle(`:root{ --mo-bg: #f5f7fb;          /* page chrome */
             #moJsonTextBuilderPanel{position:fixed;
                                     right:542px;
                                     bottom:12px;
-                                    width:900px;
-                                    max-width:min(900px,calc(100vw - 24px));
+                                    width:75ch;
+                                    max-width:min(75ch,calc(100vw - 24px));
                                     max-height:66vh;
                                     overflow:auto;
                                     background:#f8fbff;
@@ -342,11 +342,15 @@ GM_addStyle(`:root{ --mo-bg: #f5f7fb;          /* page chrome */
             #moJsonTextBuilderBody{display:flex;
                                    flex-direction:column;
                                    gap:10px;}
+            #moJsonTextBuilderBody .moBlock > h3{text-align:center;}
             .moTextBuilderOptions.moCentered{width:100%;
                                              align-self:stretch;}
             .moTextBuilderOptions.moCentered .moTextBuilderOption{text-align:center;}
             .moTextBuilderOptions{display:grid;
                                   grid-template-columns:1fr;
+                                  max-width:75ch;
+                                  margin-left:auto;
+                                  margin-right:auto;
                                   gap:8px;}
             .moTextBuilderOption{background:#fff;
                                  border:1.5px solid #bfdbfe;
@@ -360,6 +364,10 @@ GM_addStyle(`:root{ --mo-bg: #f5f7fb;          /* page chrome */
             .moTextBuilderOption.moSelected{background:#dbeafe;
                                             border-color:#2563eb;}
             .moTextBuilderTextArea{width:100%;
+                                   max-width:75ch;
+                                   display:block;
+                                   margin-left:auto;
+                                   margin-right:auto;
                                    min-height:160px;
                                    resize:vertical;
                                    border:1px solid #93c5fd;
@@ -376,9 +384,13 @@ GM_addStyle(`:root{ --mo-bg: #f5f7fb;          /* page chrome */
             .moTextBuilderPane{display:flex;
                                flex-direction:column;
                                gap:8px;}
-            .moTextBuilderPane h3{margin:0;}
+            .moTextBuilderPane h3{margin:0;
+                                    text-align:center;}
             .moTextBuilderPane .moBtn{align-self:flex-start;}
             .moTextBuilderMessage{white-space:pre-wrap;
+                                  max-width:75ch;
+                                  margin-left:auto;
+                                  margin-right:auto;
                                   border:1px solid #93c5fd;
                                   border-radius:10px;
                                   padding:10px;
@@ -543,7 +555,7 @@ function textBuilderEligibleIntro() {const labels = (textBuilderState.data.court
                                      if (labels.length <= 1) return `This is ${textBuilderState.data.staff} with the Tap In Center. Thank you for submitting an intake form! We were able to find a warrant in the ${labels[0] || ''} Court. This court is partnered with us, so we can submit a request to recall:`;
                                      return `This is ${textBuilderState.data.staff} with the Tap In Center. Thank you for submitting an intake form! We were able to find warrants in the ${textBuilderList(labels)} Courts. These Courts are partnered with us, so we can submit a request to recall:`;}
 function textBuilderDropInIneligibleMessage() {const d = textBuilderState.data;
-                                           return `This is ${d.staff} from the Tap In Center, thank you for speaking with me today. Here is a summary of the cases we found and the phone number of the clerk for each court - they are the best source of information in their municipality, especially when their Court does not work with Tap In.\n\n- - -\n\n${d.ineligibleCases || ''}\n\n- - -\n\nThese Courts do not work with the Tap In program, and we recommend contacting them for information.`;}
+                                           return `This is ${d.staff} from Tap In, thank you for speaking with me today. Here is a summary of the cases we found and the phone number of the clerk for each court - they are the best source of information in their municipality, especially when their Court does not work with Tap In.\n\n- - -\n\n${d.ineligibleCases || ''}\n\n- - -\n\nThese Courts do not work with the Tap In program, and we recommend contacting them for information.`;}
 function textBuilderDropInEligibleMessage(includeStaffIntro) {const d = textBuilderState.data;
                                          const intro = includeStaffIntro ? `This is ${d.staff}, thank you for speaking with me today. Here is what we discussed - we are requesting a recall for:` : 'Here is what we discussed today - we are requesting a recall for:';
                                          return `${intro}\n\n${d.eligibleCases || ''}\n\nWe will prepare our report and submit tomorrow morning, then the Judge makes their decision. This typically takes about one week, but can be longer depending on caseload.\n\nThe Court will send mail to the address provided, and we will update you from this phone number when we hear from the clerk. Feel free to text back with questions!`;}
@@ -561,12 +573,12 @@ function textBuilderBuildMessage() {const d = textBuilderState.data;
                                                                        if (hasEligible && !hasIneligible) return textBuilderDropInEligibleMessage(true);
                                                                        if (hasIneligible) return textBuilderDropInIneligibleMessage();
                                                                        return textBuilderDropInEligibleMessage(true);}
-                                    if (d.workflow === 'initial') return `Hi this is ${d.staff}, thank you for contacting the Tap In Center. We assist in recalling warrants issued due to missing a court date in these courts only:\n\nSt. Louis County Circuit Court (felony and misdemeanor cases only)\nSt. Louis City Circuit Court (felony and misdemeanor cases)\nSt. Louis City Municipal Court \nFlorissant\nKirkwood\nManchester\nUniversity City\nWebster Groves\n\nPlease follow this link to complete an intake form to apply for assistance:\n https://www.slcl.org/library-services/tap-in-center/intake-form\n\nThe Tap In Center operates every Tuesday from 6-8 pm at the Florissant Valley Library Branch (195 S New Florissant Rd). Anyone is welcome to walk in during these hours, text 314-669-6185, or email TapInSTL@gmail.com for assistance.`;
+                                    if (d.workflow === 'initial') return `Hi this is ${d.staff}, thank you for contacting the Tap In Center. We assist in recalling warrants issued due to missing a court date in these courts only:\n\nSt. Louis County Circuit Court (felony and misdemeanor cases only)\nSt. Louis City Circuit Court (felony and misdemeanor cases)\nSt. Louis City Municipal Court \nFlorissant\nKirkwood\nManchester\nUniversity City\nWebster Groves\n\nPlease complete our intake form to apply for assistance:\n https://www.slcl.org/library-services/tap-in-center/intake-form\n\nThe Tap In Center operates every Tuesday from 6-8 pm at the Florissant Valley Library Branch (195 S New Florissant Rd). Anyone is welcome to walk in during these hours, text 314-669-6185, or email TapInSTL@gmail.com for assistance.`;
                                     if (d.researchType === 'Nothing Found') return `Hello, this is ${d.staff} with the Tap In Center. We were unable to find any court records under the information provided. If you feel this is a mistake, please double check this information for accuracy/typos:`;
-                                    if (d.researchType === 'Can’tDo - out of network') return `This is ${d.staff} from the Tap In Center. We can only request a recall for warrants from missing a court date in Courts where the Judge has agreed to work with us. These are the Courts:\n\nSt. Louis County Circuit (felony/misdemeanor cases only)\nSt. Louis City Circuit/Municipal (felony/misdemeanor/ordinance)\nFlorissant\nKirkwood\nManchester\nUniversity City\nWebster Groves\n\nWe were unable to find any warrants in these Courts under your information. If you feel we have missed something, please share the case number for your cases and we will take a look.${textBuilderOptionalBlock(d.ineligibleCases,(cases) => `\n\nHere is a summary of the cases we found that we CANNOT assist with. We have listed the phone number for each Court clerk - we recommend calling before appearing anywhere in person, and they are the best source of information for cases in their Court:\n\n${cases}`)}`;
-                                    if (d.researchType === 'Can’tDo - repeat attempt') return `This is ${d.staff} from the Tap In Center.${textBuilderOptionalBlock(d.ineligibleCases,(cases) => ` After researching your public record, here is what we found:\n\n${cases}`)}\n\nWe are allowed by the Judge no more than one recall on each case, meaning we cannot submit another request. We recommend calling the Court clerk for information.`;
-                                    if (d.researchType === 'Can’tDo - private attorney') return `This is ${d.staff} with the Tap In Center, thank you for submitting an intake form. After researching your public record, we found at least one case in a Court that is partnered with us, but there appears to be a private attorney entered as counsel:${textBuilderOptionalBlock(d.privateAttorneyCases,(cases) => `\n\n${cases}`)}\n\nWhen a private attorney is entered, no other party - including us - can affect anything on that case. We recommend getting in contact with them, regardless of how long it has been since you last spoke.${textBuilderOptionalBlock(d.remainingIneligibleCases,(cases) => `\n\n\nHere is a summary of the cases we found under your information that we CANNOT assist with. We have listed the phone number for each Court clerk - we recommend calling before appearing anywhere in person, and they are the best source of information for cases in their Court:\n\n${cases}`)}`;
-                                    let msg = `${textBuilderEligibleIntro()}${textBuilderOptionalBlock(d.eligibleCases,(cases) => `\n\n${cases}`)}\n\nDecisions on warrant status are determined by a Court’s judge, and the Court will let us know their decision usually within one week after we submit on Wednesday morning.\n\n`;
+                                    if (d.researchType === 'Can’tDo - out of network') return `This is ${d.staff} from Tap In. We can only request a recall for warrants from missing a court date in Courts where the Judge has agreed to work with us. These are the Courts:\n\nSt. Louis County Circuit (felony/misdemeanor cases only)\nSt. Louis City Circuit/Municipal (felony/misdemeanor/ordinance)\nFlorissant\nKirkwood\nManchester\nUniversity City\nWebster Groves\n\nWe were unable to find any warrants in these Courts under your information. If you feel we have missed something, please share the case number for your cases and we will take a look.${textBuilderOptionalBlock(d.ineligibleCases,(cases) => `\n\nHere is a summary of the cases we found that we CANNOT assist with. We have listed the phone number for each Court clerk - we recommend calling before appearing anywhere in person, and they are the best source of information for cases in their Court:\n\n${cases}`)}`;
+                                    if (d.researchType === 'Can’tDo - repeat attempt') return `This is ${d.staff} from Tap In.${textBuilderOptionalBlock(d.ineligibleCases,(cases) => ` After researching your public record, here is what we found:\n\n${cases}`)}\n\nWe are allowed by the Judge no more than one recall on each case, meaning we cannot submit another request. We recommend calling the Court clerk for information.`;
+                                    if (d.researchType === 'Can’tDo - private attorney') return `This is ${d.staff} with the Tap In Center, thank you for submitting an intake form. After researching your public record, there appears to be a private attorney entered as counsel here:${textBuilderOptionalBlock(d.privateAttorneyCases,(cases) => `\n\n${cases}`)}\n\nWhen a private attorney is entered, no other party - including us - can affect anything on that case. We recommend getting in contact with them, regardless of how long it has been since you last spoke.${textBuilderOptionalBlock(d.remainingIneligibleCases,(cases) => `\n\n\nHere is a summary of the cases we found under your information that we CANNOT assist with. We have listed the phone number for each Court clerk - we recommend calling before appearing anywhere in person, and they are the best source of information for cases in their Court:\n\n${cases}`)}`;
+                                    let msg = `${textBuilderEligibleIntro()}${textBuilderOptionalBlock(d.eligibleCases,(cases) => `\n\n${cases}`)}\n\nDecisions on warrants are made by a Court’s judge, and the Court usually updates us one week after the Wednesday morning we submit.\n\n`;
                                     if (d.researchType === 'CanDo + Can’tDo') msg += `${textBuilderOptionalBlock(d.ineligibleCases,(cases) => `Here is a summary of the cases we found under your information that we CANNOT assist with. We have listed the phone number for each Court clerk - we recommend calling before appearing anywhere in person, and they are the best source of information for cases in their Court:\n\n${cases}\n\n`)}${textBuilderAddressLine(' with the cases that we CAN do')}`;
                                     else msg += textBuilderAddressLine('');
                                     return msg;}
@@ -578,7 +590,7 @@ function renderTextBuilder() {let html = '';
                               else if (s === 'eligibleDropin') html = textBuilderTextarea('Eligible Cases Drop-In','Enter summary of eligible cases','confirmEligible','eligibleCases');
                               else if (s === 'ineligibleDropin') html = textBuilderTextarea('Ineligible Cases Drop-In',textBuilderState.data.ineligiblePlaceholder || 'Enter summary of ineligible cases','confirmIneligible','ineligibleCases');
                               else if (s === 'privateAttorneyDropin') html = textBuilderTextarea('Ineligible Cases Drop-In','Enter summary of cases in eligible courts, with private attorney','confirmPrivateAttorney','privateAttorneyCases');
-                              else if (s === 'remainingIneligibleDropin') html = textBuilderTextarea('Ineligible Cases Drop-In','Enter summary of remaining ineligible cases','confirmRemainingIneligible','remainingIneligibleCases');
+                              else if (s === 'remainingIneligibleDropin') html = textBuilderTextarea('Ineligible Cases Drop-In','Enter summary of remaining ineligible cases (Optional)','confirmRemainingIneligible','remainingIneligibleCases');
                               else if (s === 'courts') html = textBuilderOptions('Court Options',TEXT_BUILDER_COURTS,'toggleCourt',true) + `<div class="moTextBuilderNote">Select one or more courts.</div>` + textBuilderActions('confirmCourts');
                               else if (s === 'address') html = textBuilderOptions('Address',['Have Address','Need Address'],'chooseAddress',false) + textBuilderActions();
                               else if (s === 'addressInput') html = textBuilderTextarea('Address','Enter address','confirmAddress','address');
@@ -618,16 +630,17 @@ textBuilderPanel.addEventListener('click',(e) => {const action = e?.target?.data
                                                                                 if (textBuilderState.data.workflow === 'followUpNewCourtDate') return textBuilderSet('courts',{staff:value,courts:[]});
                                                                                 return textBuilderSet('researchType',{staff:value});}
                                                  if (action === 'chooseResearchType') {if (value === 'Nothing Found') return textBuilderSet('message',{researchType:value});
-                                                                                      if (value === 'CanDo - everything') return textBuilderSet('eligibleDropin',{researchType:value});
-                                                                                      if (value === 'CanDo + Can’tDo') return textBuilderSet('eligibleDropin',{researchType:value});
+                                                                                      if (value === 'CanDo - everything') return textBuilderSet('courts',{researchType:value,courts:[]});
+                                                                                      if (value === 'CanDo + Can’tDo') return textBuilderSet('courts',{researchType:value,courts:[]});
                                                                                       if (value === 'Walk-In Client') return textBuilderSet('eligibleDropin',{researchType:value,workflow:'walkInDropIn'});
                                                                                       if (value === 'Can’tDo - private attorney') return textBuilderSet('privateAttorneyDropin',{researchType:value});
                                                                                       if (value === 'Can’tDo - out of network') return textBuilderSet('ineligibleDropin',{researchType:value,ineligiblePlaceholder:'Enter summary of ineligible cases'});
                                                                                       if (value === 'Can’tDo - repeat attempt') return textBuilderSet('ineligibleDropin',{researchType:value,ineligiblePlaceholder:'Enter summary of ineligible cases - make sure to identify which cases are repeats'});}
                                                  if (action === 'confirmEligible') {if (textBuilderState.data.workflow === 'walkInDropIn') return textBuilderSet('ineligibleDropin',{ineligiblePlaceholder:'Enter summary of ineligible cases'});
-                                                                                   return textBuilderState.data.researchType === 'CanDo + Can’tDo' ? textBuilderSet('ineligibleDropin',{ineligiblePlaceholder:'Enter summary of ineligible cases'}) : textBuilderSet('courts',{courts:[]});}
+                                                                                   return textBuilderState.data.researchType === 'CanDo + Can’tDo' ? textBuilderSet('ineligibleDropin',{ineligiblePlaceholder:'Enter summary of ineligible cases'}) : textBuilderSet('address');}
                                                  if (action === 'confirmIneligible') {if (textBuilderState.data.workflow === 'walkInDropIn') return textBuilderSet('message');
                                                                                     if (['Can’tDo - out of network','Can’tDo - repeat attempt'].includes(textBuilderState.data.researchType)) return textBuilderSet('message');
+                                                                                    if (textBuilderState.data.researchType === 'CanDo + Can’tDo') return textBuilderSet('address');
                                                                                     return textBuilderSet('courts',{courts:[]});}
                                                  if (action === 'confirmPrivateAttorney') return textBuilderSet('remainingIneligibleDropin');
                                                  if (action === 'confirmRemainingIneligible') return textBuilderSet('courts',{courts:[]});
@@ -636,6 +649,7 @@ textBuilderPanel.addEventListener('click',(e) => {const action = e?.target?.data
                                                                                textBuilderState.data.courts = [...courts];
                                                                                return renderTextBuilder();}
                                                  if (action === 'confirmCourts') {if (textBuilderState.data.workflow === 'followUpNewCourtDate') return textBuilderSet('newCourtDateInput');
+                                                                                 if (['CanDo - everything','CanDo + Can’tDo'].includes(textBuilderState.data.researchType)) return textBuilderSet('eligibleDropin');
                                                                                  if (textBuilderState.data.researchType === 'Can’tDo - private attorney') return textBuilderSet('message');
                                                                                  return textBuilderSet('address');}
                                                  if (action === 'chooseAddress') return value === 'Have Address' ? textBuilderSet('addressInput',{addressMode:value}) : textBuilderSet('message',{addressMode:value});

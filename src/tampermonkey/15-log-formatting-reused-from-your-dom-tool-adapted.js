@@ -719,7 +719,6 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
                                                                                                                                                                                                                                                                                         sections.push(`${caseNo}: ${charge} - ${lineStatus}`);}
                                                                                                                                                                                                                                                               sections.push('- - -');}
                                                                                                                                                                                                                          sections.push('');
-                                                                                                                                                                                                                         sections.push('');
                                                                                                                               continue;}
 
                                                                                                                               if (includeJudgeDetails && grouped.size > 1 && municipalityKey(jurisdiction).includes('CIRCUIT')) {sections.push(jurisdiction.toUpperCase());
@@ -733,7 +732,6 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
                                                                                                                                                                                                                                    const charge = norm(e?.chargeDescription || '') || 'No Charges Found';
                                                                                                                                                                                                                                    const lineStatus = getSummaryLineStatus(e);
                                                                                                                                                                                                                                    sections.push(`${caseNo}: ${charge} - ${lineStatus}`);}}
-                                                                                                                                                                                               sections.push('');
                                                                                                                                                                                                sections.push('');
                                                                                                                               continue;}
 
@@ -751,7 +749,6 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
                                                                                                                                                                                                                                        const lineStatus = getSummaryLineStatus(e);
                                                                                                                                                                                                                                        sections.push(`${caseNo}: ${charge} - ${lineStatus}`);}}
                                                                                                                                                                               sections.push('- - -');
-                                                                                                                                                                              sections.push('');
                                                                                                                                                                               sections.push('');
                                                                                                                               continue;}
 
@@ -774,7 +771,6 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
                                                                                                                                                                                                              const lineStatus = getSummaryLineStatus(e);
                                                                                                                                                                                                              sections.push(`${caseNo}: ${charge} - ${lineStatus}`);}
                                                                                                                                                                                 if (header.includes('FRESH START FRIDAYS')) sections.push(FRESH_START_FRIDAY_TEXT);
-                                                                                                                                                                                sections.push('');
                                                                                                                                                                                 sections.push('');}}
                                                                   return {sections};}
 
@@ -799,8 +795,12 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
                                                                                          else ineligibleJurisdictions.push(jurisdictionEntry);}
                                   const {sections: eligibleSections} = buildJurisdictionSummarySections(eligibleJurisdictions);
                                   const {sections: ineligibleSections} = buildJurisdictionSummarySections(ineligibleJurisdictions);
-                                  const sections = [...eligibleSections];
-                                  sections.push(...ineligibleSections);
+                                  const sections = [];
+                                  const eligibleText = eligibleSections.join('\n').trim();
+                                  const ineligibleText = ineligibleSections.join('\n').trim();
+                                  if (eligibleText) sections.push(`- - -\n\n${eligibleText}\n\n- - -`);
+                                  if (ineligibleText) {if (sections.length) sections.push('', '', '', '');
+                                                       sections.push(`- - -\n\n${ineligibleText}\n\n- - -`);}
 
                                   const upcomingByJurisdiction = new Map();
                                   for (const e of filteredLog) {const next = parseUpcomingCourtDate(e);
@@ -811,7 +811,7 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
                                                                upcomingByJurisdiction.get(jurisdiction).get(next).push(getCaseNumberForSummary(e));}
 
                                   if (upcomingByJurisdiction.size) {sections.push('');
-                                                                   sections.push('Here are the upcoming court dates we were able to find:');
+                                                                   sections.push('Upcoming Court Dates:');
                                                                    sections.push('');
                                                                    for (const [jurisdiction,dateMap] of upcomingByJurisdiction.entries()) {sections.push(jurisdiction);
                                                                                                                               for (const [dt,caseNos] of dateMap.entries()) {sections.push(`${dt} (for ${formatCaseNumberList(caseNos)})`);}
