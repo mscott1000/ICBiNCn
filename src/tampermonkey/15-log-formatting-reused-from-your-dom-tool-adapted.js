@@ -223,19 +223,7 @@
                                   const expected = norm(document.getElementById('moNsYob')?.value || '');
                                   const filteredLog = log.filter((e) => {const m = yobMatchesExpected(expected,e?.yobRaw || e?.yob || '');
                                                                          return m.ok;});
-                                  const byJurisdiction = new Map();
-                                  for (const e of filteredLog) {const jurisdiction = norm(e?.location || '') || '- - -';
-                                                                if (!byJurisdiction.has(jurisdiction)) byJurisdiction.set(jurisdiction,[]);
-                                                                byJurisdiction.get(jurisdiction).push(e);}
-                                  const sortedJurisdictions = Array.from(byJurisdiction.entries())
-                                                                   .map(([jurisdiction,entries],idx) => ({jurisdiction,entries,idx,score: getJurisdictionScore(entries)}))
-                                                                   .sort((a,b) => {const scoreDiff = b.score - a.score;
-                                                                                   if (scoreDiff) return scoreDiff;
-                                                                                   return a.idx - b.idx;});
-                                  const eligibleJurisdictions = [];
-                                  const ineligibleJurisdictions = [];
-                                  for (const jurisdictionEntry of sortedJurisdictions) {if (isEligibleSummaryJurisdiction(jurisdictionEntry.jurisdiction)) eligibleJurisdictions.push(jurisdictionEntry);
-                                                                                         else ineligibleJurisdictions.push(jurisdictionEntry);}
+                                  const {eligibleJurisdictions,ineligibleJurisdictions} = buildOrderedJurisdictionGroups(filteredLog);
                                   const sections = [];
                                   function appendSections(jurisdictions) {for (const {entries} of jurisdictions) {
                                                                                                                                 const sortedEntries = entries.map((entry,idx) => ({entry,idx}))
@@ -668,7 +656,8 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
                                           if (clean.length === 2) return `${clean[0]} and ${clean[1]}`;
                                           return `${clean.slice(0,-1).join(', ')} and ${clean[clean.length - 1]}`;}
 
-  function getSummaryStatusPriority(e) {const label = getWarrantLabelForSummary(e);
+  function getSummaryStatusPriority(e) {if (hasUpcomingCourtDate(e)) return 3;
+                                       const label = getWarrantLabelForSummary(e);
                                        const normalized = norm(String(label || '')).toLowerCase();
                                        if (normalized.includes('hold')) return 0;
                                        if (/^warrant\b/.test(normalized)) return 1;
@@ -679,11 +668,27 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
                                     return !!(upcoming && upcoming !== '- - -');}
 
   function getJurisdictionScore(entries) {let score = 0;
-                                          for (const e of entries) {const label = norm(String(getWarrantLabelForSummary(e) || '')).toLowerCase();
+                                          for (const e of entries) {if (hasUpcomingCourtDate(e)) continue;
+                                                                    const label = norm(String(getWarrantLabelForSummary(e) || '')).toLowerCase();
                                                                     if (label.includes('hold')) score += 3;
                                                                     else if (/^warrant\b/.test(label)) score += 2;
                                                                     else score += 1;}
                                           return score;}
+
+  function buildOrderedJurisdictionGroups(entries) {const eligibleByJurisdiction = new Map();
+                                                   const ineligibleByJurisdiction = new Map();
+                                                   const addEntry = (map,jurisdiction,entry) => {if (!map.has(jurisdiction)) map.set(jurisdiction,[]);
+                                                                                                map.get(jurisdiction).push(entry);};
+                                                   for (const e of entries) {const jurisdiction = norm(e?.location || '') || '- - -';
+                                                                             const isEligibleForOrdering = isEligibleSummaryJurisdiction(jurisdiction) && !hasUpcomingCourtDate(e);
+                                                                             addEntry(isEligibleForOrdering ? eligibleByJurisdiction : ineligibleByJurisdiction,jurisdiction,e);}
+                                                   const sortGroups = (map) => Array.from(map.entries())
+                                                                                   .map(([jurisdiction,groupEntries],idx) => ({jurisdiction,entries: groupEntries,idx,score: getJurisdictionScore(groupEntries)}))
+                                                                                   .sort((a,b) => {const scoreDiff = b.score - a.score;
+                                                                                                   if (scoreDiff) return scoreDiff;
+                                                                                                   return a.idx - b.idx;});
+                                                   return {eligibleJurisdictions: sortGroups(eligibleByJurisdiction),
+                                                           ineligibleJurisdictions: sortGroups(ineligibleByJurisdiction)};}
 
   function isEligibleSummaryJurisdiction(jurisdiction) {const key = municipalityMatchKey(jurisdiction);
                                                         if (!key) return false;
@@ -778,21 +783,7 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
                                   const expected = norm(document.getElementById('moNsYob')?.value || '');
                                   const filteredLog = log.filter((e) => {const m = yobMatchesExpected(expected,e?.yobRaw || e?.yob || '');
                                                                          return m.ok;});
-                                  const jurisdictionLog = filteredLog.filter((e) => !hasUpcomingCourtDate(e));
-                                  const byJurisdiction = new Map();
-                                  for (const e of jurisdictionLog) {const jurisdiction = norm(e?.location || '') || '- - -';
-                                                                    if (!byJurisdiction.has(jurisdiction)) byJurisdiction.set(jurisdiction,[]);
-                                                                    byJurisdiction.get(jurisdiction).push(e);}
-
-                                  const sortedJurisdictions = Array.from(byJurisdiction.entries())
-                                                                   .map(([jurisdiction,entries],idx) => ({jurisdiction,entries,idx,score: getJurisdictionScore(entries)}))
-                                                                   .sort((a,b) => {const scoreDiff = b.score - a.score;
-                                                                                   if (scoreDiff) return scoreDiff;
-                                                                                   return a.idx - b.idx;});
-                                  const eligibleJurisdictions = [];
-                                  const ineligibleJurisdictions = [];
-                                  for (const jurisdictionEntry of sortedJurisdictions) {if (isEligibleSummaryJurisdiction(jurisdictionEntry.jurisdiction)) eligibleJurisdictions.push(jurisdictionEntry);
-                                                                                         else ineligibleJurisdictions.push(jurisdictionEntry);}
+                                  const {eligibleJurisdictions,ineligibleJurisdictions} = buildOrderedJurisdictionGroups(filteredLog);
                                   const {sections: eligibleSections} = buildJurisdictionSummarySections(eligibleJurisdictions);
                                   const {sections: ineligibleSections} = buildJurisdictionSummarySections(ineligibleJurisdictions);
                                   const sections = [];
