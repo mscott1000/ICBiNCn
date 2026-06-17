@@ -8,6 +8,12 @@
                                                                             label: middleRaw ? `${caseType} / ${middleRaw}` : `${caseType} / all middle names`}));}
 
   dock.addEventListener('click',async (e) => {const id = e?.target?.id;
+                                             if (id === 'moHomeNameSearch') {setAppView('name'); return;}
+                                             if (id === 'moHomeTextBuilder') {setAppView('text'); return;}
+                                             if (id === 'moHomeUpcomingCourtDates') {setAppView('upcoming'); return;}
+                                             if (id === 'moHomeTrackThisCase') {setAppView('track'); return;}
+                                             if (id === 'moHomeGoogleVoiceAssist') {setAppView('voice'); return;}
+                                             if (id === 'moJsonBackBtn') {goBackView(); return;}
                                              if (id === 'moJsonNameSearch') {const params = {first: norm(document.getElementById('moNsFirst')?.value || ''),
                                                                                            middle: norm(document.getElementById('moNsMiddle')?.value || ''),
                                                                                            last: norm(document.getElementById('moNsLast')?.value || ''),
@@ -84,13 +90,13 @@
                                                                             return;}
                                              if (id === 'moJsonCloseX') {minimizeDock();
                                                                         return;}
-                                             if (id === 'moJsonHelpBtn') {openHelpPanel();
+                                             if (id === 'moJsonHelpBtn') {if (appView === 'name') {restoreNameHelpPanel(); openHelpPanel();} else openBlankHelpPanel();
                                                                           return;}
-                                             if (id === 'moJsonTextBuilderBtn') {openTextBuilderPanel();
+                                             if (id === 'moJsonTextBuilderBtn') {setAppView('text');
                                                                                  return;}
                                              if (id === 'moJsonHelpClose') {closeHelpPanel();
                                                                             return;}
-                                             if (SHOW_TRACK_THIS_CASE_UI && id === 'moTrackClearEntries') {clearTrackDraft();
+                                             if (id === 'moTrackClearEntries') {clearTrackDraft();
                                                                               clearTrackState();
                                                                               setStop(true);
                                                                               setRun(false);
@@ -98,7 +104,7 @@
                                                                               uiStatus('Track This Case entries cleared');
                                                                               dbg('track_entries_cleared',{});
                                                                               return;}
-                                             if (SHOW_TRACK_THIS_CASE_UI && id === 'moTrackSignup') {const caseNumber = norm(document.getElementById('moTrackCaseNo')?.value || '').toUpperCase();
+                                             if (id === 'moTrackSignup') {const caseNumber = norm(document.getElementById('moTrackCaseNo')?.value || '').toUpperCase();
                                                                           const email = norm(document.getElementById('moTrackEmail')?.value || '');
                                                                           if (!caseNumber) {uiStatus('Enter a case number to track.');
                                                                                             return;}
@@ -121,7 +127,7 @@
                                                                                                        const now = readUiParams();
                                                                                                        saveDraft({...cur,...now});
                                                                                                        return;}
-                                     if (SHOW_TRACK_THIS_CASE_UI && (id === 'moTrackCaseNo' || id === 'moTrackEmail')) {const draft = loadTrackDraft();
+                                     if (id === 'moTrackCaseNo' || id === 'moTrackEmail') {const draft = loadTrackDraft();
                                                                                          saveTrackDraft({...draft,
                                                                                                          caseNumber: norm(document.getElementById('moTrackCaseNo')?.value || '').toUpperCase(),
                                                                                                          email: norm(document.getElementById('moTrackEmail')?.value || '')});
