@@ -119,10 +119,50 @@
                                                                           location.href = new URL('/casenet/caseNoSearch.do',location.origin).toString();
                                                                           render();
                                                                           return;}
+                                             if (id === 'moUpcomingRun') {runUpcomingBatchIntegrated().catch((err) => {upcomingActiveRun = null; upcomingSetStatus(`Error: ${String(err?.message || err)}`);}); return;}
+                                             if (id === 'moUpcomingStop') {upcomingStopRequested = true; if (upcomingActiveRun?.controller) upcomingActiveRun.controller.abort(); upcomingDebug('stop_requested',{}); upcomingSetStatus('Stopping...'); return;}
+                                             if (id === 'moUpcomingClear') {upcomingStorageSet(UPCOMING_INPUT_KEY,''); upcomingStorageSet(UPCOMING_OUTPUT_KEY,''); render(); upcomingSetStatus('Upcoming Court Dates entries cleared.'); return;}
+                                             if (id === 'moUpcomingCopy') {GM_setClipboard(document.getElementById('moUpcomingOutput')?.value || '','text'); upcomingSetStatus('Results copied to clipboard.'); return;}
+                                             if (id === 'moUpcomingCopyDebug') {GM_setClipboard(upcomingStorageGet(UPCOMING_DEBUG_KEY) || '(no debug rows)','text'); upcomingSetStatus('Debug copied to clipboard.'); return;}
+                                             if (id === 'moUpcomingClearDebug') {upcomingStorageSet(UPCOMING_DEBUG_KEY,''); upcomingSetStatus('Debug cleared.'); return;}
+                                             if (id === 'moGvLoad') {try {gvLoadPairs(); uiStatus('Google Voice pairs loaded.');} catch (err) {gvRenderStatus(`Load error: ${String(err?.message || err)}`);} return;}
+                                             if (id === 'moGvClear') {['moGvPhones','moGvNames','moGvLastNames','moGvMessage'].forEach((x) => {const el = document.getElementById(x); if (el) el.value = '';}); gvQueue = []; gvFocusedPair = null; gvSaveFromUi(); gvRenderStatus(); uiStatus('Google Voice entries cleared.'); return;}
+                                             if (id === 'moGvNumber') {if (!gvFocusedPair) {gvRenderStatus('Load at least one pair first.'); return;} GM_setClipboard(gvFocusedPair.phoneDisplay || gvFocusedPair.phoneRaw,'text'); uiStatus('Google Voice number copied.'); return;}
+                                             if (id === 'moGvText') {if (!gvFocusedPair) {gvRenderStatus('Load at least one pair first.'); return;} GM_setClipboard(gvCompose(gvFocusedPair.firstName,document.getElementById('moGvMessage')?.value || ''),'text'); uiStatus('Google Voice text copied.'); return;}
+                                             if (id === 'moGvName') {if (!gvFocusedPair) {gvRenderStatus('Load at least one pair first.'); return;} const fullName = [gvFocusedPair.firstName,gvFocusedPair.lastName].filter(Boolean).join(' '); if (!fullName) {gvRenderStatus('Focused pair has no name.'); return;} GM_setClipboard(fullName,'text'); uiStatus('Google Voice name copied.'); return;}
+                                             if (id === 'moGvNext') {if (!gvQueue.length) {gvFocusedPair = null; gvRenderStatus(); return;} gvQueue.shift(); gvRemoveFirstLine('moGvPhones'); gvRemoveFirstLine('moGvNames'); gvRemoveFirstLine('moGvLastNames'); gvFocusedPair = gvQueue[0] || null; gvSaveFromUi(); gvRenderStatus(); uiStatus('Google Voice advanced to next pair.'); return;}
                                              if (id === 'moJsonOpenLastHtml') {openLastHtmlInNewTab();
                                                                               return;}});
 
+
+  dock.addEventListener('click',(e) => {const action = e?.target?.dataset?.tbAction;
+                                     if (!action || appView !== 'text') return;
+                                     const value = e?.target?.dataset?.tbValue;
+                                     if (action === 'back') return textBuilderBack();
+                                     if (action === 'chooseRoot') {if (value === 'Initial Text') return textBuilderSet('staff',{workflow:'initial'}); if (value === 'Post-Research Response') return textBuilderSet('staff',{workflow:'postResearch'}); return textBuilderSet('followUp',{workflow:'followUp'});}
+                                     if (action === 'chooseStaff') {if (textBuilderState.data.workflow === 'initial') return textBuilderSet('message',{staff:value}); if (textBuilderState.data.workflow === 'followUpNewCourtDate') return textBuilderSet('courts',{staff:value,courts:[]}); return textBuilderSet('researchType',{staff:value});}
+                                     if (action === 'chooseResearchType') {if (value === 'Nothing Found') return textBuilderSet('message',{researchType:value}); if (value === 'CanDo - everything' || value === 'CanDo + Can’tDo') return textBuilderSet('courts',{researchType:value,courts:[]}); if (value === 'Walk-In Client') return textBuilderSet('eligibleDropin',{researchType:value,workflow:'walkInDropIn'}); if (value === 'Can’tDo - private attorney') return textBuilderSet('privateAttorneyDropin',{researchType:value}); if (value === 'Can’tDo - out of network' || value === 'Can’tDo - repeat attempt') return textBuilderSet('ineligibleDropin',{researchType:value,ineligiblePlaceholder:'Enter summary of ineligible cases'});}
+                                     if (action === 'confirmEligible') return textBuilderState.data.workflow === 'walkInDropIn' ? textBuilderSet('ineligibleDropin',{ineligiblePlaceholder:'Enter summary of ineligible cases'}) : (textBuilderState.data.researchType === 'CanDo + Can’tDo' ? textBuilderSet('ineligibleDropin',{ineligiblePlaceholder:'Enter summary of ineligible cases'}) : textBuilderSet('address'));
+                                     if (action === 'confirmIneligible') {if (textBuilderState.data.workflow === 'walkInDropIn' || ['Can’tDo - out of network','Can’tDo - repeat attempt'].includes(textBuilderState.data.researchType)) return textBuilderSet('message'); if (textBuilderState.data.researchType === 'CanDo + Can’tDo') return textBuilderSet('address'); return textBuilderSet('courts',{courts:[]});}
+                                     if (action === 'confirmPrivateAttorney') return textBuilderSet('remainingIneligibleDropin');
+                                     if (action === 'confirmRemainingIneligible') return textBuilderSet('courts',{courts:[]});
+                                     if (action === 'toggleCourt') {const courts = new Set(textBuilderState.data.courts || []); courts.has(value) ? courts.delete(value) : courts.add(value); textBuilderState.data.courts = [...courts]; return renderTextBuilder();}
+                                     if (action === 'confirmCourts') {if (textBuilderState.data.workflow === 'followUpNewCourtDate') return textBuilderSet('newCourtDateInput'); if (['CanDo - everything','CanDo + Can’tDo'].includes(textBuilderState.data.researchType)) return textBuilderSet('eligibleDropin'); if (textBuilderState.data.researchType === 'Can’tDo - private attorney') return textBuilderSet('message'); return textBuilderSet('address');}
+                                     if (action === 'chooseAddress') return value === 'Have Address' ? textBuilderSet('addressInput',{addressMode:value}) : textBuilderSet('message',{addressMode:value});
+                                     if (action === 'chooseFollowUp') return value === 'Ready to Submit' ? textBuilderSet('followUpReadyDay',{workflow:'followUpReady'}) : textBuilderSet('staff',{workflow:'followUpNewCourtDate'});
+                                     if (action === 'chooseFollowUpReadyDay') return textBuilderSet('message',{followUpDay:value});
+                                     if (action === 'confirmNewCourtDate' || action === 'confirmAddress') return textBuilderSet('message');
+                                     if (action === 'copyMessage') {GM_setClipboard(textBuilderBuildMessage(),'text'); return uiStatus('Text Builder message copied to clipboard');}
+                                     if (action === 'copyIneligibleMessage') {GM_setClipboard(textBuilderDropInIneligibleMessage(),'text'); return uiStatus('Text Builder ineligible cases message copied to clipboard');}
+                                     if (action === 'copyEligibleMessage') {GM_setClipboard(textBuilderDropInEligibleMessage(false),'text'); return uiStatus('Text Builder eligible cases message copied to clipboard');}});
+
   dock.addEventListener('input',(e) => {const id = e?.target?.id || '';
+                                     const tbKey = e?.target?.dataset?.tbInput;
+                                     if (tbKey && appView === 'text') {textBuilderState.data[tbKey] = e.target.value; return;}
+                                     if (id === 'moUpcomingInput') {upcomingStorageSet(UPCOMING_INPUT_KEY,e.target.value || ''); return;}
+                                     if (id === 'moUpcomingOutput') {upcomingStorageSet(UPCOMING_OUTPUT_KEY,e.target.value || ''); return;}
+                                     if (id === 'moUpcomingConcurrency') {upcomingStorageSet(UPCOMING_CONCURRENCY_KEY,String(upcomingConcurrency(e.target.value))); return;}
+                                     if (['moGvPhones','moGvNames','moGvLastNames','moGvMessage'].includes(id)) {gvSaveFromUi(); return;}
                                      if (['moNsFirst','moNsMiddle','moNsLast','moNsYob'].includes(id)) {const cur = loadDraft();
                                                                                                        const now = readUiParams();
                                                                                                        saveDraft({...cur,...now});
