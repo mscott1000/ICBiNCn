@@ -1,0 +1,459 @@
+// ==UserScript==
+// @name         google-voice-batch-text
+// @namespace    http://tampermonkey.net/
+// @version      2026-04-23.2
+// @description  Sidebar assistant for pairing names + phone numbers and quickly copying number/text snippets in Google Voice.
+// @author       Mason Scott
+// @match        https://voice.google.com/*
+// @run-at       document-idle
+// @grant        GM_addStyle
+// ==/UserScript==
+
+(function () {
+  'use strict';
+
+  const APP_ID = 'gvBatchTextTool';
+  const STORAGE_KEY = 'gv_batch_sender_state_v1';
+
+  let queue = [];
+  let focusedPair = null;
+
+  GM_addStyle(`
+    #${APP_ID}{
+      position:fixed;
+      right:12px;
+      bottom:12px;
+      width:366px;
+      max-height:94.3vh;
+      z-index:999999;
+      background:#f8fafc;
+      color:#0f172a;
+      border:1px solid #cbd5e1;
+      border-radius:14px;
+      box-shadow:0 10px 30px rgba(15,23,42,.18);
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      display:flex;
+      flex-direction:column;
+      overflow:hidden;
+    }
+    #${APP_ID} *{ box-sizing:border-box; }
+    #${APP_ID} .hdr{
+      padding:10px 12px;
+      background:#e2e8f0;
+      border-bottom:1px solid #cbd5e1;
+      font-weight:800;
+      font-size:14px;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+    }
+    #${APP_ID} .body{
+      padding:10px;
+      overflow:auto;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+    }
+    #${APP_ID} .row{
+      display:flex;
+      gap:8px;
+      align-items:center;
+      flex-wrap:wrap;
+    }
+    #${APP_ID} .field{
+      display:flex;
+      flex-direction:column;
+      gap:4px;
+      width:100%;
+    }
+    #${APP_ID} .field.half{
+      width:calc(50% - 4px);
+      min-width:0;
+    }
+    #${APP_ID} label{
+      font-size:11px;
+      font-weight:700;
+      color:#334155;
+    }
+    #${APP_ID} textarea{
+      width:100%;
+      min-height:74px;
+      resize:vertical;
+      border:1px solid #cbd5e1;
+      border-radius:10px;
+      padding:8px 10px;
+      font-size:12px;
+      background:#fff;
+      color:#0f172a;
+    }
+    #${APP_ID} textarea#gvBatchMessage{ min-height:74px; }
+    #${APP_ID} button{
+      border:1px solid #cbd5e1;
+      border-radius:10px;
+      padding:7px 10px;
+      font-size:12px;
+      font-weight:700;
+      cursor:pointer;
+      background:#fff;
+      color:#0f172a;
+    }
+    #${APP_ID} button.primary{
+      background:#2563eb;
+      color:#fff;
+      border-color:#1d4ed8;
+    }
+    #${APP_ID} button:disabled{
+      opacity:.55;
+      cursor:not-allowed;
+    }
+    #${APP_ID} .pair{
+      font-size:12px;
+      line-height:1.4;
+      color:#334155;
+      background:#fff;
+      border:1px solid #cbd5e1;
+      border-radius:10px;
+      padding:8px 10px;
+      min-height:56px;
+    }
+    #${APP_ID} .preview{
+      white-space:pre-wrap;
+      font-size:12px;
+      line-height:1.4;
+      color:#0f172a;
+      background:#fff;
+      border:1px solid #cbd5e1;
+      border-radius:10px;
+      padding:8px 10px;
+      max-height:180px;
+      overflow:auto;
+    }
+    #${APP_ID} .tiny{
+      font-size:11px;
+      color:#475569;
+    }
+    #${APP_ID}.collapsed{
+      width:260px;
+      max-height:none;
+    }
+    #${APP_ID}.collapsed .body{
+      display:none;
+    }
+    #${APP_ID} .pair-name{
+      font-weight:700;
+      color:#0f172a;
+    }
+    #${APP_ID} .pair-phone{
+      margin-top:2px;
+      font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;
+      color:#1e293b;
+    }
+  `);
+
+  const root = document.createElement('div');
+  root.id = APP_ID;
+  root.innerHTML = `
+    <div class="hdr">
+      <span>Google Voice Sidebar Assistant</span>
+      <button id="gvBatchClose" title="Minimize">×</button>
+    </div>
+    <div class="body">
+      <div class="row">
+        <div class="field half">
+          <label>First names (one per line)</label>
+          <textarea id="gvBatchNames" placeholder="Yasmine&#10;Shauron"></textarea>
+        </div>
+        <div class="field half">
+          <label>Last names (one per line)</label>
+          <textarea id="gvBatchLastNames" placeholder="Smith&#10;Jones"></textarea>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="field half">
+          <label>Message body</label>
+          <textarea id="gvBatchMessage" placeholder="this is Mason with Tap In..."></textarea>
+        </div>
+        <div class="field half">
+          <label>Phone numbers (one per line)</label>
+          <textarea id="gvBatchPhones" placeholder="(314) 302-7864&#10;(314) 435-9029"></textarea>
+        </div>
+      </div>
+
+      <div class="row">
+        <button id="gvBatchLoad" class="primary">Load Pairs</button>
+        <button id="gvBatchNumber">Number</button>
+        <button id="gvBatchText">Text</button>
+        <button id="gvBatchName">Name</button>
+        <button id="gvBatchNext">Next</button>
+        <button id="gvBatchClear">Clear</button>
+      </div>
+
+      <div class="tiny">No auto-sending. Use the helper buttons to copy and step through each name + number pair.</div>
+
+      <div class="pair" id="gvBatchStatus">No pair loaded.</div>
+      <div class="preview" id="gvBatchPreview">(queue preview will appear here)</div>
+    </div>
+  `;
+  (document.body || document.documentElement).appendChild(root);
+
+  const $phones = root.querySelector('#gvBatchPhones');
+  const $names = root.querySelector('#gvBatchNames');
+  const $lastNames = root.querySelector('#gvBatchLastNames');
+  const $message = root.querySelector('#gvBatchMessage');
+  const $pair = root.querySelector('#gvBatchStatus');
+  const $preview = root.querySelector('#gvBatchPreview');
+  const $close = root.querySelector('#gvBatchClose');
+
+  function saveState() {
+    const state = {
+      phones: $phones.value || '',
+      names: $names.value || '',
+      lastNames: $lastNames.value || '',
+      message: $message.value || ''
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  }
+
+  function loadState() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+      const state = JSON.parse(raw);
+      $phones.value = state.phones || '';
+      $names.value = state.names || '';
+      $lastNames.value = state.lastNames || '';
+      $message.value = state.message || '';
+    } catch (_) {}
+  }
+
+  function parseLines_(text) {
+    return String(text || '')
+      .split(/\r?\n/)
+      .map(s => s.trim())
+      .filter(Boolean);
+  }
+
+  function normalizePhone_(text) {
+    let digits = String(text || '').replace(/\D/g, '');
+    if (digits.length === 11 && digits.startsWith('1')) digits = digits.slice(1);
+    return digits.length === 10 ? digits : '';
+  }
+
+  function formatPhone_(digits) {
+    const d = String(digits || '');
+    if (!/^\d{10}$/.test(d)) return '';
+    return `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}`;
+  }
+
+  function normalizeName_(name) {
+    return String(name || '').trim();
+  }
+
+  function composeMessage_(firstName, baseMessage) {
+    const body = String(baseMessage || '').trim();
+    const first = normalizeName_(firstName);
+    if (!body) return first ? `Hi ${first},` : 'Hi,';
+    return first ? `Hi ${first}, ${body}` : `Hi, ${body}`;
+  }
+
+  function buildQueue_() {
+    const phones = parseLines_($phones.value);
+    const firstNames = parseLines_($names.value);
+    const lastNames = parseLines_($lastNames.value);
+
+    if (!phones.length) throw new Error('Enter at least one phone number.');
+
+    const parsed = phones.map((phone, idx) => {
+      const digits = normalizePhone_(phone);
+      return {
+        index: idx + 1,
+        phoneRaw: phone,
+        phoneDigits: digits,
+        phoneDisplay: formatPhone_(digits) || phone.trim(),
+        firstName: normalizeName_(firstNames[idx] || ''),
+        lastName: normalizeName_(lastNames[idx] || '')
+      };
+    });
+
+    const bad = parsed.filter(x => !x.phoneDigits);
+    if (bad.length) {
+      throw new Error(`These phone numbers could not be parsed: ${bad.map(x => x.phoneRaw).join(', ')}`);
+    }
+
+    return parsed;
+  }
+
+  function renderFocusedPair_() {
+    if (!focusedPair) {
+      $pair.textContent = 'No pair loaded.';
+      return;
+    }
+
+    const fullName = [focusedPair.firstName, focusedPair.lastName].filter(Boolean).join(' ');
+    const safeName = fullName || '(no name provided)';
+    const safePhone = focusedPair.phoneDisplay || focusedPair.phoneRaw || '(no number)';
+
+    $pair.innerHTML = `
+      <div class="pair-name">${escapeHtml_(safeName)}</div>
+      <div class="pair-phone">${escapeHtml_(safePhone)}</div>
+      <div class="tiny" style="margin-top:6px;">${queue.length} pair(s) remaining in queue.</div>
+    `;
+  }
+
+  function renderPreview_() {
+    if (!queue.length) {
+      $preview.textContent = '(queue preview will appear here)';
+      return;
+    }
+
+    const lines = [];
+    const show = queue.slice(0, 5);
+
+    show.forEach(item => {
+      const label = [item.firstName, item.lastName].filter(Boolean).join(' ') || '(no name)';
+      lines.push(`[${item.index}] ${label} -> ${item.phoneDisplay}`);
+    });
+
+    if (queue.length > show.length) {
+      lines.push(`...and ${queue.length - show.length} more.`);
+    }
+
+    $preview.textContent = lines.join('\n');
+  }
+
+  function removeFirstTextareaLine_(textarea) {
+    const all = String(textarea.value || '').split(/\r?\n/);
+    while (all.length && !all[0].trim()) all.shift();
+    if (all.length) all.shift();
+    textarea.value = all.join('\n');
+  }
+
+  async function copyToClipboard_(text) {
+    const value = String(text || '');
+    if (!value) throw new Error('Nothing to copy.');
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(value);
+      return;
+    }
+
+    const ta = document.createElement('textarea');
+    ta.value = value;
+    ta.setAttribute('readonly', '');
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+
+    const ok = document.execCommand('copy');
+    document.body.removeChild(ta);
+
+    if (!ok) throw new Error('Clipboard copy failed in this browser.');
+  }
+
+  function escapeHtml_(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+  function loadQueue_() {
+    queue = buildQueue_();
+    focusedPair = queue[0] || null;
+    renderFocusedPair_();
+    renderPreview_();
+  }
+
+  loadState();
+
+  $close.addEventListener('click', () => {
+    const collapsed = root.classList.toggle('collapsed');
+
+    if (collapsed) {
+      $close.textContent = '+';
+      $close.title = 'Restore';
+    } else {
+      $close.textContent = '×';
+      $close.title = 'Minimize';
+    }
+  });
+
+  root.querySelector('#gvBatchClear').addEventListener('click', () => {
+    $phones.value = '';
+    $names.value = '';
+    $lastNames.value = '';
+    $message.value = '';
+    queue = [];
+    focusedPair = null;
+    saveState();
+    renderFocusedPair_();
+    renderPreview_();
+  });
+
+  root.querySelector('#gvBatchLoad').addEventListener('click', () => {
+    try {
+      saveState();
+      loadQueue_();
+    } catch (err) {
+      $pair.textContent = `Load error: ${String(err.message || err)}`;
+    }
+  });
+
+  root.querySelector('#gvBatchNumber').addEventListener('click', async () => {
+    try {
+      if (!focusedPair) throw new Error('Load at least one pair first.');
+      await copyToClipboard_(focusedPair.phoneDisplay || focusedPair.phoneRaw);
+    } catch (err) {
+      $pair.textContent = `Copy error: ${String(err.message || err)}`;
+    }
+  });
+
+  root.querySelector('#gvBatchText').addEventListener('click', async () => {
+    try {
+      if (!focusedPair) throw new Error('Load at least one pair first.');
+      const message = composeMessage_(focusedPair.firstName, $message.value || '');
+      await copyToClipboard_(message);
+    } catch (err) {
+      $pair.textContent = `Copy error: ${String(err.message || err)}`;
+    }
+  });
+
+  root.querySelector('#gvBatchName').addEventListener('click', async () => {
+    try {
+      if (!focusedPair) throw new Error('Load at least one pair first.');
+      const fullName = [focusedPair.firstName, focusedPair.lastName].filter(Boolean).join(' ');
+      if (!fullName) throw new Error('Focused pair has no name.');
+      await copyToClipboard_(fullName);
+    } catch (err) {
+      $pair.textContent = `Copy error: ${String(err.message || err)}`;
+    }
+  });
+
+  root.querySelector('#gvBatchNext').addEventListener('click', () => {
+    if (!queue.length) {
+      focusedPair = null;
+      renderFocusedPair_();
+      return;
+    }
+
+    queue.shift();
+    removeFirstTextareaLine_($phones);
+    removeFirstTextareaLine_($names);
+    removeFirstTextareaLine_($lastNames);
+    focusedPair = queue[0] || null;
+    saveState();
+    renderFocusedPair_();
+    renderPreview_();
+  });
+
+  try {
+    loadQueue_();
+  } catch (_) {
+    renderFocusedPair_();
+    renderPreview_();
+  }
+})();
