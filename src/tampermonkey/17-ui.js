@@ -753,8 +753,8 @@ function render() {const log = loadLog();
         <button class="moBtn moHomeOption" id="moHomeGoogleVoiceAssist">Google Voice Assist</button>
       </div>`); return;}
                    if (appView === 'text') {renderTextBuilder(); return;}
-                   if (appView === 'upcoming') {addBlock('Upcoming Court Dates',`<div class="moFeaturePlaceholder"><div class="moField"><label>Case Numbers</label><textarea placeholder="Paste case numbers here, one per line"></textarea></div><div class="moNameRowBottom" style="grid-template-columns:1fr 1fr;"><button class="moBtn moSearchBtn" style="height:32px;">Find Upcoming Dates</button><button class="moBtn" style="height:32px;">Clear Entries</button></div></div>`); return;}
-                   if (appView === 'voice') {addBlock('Google Voice Assist',`<div class="moFeaturePlaceholder"><div class="moField"><label>Batch Text</label><textarea placeholder="Paste Google Voice batch text here"></textarea></div><div class="moNameRowBottom" style="grid-template-columns:1fr 1fr;"><button class="moBtn moSearchBtn" style="height:32px;">Prepare Texts</button><button class="moBtn" style="height:32px;">Clear Entries</button></div></div>`); return;}
+                   if (appView === 'upcoming') {renderUpcomingCourtDates(); return;}
+                   if (appView === 'voice') {renderGoogleVoiceAssist(); return;}
                    if (appView === 'track') {addBlock('Track This Case',`
   <div class="moNameRow" style="grid-template-columns:minmax(0, 0.9fr) minmax(0, 1.3fr); align-items:end;">
     <div class="moField"><label>Case Number</label><input id="moTrackCaseNo" type="text" placeholder="e.g. 18SL-CR01234" value="${escapeHtml((loadTrackState()?.caseNumber) || (loadTrackDraft()?.caseNumber) || '')}"></div>
