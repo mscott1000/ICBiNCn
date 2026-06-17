@@ -144,10 +144,10 @@ GM_addStyle(`:root{ --mo-bg: #f5f7fb;          /* page chrome */
                         color:#fff;}
             #moJsonCopy:hover{background:var(--mo-primary-dk);}
 
-            #moJsonStop{background:var(--mo-danger);
+            #moJsonStop,#moUpcomingStop{background:var(--mo-danger);
                         border:1.5px solid var(--mo-border);
                         color:#fff;}
-            #moJsonStop:hover{background:var(--mo-danger-dk);}
+            #moJsonStop:hover,#moUpcomingStop:hover{background:var(--mo-danger-dk);}
 
             .moNameRow{display:grid;
                        grid-template-columns:minmax(0, 1.3fr) minmax(0, 0.5fr) minmax(0, 1.8fr);
@@ -745,6 +745,7 @@ function render() {const log = loadLog();
                    if (actions) actions.style.display = appView === 'name' ? 'flex' : 'none';
                    const headerButtons = dock.querySelector('#moJsonHeader .btnRow');
                    if (headerButtons) headerButtons.style.display = appView === 'name' ? 'flex' : 'none';
+                   if ($status) $status.style.display = appView === 'home' ? 'none' : 'block';
                    if (appView === 'home') {addBlock('',`<div class="moHomeOptions">
         <button class="moBtn moHomeOption" id="moHomeNameSearch">Name Search</button>
         <button class="moBtn moHomeOption" id="moHomeTextBuilder">Text Builder</button>
@@ -771,7 +772,7 @@ function render() {const log = loadLog();
         <div class="moField"><input id="moNsLast" type="text" placeholder="Last" value="${escapeHtml(p?.last || '')}"></div>
       </div>
       <div class="moNameRowBottom" style="grid-template-columns:minmax(0, 0.36fr) minmax(0, 1.64fr);">
-        <div class="moField"><label>Birth Year</label><input id="moNsYob" type="text" placeholder="YYYY" maxlength="4" value="${escapeHtml(p?.yob || '')}"></div>
+        <div class="moField"><label style="color:var(--mo-text);">Birth Year</label><input id="moNsYob" type="text" placeholder="YYYY" maxlength="4" value="${escapeHtml(p?.yob || '')}"></div>
         <div style="display:flex; gap:8px; align-items:end; width:100%;"><button class="moBtn moSearchBtn" id="moJsonNameSearch" style="flex:1;">Search</button><button class="moBtn" id="moJsonClearEntries" style="height:32px; flex:1;">Clear Entries</button></div>
       </div>`);
 }
