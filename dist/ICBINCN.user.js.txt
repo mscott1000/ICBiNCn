@@ -3459,6 +3459,15 @@ GM_addStyle(`:root{ --mo-bg: #f5f7fb;          /* page chrome */
                          margin-top:0;
                          flex-wrap:wrap;}
 
+            .moHomeOptions{display:grid;
+                           grid-template-columns:1fr;
+                           gap:10px;}
+            .moHomeOption{width:100%;
+                          padding:12px 14px;
+                          font-size:13px;
+                          text-align:center;}
+            .moFeaturePlaceholder{min-height:180px;}
+
             #moJsonHelpBtn{background:#d4a017;
                            border:1.5px solid #ad7f00;
                            color:#ffffff;}
@@ -3674,7 +3683,7 @@ const dock = document.createElement('div');
 dock.id = 'moJsonDock';
 dock.innerHTML = `
   <div id="moJsonHeader">
-    <div class="title">I Can't Believe It's Not CaseNet!</div>
+    <div class="title" id="moJsonTitle">I Can't Believe it's Not CaseNet!</div>
     <div class="btnRow">
       <button class="moBtn" id="moJsonSummary">Summary</button>
       <button class="moBtn" id="moJsonCopy">Copy</button>
@@ -3685,14 +3694,10 @@ dock.innerHTML = `
   <div id="moJsonContent"></div>
   <div id="moJsonFooter">
     <div id="moJsonFooterInner">
-      <div class="moBottomRow"><button class="moBtn" id="moJsonHelpBtn">Help</button><button class="moBtn" id="moJsonTextBuilderBtn">Text Builder</button></div>
-      <div class="moBottomRow">
+      <div class="moBottomRow" id="moJsonNavButtons"></div>
+      <div class="moBottomRow" id="moJsonActionButtons">
         <button class="moBtn" id="moJsonStop">Stop All</button>
         <button class="moBtn" id="moJsonClear">Clear Log</button>
-      </div>
-      <div class="moBottomRow">
-        <button class="moBtn" id="moJsonCopyDebug">Copy Debug</button>
-        <button class="moBtn" id="moJsonCopyCebug">Copy Cebug</button>
       </div>
     </div>
   </div>
@@ -3708,7 +3713,7 @@ launcher.textContent = 'ICBiNCn';
 const helpPanel = document.createElement('div');
 helpPanel.id = 'moJsonHelpPanel';
 helpPanel.className = 'moHidden';
-helpPanel.innerHTML = `
+const helpPanelTemplate = `
   <button id="moJsonHelpClose" title="Close Help">×</button>
   <img id="moJsonHelpLogo" src="${escapeHtml(LOGO_CASEY_IMAGE)}" alt="ICBiNCn Casey logo" />
   <div id="moJsonHelpHeading">FAQ / Tips</div>
@@ -3755,6 +3760,7 @@ Don't tell the cops!</div>
     <img id="moJsonHelpFooterLogo" src="${escapeHtml(LOGO_CASEY_IMAGE)}" alt="ICBiNCn Casey logo" />
   </div>
 `;
+helpPanel.innerHTML = helpPanelTemplate;
 (document.body || document.documentElement).appendChild(helpPanel);
 
 const textBuilderPanel = document.createElement('div');
@@ -3853,7 +3859,7 @@ function renderTextBuilder() {let html = '';
                                                                                                  html = `<div class="moBlock"><h3>Constructed Message</h3><div class="moTextBuilderPane"><h3>${escapeHtml(title)}</h3><div class="moTextBuilderMessage" id="moTextBuilderConstructed">${escapeHtml(msg)}</div></div></div><div class="moTextBuilderActions"><button class="moBtn" data-tb-action="back">Back</button><button class="moBtn" data-tb-action="copyMessage">Copy Message</button></div>`;}}
                                                          else {const msg = textBuilderLimitMessage(textBuilderBuildMessage());
                                                                html = `<div class="moBlock"><h3>Constructed Message</h3><div class="moTextBuilderMessage" id="moTextBuilderConstructed">${escapeHtml(msg)}</div></div><div class="moTextBuilderActions"><button class="moBtn" data-tb-action="back">Back</button><button class="moBtn" data-tb-action="copyMessage">Copy Message</button></div>`;}}
-                              textBuilderBody.innerHTML = html;}
+                              (appView === 'text' ? $content : textBuilderBody).innerHTML = html;}
 function positionTextBuilderPanel() {const rect = dock.getBoundingClientRect();
                                      const right = Math.max(8,window.innerWidth - rect.left + 10);
                                      const bottom = Math.max(8,window.innerHeight - rect.bottom);
@@ -3911,6 +3917,24 @@ textBuilderPanel.addEventListener('click',(e) => {const action = e?.target?.data
                                                                                         uiStatus('Text Builder eligible cases message copied to clipboard');}});
 
 
+
+const APP_VIEWS = {home:'I Can’t Believe it’s Not CaseNet!',name:'Name Search',text:'Text Builder',upcoming:'Upcoming Court Dates',track:'Track This Case',voice:'Google Voice Assist'};
+let appView = 'home';
+const appHistory = [];
+function setAppView(view) {if (!APP_VIEWS[view]) return;
+                           if (view !== appView) appHistory.push(appView);
+                           appView = view;
+                           closeHelpPanel();
+                           closeTextBuilderPanel();
+                           render();}
+function goBackView() {appView = appHistory.pop() || 'home';
+                       closeHelpPanel();
+                       closeTextBuilderPanel();
+                       render();}
+function openBlankHelpPanel() {positionHelpPanel();
+                               helpPanel.classList.remove('moHidden');
+                               helpPanel.innerHTML = `<button id="moJsonHelpClose" title="Close Help">×</button><div style="min-height:320px;"></div>`;}
+function restoreNameHelpPanel() {helpPanel.innerHTML = helpPanelTemplate;}
 const $status = dock.querySelector('#moJsonStatus');
 const $content = dock.querySelector('#moJsonContent');
 
@@ -3952,52 +3976,46 @@ expandDock();
 const SHOW_TRACK_THIS_CASE_UI = false; // Temporarily disconnect visible Track This Case UI without removing its automation architecture.
 
 function render() {const log = loadLog();
+                   const title = dock.querySelector('#moJsonTitle');
+                   if (title) title.textContent = APP_VIEWS[appView] || APP_VIEWS.home;
                    $content.innerHTML = '';
                    const copyBtn = dock.querySelector('#moJsonCopy');
                    if (copyBtn) copyBtn.textContent = `Copy (${log.length})`;
+                   const nav = dock.querySelector('#moJsonNavButtons');
+                   const actions = dock.querySelector('#moJsonActionButtons');
+                   if (nav) nav.innerHTML = appView === 'home' ? '' : '<button class="moBtn" id="moJsonBackBtn">Back</button><button class="moBtn" id="moJsonHelpBtn">Help</button>';
+                   if (actions) actions.style.display = appView === 'name' ? 'flex' : 'none';
+                   const headerButtons = dock.querySelector('#moJsonHeader .btnRow');
+                   if (headerButtons) headerButtons.style.display = appView === 'name' ? 'flex' : 'none';
+                   if (appView === 'home') {addBlock('',`<div class="moHomeOptions">
+        <button class="moBtn moHomeOption" id="moHomeNameSearch">Name Search</button>
+        <button class="moBtn moHomeOption" id="moHomeTextBuilder">Text Builder</button>
+        <button class="moBtn moHomeOption" id="moHomeUpcomingCourtDates">Upcoming Court Dates</button>
+        <button class="moBtn moHomeOption" id="moHomeTrackThisCase">Track This Case</button>
+        <button class="moBtn moHomeOption" id="moHomeGoogleVoiceAssist">Google Voice Assist</button>
+      </div>`); return;}
+                   if (appView === 'text') {renderTextBuilder(); return;}
+                   if (appView === 'upcoming') {addBlock('Upcoming Court Dates',`<div class="moFeaturePlaceholder"><div class="moField"><label>Case Numbers</label><textarea placeholder="Paste case numbers here, one per line"></textarea></div><div class="moNameRowBottom" style="grid-template-columns:1fr 1fr;"><button class="moBtn moSearchBtn" style="height:32px;">Find Upcoming Dates</button><button class="moBtn" style="height:32px;">Clear Entries</button></div></div>`); return;}
+                   if (appView === 'voice') {addBlock('Google Voice Assist',`<div class="moFeaturePlaceholder"><div class="moField"><label>Batch Text</label><textarea placeholder="Paste Google Voice batch text here"></textarea></div><div class="moNameRowBottom" style="grid-template-columns:1fr 1fr;"><button class="moBtn moSearchBtn" style="height:32px;">Prepare Texts</button><button class="moBtn" style="height:32px;">Clear Entries</button></div></div>`); return;}
+                   if (appView === 'track') {addBlock('Track This Case',`
+  <div class="moNameRow" style="grid-template-columns:minmax(0, 0.9fr) minmax(0, 1.3fr); align-items:end;">
+    <div class="moField"><label>Case Number</label><input id="moTrackCaseNo" type="text" placeholder="e.g. 18SL-CR01234" value="${escapeHtml((loadTrackState()?.caseNumber) || (loadTrackDraft()?.caseNumber) || '')}"></div>
+    <div class="moField"><label>Email Address</label><input id="moTrackEmail" type="email" placeholder="name@example.com" value="${escapeHtml((loadTrackState()?.email) || (loadTrackDraft()?.email) || '')}"></div>
+  </div>
+  <div class="moNameRowBottom" style="grid-template-columns:minmax(0, 1fr) minmax(0, 1fr);"><button class="moBtn" id="moTrackSignup" style="height:32px;">Send Verification Email</button><button class="moBtn" id="moTrackClearEntries" style="height:32px;">Clear Entries</button></div>`); return;}
                    const ns = loadNameState();
                    const draft = loadDraft();
                    const p = ns?.params || draft;
                    addBlock('Name',`
       <div class="moNameRow">
-        <div class="moField">
-          <input id="moNsFirst" type="text" placeholder="First" value="${escapeHtml(p?.first || '')}">
-        </div>
-        <div class="moField">
-          <input id="moNsMiddle" type="text" placeholder="M.I." value="${escapeHtml(p?.middle || '')}">
-        </div>
-        <div class="moField">
-          <input id="moNsLast" type="text" placeholder="Last" value="${escapeHtml(p?.last || '')}">
-        </div>
+        <div class="moField"><input id="moNsFirst" type="text" placeholder="First" value="${escapeHtml(p?.first || '')}"></div>
+        <div class="moField"><input id="moNsMiddle" type="text" placeholder="M.I." value="${escapeHtml(p?.middle || '')}"></div>
+        <div class="moField"><input id="moNsLast" type="text" placeholder="Last" value="${escapeHtml(p?.last || '')}"></div>
       </div>
-
       <div class="moNameRowBottom" style="grid-template-columns:minmax(0, 0.36fr) minmax(0, 1.64fr);">
-        <div class="moField">
-          <label>Birth Year</label>
-          <input id="moNsYob" type="text" placeholder="YYYY" maxlength="4" value="${escapeHtml(p?.yob || '')}">
-        </div>
-        <div style="display:flex; gap:8px; align-items:end; width:100%;">
-          <button class="moBtn moSearchBtn" id="moJsonNameSearch" style="flex:1;">Search</button>
-          <button class="moBtn" id="moJsonClearEntries" style="height:32px; flex:1;">Clear Entries</button>
-        </div>
-      </div>
-    `);
-                   if (SHOW_TRACK_THIS_CASE_UI) {addBlock('Track This Case',`
-  <div class="moNameRow" style="grid-template-columns:minmax(0, 0.9fr) minmax(0, 1.3fr); align-items:end;">
-    <div class="moField">
-      <label>Case Number</label>
-      <input id="moTrackCaseNo" type="text" placeholder="e.g. 18SL-CR01234" value="${escapeHtml((loadTrackState()?.caseNumber) || (loadTrackDraft()?.caseNumber) || '')}">
-    </div>
-    <div class="moField">
-      <label>Email Address</label>
-      <input id="moTrackEmail" type="email" placeholder="name@example.com" value="${escapeHtml((loadTrackState()?.email) || (loadTrackDraft()?.email) || '')}">
-    </div>
-  </div>
-  <div class="moNameRowBottom" style="grid-template-columns:minmax(0, 1fr) minmax(0, 1fr);">
-    <button class="moBtn" id="moTrackSignup" style="height:32px;">Send Verification Email</button>
-    <button class="moBtn" id="moTrackClearEntries" style="height:32px;">Clear Entries</button>
-  </div>
-`);}
+        <div class="moField"><label>Birth Year</label><input id="moNsYob" type="text" placeholder="YYYY" maxlength="4" value="${escapeHtml(p?.yob || '')}"></div>
+        <div style="display:flex; gap:8px; align-items:end; width:100%;"><button class="moBtn moSearchBtn" id="moJsonNameSearch" style="flex:1;">Search</button><button class="moBtn" id="moJsonClearEntries" style="height:32px; flex:1;">Clear Entries</button></div>
+      </div>`);
 }
 /************************************************************
    * Main run
@@ -4802,6 +4820,12 @@ function render() {const log = loadLog();
                                                                             label: middleRaw ? `${caseType} / ${middleRaw}` : `${caseType} / all middle names`}));}
 
   dock.addEventListener('click',async (e) => {const id = e?.target?.id;
+                                             if (id === 'moHomeNameSearch') {setAppView('name'); return;}
+                                             if (id === 'moHomeTextBuilder') {setAppView('text'); return;}
+                                             if (id === 'moHomeUpcomingCourtDates') {setAppView('upcoming'); return;}
+                                             if (id === 'moHomeTrackThisCase') {setAppView('track'); return;}
+                                             if (id === 'moHomeGoogleVoiceAssist') {setAppView('voice'); return;}
+                                             if (id === 'moJsonBackBtn') {goBackView(); return;}
                                              if (id === 'moJsonNameSearch') {const params = {first: norm(document.getElementById('moNsFirst')?.value || ''),
                                                                                            middle: norm(document.getElementById('moNsMiddle')?.value || ''),
                                                                                            last: norm(document.getElementById('moNsLast')?.value || ''),
@@ -4878,13 +4902,13 @@ function render() {const log = loadLog();
                                                                             return;}
                                              if (id === 'moJsonCloseX') {minimizeDock();
                                                                         return;}
-                                             if (id === 'moJsonHelpBtn') {openHelpPanel();
+                                             if (id === 'moJsonHelpBtn') {if (appView === 'name') {restoreNameHelpPanel(); openHelpPanel();} else openBlankHelpPanel();
                                                                           return;}
-                                             if (id === 'moJsonTextBuilderBtn') {openTextBuilderPanel();
+                                             if (id === 'moJsonTextBuilderBtn') {setAppView('text');
                                                                                  return;}
                                              if (id === 'moJsonHelpClose') {closeHelpPanel();
                                                                             return;}
-                                             if (SHOW_TRACK_THIS_CASE_UI && id === 'moTrackClearEntries') {clearTrackDraft();
+                                             if (id === 'moTrackClearEntries') {clearTrackDraft();
                                                                               clearTrackState();
                                                                               setStop(true);
                                                                               setRun(false);
@@ -4892,7 +4916,7 @@ function render() {const log = loadLog();
                                                                               uiStatus('Track This Case entries cleared');
                                                                               dbg('track_entries_cleared',{});
                                                                               return;}
-                                             if (SHOW_TRACK_THIS_CASE_UI && id === 'moTrackSignup') {const caseNumber = norm(document.getElementById('moTrackCaseNo')?.value || '').toUpperCase();
+                                             if (id === 'moTrackSignup') {const caseNumber = norm(document.getElementById('moTrackCaseNo')?.value || '').toUpperCase();
                                                                           const email = norm(document.getElementById('moTrackEmail')?.value || '');
                                                                           if (!caseNumber) {uiStatus('Enter a case number to track.');
                                                                                             return;}
@@ -4915,7 +4939,7 @@ function render() {const log = loadLog();
                                                                                                        const now = readUiParams();
                                                                                                        saveDraft({...cur,...now});
                                                                                                        return;}
-                                     if (SHOW_TRACK_THIS_CASE_UI && (id === 'moTrackCaseNo' || id === 'moTrackEmail')) {const draft = loadTrackDraft();
+                                     if (id === 'moTrackCaseNo' || id === 'moTrackEmail') {const draft = loadTrackDraft();
                                                                                          saveTrackDraft({...draft,
                                                                                                          caseNumber: norm(document.getElementById('moTrackCaseNo')?.value || '').toUpperCase(),
                                                                                                          email: norm(document.getElementById('moTrackEmail')?.value || '')});
