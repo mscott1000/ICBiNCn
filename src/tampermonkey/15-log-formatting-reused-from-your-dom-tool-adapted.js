@@ -470,7 +470,7 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
 
   function getStLouisCountyCircuitHeaderParts(header,fallbackJudge = '') {const raw = String(header || '');
                                                                        const firstLine = norm(raw.split('\n')[0] || '');
-                                                                       const clerkMatch = raw.match(/Court\s+Clerk:\s*([^\n]*?)(?=\s*-\s*-|$)/i);
+                                                                       const clerkMatch = raw.match(/\|\s*Court\s+Clerk:\s*([^|\n]+?)\s*\|/i) || raw.match(/Court\s+Clerk:\s*([^\n]*?)(?=\s*-\s*-|$)/i);
                                                                        const clerk = norm(clerkMatch?.[1] || '');
                                                                        const divisionMatch = firstLine.match(/\bDIV(?:ISION)?\s+(\d+[A-Z]?)\b/i);
                                                                        const judgeMatch = firstLine.match(/\bJudge\s+(.+)$/i);
@@ -480,7 +480,7 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
                                                                                judge: abbreviateJudgeMiddleNames(judgeMatch?.[1] || fallbackJudge)};}
 
   function formatStLouisCountyCircuitHeader(header) {const {firstLine,clerk} = getStLouisCountyCircuitHeaderParts(header);
-                                                    return clerk ? `${firstLine}\n- - Court Clerk: ${clerk} - -` : firstLine;}
+                                                    return clerk ? `${firstLine}\n| Court Clerk: ${clerk} |` : firstLine;}
 
   function formatStLouisCountyCircuitJudgeSubheader(header,fallbackJudge = '') {const {division,judge,clerk} = getStLouisCountyCircuitHeaderParts(header,fallbackJudge);
                                                                                const divisionText = division ? `DIV ${division}` : 'DIV';
@@ -514,7 +514,7 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
                                       const key = municipalityKey(base);
                                       if (!key) return null;
                                       const display = judgeTag ? `${base} - Judge ${judgeTag}` : baseLine;
-                                      const displayWithClerk = clerk ? isStLouisCountyCircuitHeader(display) ? `${display}\n- - Court Clerk: ${clerk} - -` : `${display}\nCourt Clerk: ${clerk}` : display;
+                                      const displayWithClerk = clerk ? isStLouisCountyCircuitHeader(display) ? `${display}\n| Court Clerk: ${clerk} |` : `${display}\nCourt Clerk: ${clerk}` : display;
                                       const divisionMatch = base.match(/\bDIV(?:ISION)?\s+(\d+[A-Z]?)\b/i);
                                       return {raw: trimmed,
                                               display: displayWithClerk,
@@ -682,6 +682,13 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
                                                                     else score += 1;}
                                           return score;}
 
+  function isFelonyChargeType(e) {return /felony/i.test(norm(String(e?.chargeType || '')));}
+
+  function isStLouisCountyCircuitJurisdiction(jurisdiction) {const key = municipalityMatchKey(jurisdiction);
+                                                             return key.includes('ST LOUIS COUNTY CIRCUIT') || (key.includes('ST LOUIS COUNTY') && key.includes('CIRCUIT'));}
+
+  function getEligibleJurisdictionPriority(jurisdiction,entries) {return isStLouisCountyCircuitJurisdiction(jurisdiction) && entries.some(isFelonyChargeType) ? 1 : 0;}
+
   function buildOrderedJurisdictionGroups(entries) {const eligibleByJurisdiction = new Map();
                                                    const ineligibleByJurisdiction = new Map();
                                                    const addEntry = (map,jurisdiction,entry) => {if (!map.has(jurisdiction)) map.set(jurisdiction,[]);
@@ -689,12 +696,14 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
                                                    for (const e of entries) {const jurisdiction = norm(e?.location || '') || '- - -';
                                                                              const isEligibleForOrdering = isEligibleSummaryJurisdiction(jurisdiction) && !hasUpcomingCourtDate(e);
                                                                              addEntry(isEligibleForOrdering ? eligibleByJurisdiction : ineligibleByJurisdiction,jurisdiction,e);}
-                                                   const sortGroups = (map) => Array.from(map.entries())
-                                                                                   .map(([jurisdiction,groupEntries],idx) => ({jurisdiction,entries: groupEntries,idx,score: getJurisdictionScore(groupEntries)}))
-                                                                                   .sort((a,b) => {const scoreDiff = b.score - a.score;
+                                                   const sortGroups = (map,prioritizeEligibleCircuitFelonies = false) => Array.from(map.entries())
+                                                                                   .map(([jurisdiction,groupEntries],idx) => ({jurisdiction,entries: groupEntries,idx,score: getJurisdictionScore(groupEntries),priority: prioritizeEligibleCircuitFelonies ? getEligibleJurisdictionPriority(jurisdiction,groupEntries) : 0}))
+                                                                                   .sort((a,b) => {const priorityDiff = b.priority - a.priority;
+                                                                                                   if (priorityDiff) return priorityDiff;
+                                                                                                   const scoreDiff = b.score - a.score;
                                                                                                    if (scoreDiff) return scoreDiff;
                                                                                                    return a.idx - b.idx;});
-                                                   return {eligibleJurisdictions: sortGroups(eligibleByJurisdiction),
+                                                   return {eligibleJurisdictions: sortGroups(eligibleByJurisdiction,true),
                                                            ineligibleJurisdictions: sortGroups(ineligibleByJurisdiction)};}
 
   function isEligibleSummaryJurisdiction(jurisdiction) {const key = municipalityMatchKey(jurisdiction);
