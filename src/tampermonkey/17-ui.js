@@ -13,8 +13,8 @@ GM_addStyle(`:root{ --mo-bg: #f5f7fb;          /* page chrome */
                     --mo-danger-dk: #912018;
                     --mo-shadow: 0 10px 28px rgba(15, 23, 42, .18);}
 
-            #moJsonDock{position:fixed; right:12px; bottom:12px;
-                        width:520px; max-height:66vh;
+            #moJsonDock{position:fixed; left:50%; top:50%; transform:translate(-50%,-50%);
+                        width:min(760px,calc(100vw - 24px)); height:min(620px,calc(100vh - 24px));
                         z-index:999999;
                         font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
                         box-shadow:var(--mo-shadow);
@@ -676,7 +676,7 @@ textBuilderPanel.addEventListener('click',(e) => {const action = e?.target?.data
 
 
 
-const APP_VIEWS = {home:'I Can’t Believe it’s Not CaseNet!',name:'Name Search',text:'Text Builder',upcoming:'Upcoming Court Dates',track:'Track This Case',voice:'Google Voice Assist'};
+const APP_VIEWS = {home:'I Can’t Believe it’s Not CaseNet!',name:'Name Search',text:'Text Builder',upcoming:'Upcoming Court Dates',track:'Track This Case'};
 let appView = 'home';
 const appHistory = [];
 function setAppView(view) {if (!APP_VIEWS[view]) return;
@@ -745,17 +745,15 @@ function render() {const log = loadLog();
                    if (actions) actions.style.display = appView === 'name' ? 'flex' : 'none';
                    const headerButtons = dock.querySelector('#moJsonHeader .btnRow');
                    if (headerButtons) headerButtons.style.display = appView === 'name' ? 'flex' : 'none';
-                   if ($status) $status.style.display = appView === 'home' ? 'none' : 'block';
+                   if ($status) $status.style.display = (appView === 'home' || appView === 'text') ? 'none' : 'block';
                    if (appView === 'home') {addBlock('',`<div class="moHomeOptions">
         <button class="moBtn moHomeOption" id="moHomeNameSearch">Name Search</button>
         <button class="moBtn moHomeOption" id="moHomeTextBuilder">Text Builder</button>
         <button class="moBtn moHomeOption" id="moHomeUpcomingCourtDates">Upcoming Court Dates</button>
         <button class="moBtn moHomeOption" id="moHomeTrackThisCase">Track This Case</button>
-        <button class="moBtn moHomeOption" id="moHomeGoogleVoiceAssist">Google Voice Assist</button>
       </div>`); return;}
                    if (appView === 'text') {renderTextBuilder(); return;}
                    if (appView === 'upcoming') {renderUpcomingCourtDates(); return;}
-                   if (appView === 'voice') {renderGoogleVoiceAssist(); return;}
                    if (appView === 'track') {addBlock('Track This Case',`
   <div class="moNameRow" style="grid-template-columns:minmax(0, 0.9fr) minmax(0, 1.3fr); align-items:end;">
     <div class="moField"><label>Case Number</label><input id="moTrackCaseNo" type="text" placeholder="e.g. 18SL-CR01234" value="${escapeHtml((loadTrackState()?.caseNumber) || (loadTrackDraft()?.caseNumber) || '')}"></div>
