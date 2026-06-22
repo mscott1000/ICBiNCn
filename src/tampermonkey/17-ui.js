@@ -14,7 +14,7 @@ GM_addStyle(`:root{ --mo-bg: #f5f7fb;          /* page chrome */
                     --mo-shadow: 0 10px 28px rgba(15, 23, 42, .18);}
 
             #moJsonDock{position:fixed; left:50%; top:50%; transform:translate(-50%,-50%);
-                        width:min(760px,calc(100vw - 24px)); height:min(620px,calc(100vh - 24px));
+                        width:min(836px,calc(100vw - 24px)); height:min(434px,calc(100vh - 24px));
                         z-index:999999;
                         font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
                         box-shadow:var(--mo-shadow);
@@ -352,6 +352,7 @@ GM_addStyle(`:root{ --mo-bg: #f5f7fb;          /* page chrome */
                                    flex-direction:column;
                                    gap:10px;}
             #moJsonTextBuilderBody .moBlock > h3{text-align:center;}
+            #moJsonTextBuilderBody .moTextBuilderPane > h3{text-align:center;}
             .moTextBuilderOptions.moCentered{width:100%;
                                              align-self:stretch;}
             .moTextBuilderOptions.moCentered .moTextBuilderOption{text-align:center;}
@@ -373,7 +374,7 @@ GM_addStyle(`:root{ --mo-bg: #f5f7fb;          /* page chrome */
             .moTextBuilderOption.moSelected{background:#dbeafe;
                                             border-color:#2563eb;}
             .moTextBuilderTextArea{width:100%;
-                                   max-width:75ch;
+                                   max-width:none;
                                    display:block;
                                    margin-left:auto;
                                    margin-right:auto;
@@ -397,7 +398,7 @@ GM_addStyle(`:root{ --mo-bg: #f5f7fb;          /* page chrome */
                                     text-align:center;}
             .moTextBuilderPane .moBtn{align-self:flex-start;}
             .moTextBuilderMessage{white-space:pre-wrap;
-                                  max-width:75ch;
+                                  max-width:none;
                                   margin-left:auto;
                                   margin-right:auto;
                                   border:1px solid #93c5fd;
@@ -741,7 +742,7 @@ function render() {const log = loadLog();
                    if (copyBtn) copyBtn.textContent = `Copy (${log.length})`;
                    const nav = dock.querySelector('#moJsonNavButtons');
                    const actions = dock.querySelector('#moJsonActionButtons');
-                   if (nav) nav.innerHTML = appView === 'home' ? '' : '<button class="moBtn" id="moJsonBackBtn">Back</button><button class="moBtn" id="moJsonHelpBtn">Help</button>';
+                   if (nav) nav.innerHTML = appView === 'home' ? '' : '<button class="moBtn" id="moJsonBackBtn">Home</button><button class="moBtn" id="moJsonHelpBtn">Help</button>';
                    if (actions) actions.style.display = appView === 'name' ? 'flex' : 'none';
                    const headerButtons = dock.querySelector('#moJsonHeader .btnRow');
                    if (headerButtons) headerButtons.style.display = appView === 'name' ? 'flex' : 'none';
