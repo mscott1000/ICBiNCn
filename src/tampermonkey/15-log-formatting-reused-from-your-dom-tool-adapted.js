@@ -263,6 +263,7 @@ CHAMP MUNICIPAL - (314) 291-6036
 CHARLACK MUNICIPAL (OPERATES IN ST. ANN MUNICIPAL) - (314) 428-6811 EXT 5
 CHESTERFIELD MUNICIPAL - (636) 537-4000
 CLARKSON VALLEY MUNICIPAL - (636) 537-4718
+CITY OF ST. LOUIS MUNICIPAL - (314) 622-3231
 CLAYTON MUNICIPAL - (314) 290-8441
 COOL VALLEY (OPERATES IN NORMANDY MUNICIPAL) - (314) 385-3300 EXT. 3029
 COUNTRY CLUB HILLS (OPERATES IN NORMANDY MUNICIPAL) - (314) 385-3300 EXT. 3029
@@ -566,13 +567,7 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
                                                                         return pool[0].displayWithJudge || pool[0].display;}
 
 
-  const FRESH_START_FRIDAY_TEXT = ['- - - - -',
-                                   '"Fresh Start Fridays" is a virtual court program, allowing those with active warrants in St. Louis County Municipal Court to ask for the warrant to be recalled and for a new court date to be set without fear of arrest. This program is limited to ordinance violation cases (typically traffic-related or other nonviolent offenses).',
-                                   'Those with active warrants can log into the virtual docket to speak with a judge at 10am on any Friday, except for those that fall on a county, state or federal holiday. This link will take you to the virtual courtroom:',
-                                   'https://mocourts.webex.com/meet/courtney.whiteside ',
-                                   '',
-                                   'Questions can be directed to the St. Louis County Municipal Court at 314-615-8760.',
-                                   '- - - - -'].join('\n');
+  const FRESH_START_FRIDAY_TEXT = "* The virtual court program 'Fresh Start Fridays' allows those with active warrants in the St. Louis County Municipal Court to ask for the warrant to be recalled and for a new court date to be set without fear of arrest. The judge holds this virtual docket at 10am every Friday, except for those that fall on a county, state or federal holiday. This link will take you to the virtual courtroom:\nhttps://mocourts.webex.com/meet/courtney.whiteside";
 
   function getCaseNumberForSummary(e) {const fromTitle = norm(String(e?.caseTitle || '').split('–')[0]);
                                       if (e?._source === 'municourt') {const muniNo = getMuniPrimaryCaseNumber(e) || fromTitle;
@@ -587,6 +582,16 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
                                                     if (stripped) return stripped;
                                                     return fromKey;}
                                       return '- - -';}
+
+
+  function formatSummaryCaseLine(caseNo,charge,lineStatus,separator = ':') {return `- ${caseNo}${separator} ${charge} - ${lineStatus}`;}
+
+  function isFreshStartFridayHeader(header) {return /FRESH\s+START\s+FRIDAYS/i.test(String(header || ''));}
+
+  function formatSummaryHeader(header) {const raw = String(header || '');
+                                       if (isFreshStartFridayHeader(raw)) {const base = norm(raw.replace(/\s*-\s*FRESH\s+START\s+FRIDAYS\s*$/i,''));
+                                                                          return `${base} - (314) 615-8760 | FRESH START FRIDAYS*`;}
+                                       return isStLouisCountyCircuitHeader(raw) ? formatStLouisCountyCircuitHeader(raw) : raw;}
 
   function getWarrantLabelForSummary(e) {const explicit = norm(String(e?.summaryStatus || '')).toLowerCase();
                                         if (explicit) return explicit.replace(/^nonwarrant\b/,'open (no warrant found)');
@@ -721,7 +726,7 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
                                                                                                                                                                                                                                                               for (const e of sortedEntries) {const caseNo = getCaseNumberForSummary(e);
                                                                                                                                                                                                                                                                                         const charge = norm(e?.chargeDescription || '') || 'No Charges Found';
                                                                                                                                                                                                                                                                                         const lineStatus = getSummaryLineStatus(e);
-                                                                                                                                                                                                                                                                                        sections.push(`${caseNo}: ${charge} - ${lineStatus}`);}
+                                                                                                                                                                                                                                                                                        sections.push(formatSummaryCaseLine(caseNo,charge,lineStatus));}
                                                                                                                                                                                                                                                               sections.push('- - -');}
                                                                                                                                                                                                                          sections.push('');
                                                                                                                               continue;}
@@ -732,11 +737,11 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
                                                                                                                                                                                                             if (priorityDiff) return priorityDiff;
                                                                                                                                                                                                             return a.idx - b.idx;})
                                                                                                                                                                                             .map(({entry}) => entry);
-                                                                                                                                                                                                         sections.push(isStLouisCountyCircuitHeader(header) ? formatStLouisCountyCircuitHeader(header) : header);
+                                                                                                                                                                                                         sections.push(formatSummaryHeader(header));
                                                                                                                                                                                                          for (const e of sortedEntries) {const caseNo = getCaseNumberForSummary(e);
                                                                                                                                                                                                                                    const charge = norm(e?.chargeDescription || '') || 'No Charges Found';
                                                                                                                                                                                                                                    const lineStatus = getSummaryLineStatus(e);
-                                                                                                                                                                                                                                   sections.push(`${caseNo}: ${charge} - ${lineStatus}`);}}
+                                                                                                                                                                                                                                   sections.push(formatSummaryCaseLine(caseNo,charge,lineStatus));}}
                                                                                                                                                                                                sections.push('');
                                                                                                                               continue;}
 
@@ -747,13 +752,11 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
                                                                                                                                                                                                                                              return a.idx - b.idx;})
                                                                                                                                                                                                                              .map(({entry}) => entry);
                                                                                                                                                                                                              const judge = formatJudgeDisplayName(sortedEntries[0]?.judge || '');
-                                                                                                                                                                                                             sections.push('- - -');
-                                                                                                                                                                                                             sections.push(`Judge ${judge}`);
+                                                                                                                                                                                                             sections.push(`| Judge ${judge} |`);
                                                                                                                                                                                                              for (const e of sortedEntries) {const caseNo = getCaseNumberForSummary(e);
                                                                                                                                                                                                                                        const charge = norm(e?.chargeDescription || '') || 'No Charges Found';
                                                                                                                                                                                                                                        const lineStatus = getSummaryLineStatus(e);
-                                                                                                                                                                                                                                       sections.push(`${caseNo}: ${charge} - ${lineStatus}`);}}
-                                                                                                                                                                              sections.push('- - -');
+                                                                                                                                                                                                                                       sections.push(formatSummaryCaseLine(caseNo,charge,lineStatus));}}
                                                                                                                                                                               sections.push('');
                                                                                                                               continue;}
 
@@ -762,20 +765,20 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
                                                                                                                                                                                                    if (priorityDiff) return priorityDiff;
                                                                                                                                                                                                    return a.idx - b.idx;})
                                                                                                                                                                                    .map(({entry}) => entry);
-                                                                                                                                                                                sections.push(isStLouisCountyCircuitHeader(header) ? formatStLouisCountyCircuitHeader(header) : header);
+                                                                                                                                                                                sections.push(formatSummaryHeader(header));
                                                                                                                                                                                 const municourtEntries = sortedEntries.filter((e) => e?._source === 'municourt');
                                                                                                                                                                                 const nonMunicourtEntries = sortedEntries.filter((e) => e?._source !== 'municourt');
                                                                                                                                                                                 if (municourtEntries.length) {
                                                                                                                                                                                                              for (const e of municourtEntries) {const caseNo = getCaseNumberForSummary(e);
                                                                                                                                                                                                                                             const charge = norm(e?.chargeDescription || '') || 'No Charges Found';
                                                                                                                                                                                                                                             const lineStatus = getMunicourtSummaryLineStatus(e);
-                                                                                                                                                                                                                                            sections.push(`${caseNo} - ${charge} - ${lineStatus}`);}
+                                                                                                                                                                                                                                            sections.push(formatSummaryCaseLine(caseNo,charge,lineStatus,' -'));}
                                                                                                                                                                                                              if (nonMunicourtEntries.length) sections.push('- - -');}
                                                                                                                                                                                 for (const e of nonMunicourtEntries) {const caseNo = getCaseNumberForSummary(e);
                                                                                                                                                                                                              const charge = norm(e?.chargeDescription || '') || 'No Charges Found';
                                                                                                                                                                                                              const lineStatus = getSummaryLineStatus(e);
-                                                                                                                                                                                                             sections.push(`${caseNo}: ${charge} - ${lineStatus}`);}
-                                                                                                                                                                                if (header.includes('FRESH START FRIDAYS')) sections.push(FRESH_START_FRIDAY_TEXT);
+                                                                                                                                                                                                             sections.push(formatSummaryCaseLine(caseNo,charge,lineStatus));}
+                                                                                                                                                                                if (isFreshStartFridayHeader(header)) sections.push(FRESH_START_FRIDAY_TEXT);
                                                                                                                                                                                 sections.push('');}}
                                                                   return {sections};}
 
