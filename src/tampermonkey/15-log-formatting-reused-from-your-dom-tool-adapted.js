@@ -544,6 +544,8 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
 
   function getMunicipalityHeaderForSummary(jurisdiction,judgeName = '') {const key = municipalityKey(jurisdiction);
                                                                         if (!key) return '';
+                                                                        if (key === 'CITY OF ST LOUIS') {const judgeKey = normalizeJudgeName(judgeName);
+                                                                                                       return judgeKey && shouldIncludeJudgeDetails(jurisdiction) ? `${key} - Judge ${formatJudgeDisplayName(judgeKey)}` : key;}
                                                                         const looseKey = municipalityLooseKey(jurisdiction);
                                                                         const matchKey = municipalityMatchKey(jurisdiction);
                                                                         const candidateKeys = [key];
@@ -703,7 +705,7 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
                                                         if (key.includes('KIRKWOOD')) return true;
                                                         if (key.includes('MANCHESTER')) return true;
                                                         if (key.includes('WEBSTER GROVES')) return true;
-                                                        if (key.includes('CITY OF ST LOUIS')) return true;
+                                                        if (key.includes('CITY OF ST LOUIS MUNICIPAL')) return true;
                                                         if (key.includes('ST LOUIS COUNTY')) return true;
                                                         return false;}
 
@@ -786,7 +788,8 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
                                   const expected = norm(document.getElementById('moNsYob')?.value || '');
                                   const filteredLog = log.filter((e) => {const m = yobMatchesExpected(expected,e?.yobRaw || e?.yob || '');
                                                                          return m.ok;});
-                                  const {eligibleJurisdictions,ineligibleJurisdictions} = buildOrderedJurisdictionGroups(filteredLog);
+                                  const summarySectionsLog = filteredLog.filter((e) => !hasUpcomingCourtDate(e));
+                                  const {eligibleJurisdictions,ineligibleJurisdictions} = buildOrderedJurisdictionGroups(summarySectionsLog);
                                   const {sections: eligibleSections} = buildJurisdictionSummarySections(eligibleJurisdictions);
                                   const {sections: ineligibleSections} = buildJurisdictionSummarySections(ineligibleJurisdictions);
                                   const sections = [];
