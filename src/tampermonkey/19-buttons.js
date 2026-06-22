@@ -12,7 +12,6 @@
                                              if (id === 'moHomeTextBuilder') {setAppView('text'); return;}
                                              if (id === 'moHomeUpcomingCourtDates') {setAppView('upcoming'); return;}
                                              if (id === 'moHomeTrackThisCase') {setAppView('track'); return;}
-                                             if (id === 'moHomeGoogleVoiceAssist') {setAppView('voice'); return;}
                                              if (id === 'moJsonBackBtn') {goBackView(); return;}
                                              if (id === 'moJsonNameSearch') {const params = {first: norm(document.getElementById('moNsFirst')?.value || ''),
                                                                                            middle: norm(document.getElementById('moNsMiddle')?.value || ''),
@@ -124,12 +123,6 @@
                                              if (id === 'moUpcomingClear') {upcomingStorageSet(UPCOMING_INPUT_KEY,''); upcomingStorageSet(UPCOMING_OUTPUT_KEY,''); render(); upcomingSetStatus('Upcoming Court Dates entries cleared.'); return;}
                                              if (id === 'moUpcomingCopy') {GM_setClipboard(document.getElementById('moUpcomingOutput')?.value || '','text'); upcomingSetStatus('Results copied to clipboard.'); return;}
                                              if (id === 'moUpcomingClearResults') {upcomingStorageSet(UPCOMING_OUTPUT_KEY,''); const output = document.getElementById('moUpcomingOutput'); if (output) output.value = ''; upcomingSetStatus('Upcoming Court Dates results cleared.'); return;}
-                                             if (id === 'moGvLoad') {try {gvLoadPairs(); uiStatus('Google Voice pairs loaded.');} catch (err) {gvRenderStatus(`Load error: ${String(err?.message || err)}`);} return;}
-                                             if (id === 'moGvClear') {['moGvPhones','moGvNames','moGvLastNames','moGvMessage'].forEach((x) => {const el = document.getElementById(x); if (el) el.value = '';}); gvQueue = []; gvFocusedPair = null; gvSaveFromUi(); gvRenderStatus(); uiStatus('Google Voice entries cleared.'); return;}
-                                             if (id === 'moGvNumber') {if (!gvFocusedPair) {gvRenderStatus('Load at least one pair first.'); return;} GM_setClipboard(gvFocusedPair.phoneDisplay || gvFocusedPair.phoneRaw,'text'); uiStatus('Google Voice number copied.'); return;}
-                                             if (id === 'moGvText') {if (!gvFocusedPair) {gvRenderStatus('Load at least one pair first.'); return;} GM_setClipboard(gvCompose(gvFocusedPair.firstName,document.getElementById('moGvMessage')?.value || ''),'text'); uiStatus('Google Voice text copied.'); return;}
-                                             if (id === 'moGvName') {if (!gvFocusedPair) {gvRenderStatus('Load at least one pair first.'); return;} const fullName = [gvFocusedPair.firstName,gvFocusedPair.lastName].filter(Boolean).join(' '); if (!fullName) {gvRenderStatus('Focused pair has no name.'); return;} GM_setClipboard(fullName,'text'); uiStatus('Google Voice name copied.'); return;}
-                                             if (id === 'moGvNext') {if (!gvQueue.length) {gvFocusedPair = null; gvRenderStatus(); return;} gvQueue.shift(); gvRemoveFirstLine('moGvPhones'); gvRemoveFirstLine('moGvNames'); gvRemoveFirstLine('moGvLastNames'); gvFocusedPair = gvQueue[0] || null; gvSaveFromUi(); gvRenderStatus(); uiStatus('Google Voice advanced to next pair.'); return;}
                                              if (id === 'moJsonOpenLastHtml') {openLastHtmlInNewTab();
                                                                               return;}});
 
@@ -160,7 +153,6 @@
                                      if (tbKey && appView === 'text') {textBuilderState.data[tbKey] = e.target.value; return;}
                                      if (id === 'moUpcomingInput') {upcomingStorageSet(UPCOMING_INPUT_KEY,e.target.value || ''); return;}
                                      if (id === 'moUpcomingOutput') {upcomingStorageSet(UPCOMING_OUTPUT_KEY,e.target.value || ''); return;}
-                                     if (['moGvPhones','moGvNames','moGvLastNames','moGvMessage'].includes(id)) {gvSaveFromUi(); return;}
                                      if (['moNsFirst','moNsMiddle','moNsLast','moNsYob'].includes(id)) {const cur = loadDraft();
                                                                                                        const now = readUiParams();
                                                                                                        saveDraft({...cur,...now});
