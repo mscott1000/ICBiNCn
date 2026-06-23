@@ -89,7 +89,7 @@
                                                                             return;}
                                              if (id === 'moJsonCloseX') {minimizeDock();
                                                                         return;}
-                                             if (id === 'moJsonHelpBtn') {if (appView === 'name') {restoreNameHelpPanel(); openHelpPanel();} else openBlankHelpPanel();
+                                             if (id === 'moJsonHelpBtn') {toggleHelpPanel(() => {if (appView === 'name') {restoreNameHelpPanel(); openHelpPanel();} else openBlankHelpPanel();});
                                                                           return;}
                                              if (id === 'moJsonTextBuilderBtn') {setAppView('text');
                                                                                  return;}
