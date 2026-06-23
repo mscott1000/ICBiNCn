@@ -25,6 +25,7 @@ GM_addStyle(`:root{ --mo-bg: #f5f7fb;          /* page chrome */
                         box-sizing:border-box;
                         display:flex;
                         flex-direction:column;}
+            #moJsonDock.moTextBuilderDock{height:min(720px,calc(100vh - 24px));}
             #moJsonDock.moHidden{display:none;}
 
             #moJsonLauncher{position:fixed;
@@ -377,7 +378,7 @@ GM_addStyle(`:root{ --mo-bg: #f5f7fb;          /* page chrome */
                                              align-self:stretch;}
             .moTextBuilderOptions{display:flex;
                                   flex-direction:column;
-                                  align-items:flex-start;
+                                  align-items:stretch;
                                   width:100%;
                                   max-width:100%;
                                   margin-left:0;
@@ -391,9 +392,9 @@ GM_addStyle(`:root{ --mo-bg: #f5f7fb;          /* page chrome */
                                  border-radius:10px;
                                  font-weight:900;
                                  cursor:pointer;
-                                 text-align:left;
+                                 text-align:center;
                                  min-width:0;
-                                 width:min(100%, 28ch);
+                                 width:100%;
                                  max-width:100%;
                                  white-space:normal;
                                  overflow-wrap:anywhere;}
@@ -440,6 +441,9 @@ GM_addStyle(`:root{ --mo-bg: #f5f7fb;          /* page chrome */
                                   gap:8px;
                                   flex-wrap:wrap;
                                   justify-content:space-between;}
+            .moTextBuilderTall .moTextBuilderOptions{gap:7px;}
+            .moTextBuilderTall .moTextBuilderOption{padding:9px 12px;}
+            .moTextBuilderTall .moTextBuilderActions{margin-top:auto;}
             .moTextBuilderNote{font-size:12px;
                                color:#475569;
                                font-weight:800;}
@@ -580,9 +584,10 @@ function textBuilderBack() {const prev = textBuilderState.history.pop();
                             else {textBuilderState.screen = prev.screen;
                                   textBuilderState.data = prev.data;}
                             renderTextBuilder();}
-function textBuilderOptions(title,options,action,multi,centered) {const heading = title ? `<h3>${escapeHtml(title)}</h3>` : '';
+function textBuilderOptions(title,options,action,multi,centered,tall) {const heading = title ? `<h3>${escapeHtml(title)}</h3>` : '';
                                                           const optionsClass = `moTextBuilderOptions${centered ? ' moCentered' : ''}`;
-                                                          return `<div class="moBlock moTextBuilderOptionBlock">${heading}<div class="${optionsClass}">${options.map((opt) => `<button class="moTextBuilderOption ${multi && (textBuilderState.data.courts || []).includes(opt) ? 'moSelected' : ''}" data-tb-action="${escapeHtml(action)}" data-tb-value="${escapeHtml(opt)}">${escapeHtml(opt)}</button>`).join('')}</div></div>`;}
+                                                          const blockClass = `moBlock moTextBuilderOptionBlock${tall ? ' moTextBuilderTall' : ''}`;
+                                                          return `<div class="${blockClass}">${heading}<div class="${optionsClass}">${options.map((opt) => `<button class="moTextBuilderOption ${multi && (textBuilderState.data.courts || []).includes(opt) ? 'moSelected' : ''}" data-tb-action="${escapeHtml(action)}" data-tb-value="${escapeHtml(opt)}">${escapeHtml(opt)}</button>`).join('')}</div></div>`;}
 function textBuilderActions(confirmAction) {return `<div class="moTextBuilderActions"><button class="moBtn" data-tb-action="back">Back</button>${confirmAction ? `<button class="moBtn" data-tb-action="${escapeHtml(confirmAction)}">Confirm</button>` : ''}</div>`;}
 function textBuilderTextarea(title,placeholder,confirmAction,valueKey) {return `<div class="moBlock"><h3>${escapeHtml(title)}</h3><textarea class="moTextBuilderTextArea" data-tb-input="${escapeHtml(valueKey)}" placeholder="${escapeHtml(placeholder)}">${escapeHtml(textBuilderState.data[valueKey] || '')}</textarea></div>${textBuilderActions(confirmAction)}`;}
 function textBuilderOptionalBlock(text,blockBuilder) {const value = String(text || '').trim();
@@ -624,12 +629,12 @@ function renderTextBuilder() {let html = '';
                               const s = textBuilderState.screen;
                               if (s === 'root') html = textBuilderOptions('', ['Initial Text','Post-Research Response','Follow-Up'],'chooseRoot',false,true);
                               else if (s === 'staff') html = textBuilderOptions('Tap In Staff',TEXT_BUILDER_STAFF,'chooseStaff',false) + textBuilderActions();
-                              else if (s === 'researchType') html = textBuilderOptions('Post-Research Response',['CanDo - everything','CanDo + Can’tDo','Can’tDo - private attorney','Can’tDo - out of network','Can’tDo - repeat attempt','Nothing Found','Walk-In Client'],'chooseResearchType',false) + textBuilderActions();
+                              else if (s === 'researchType') html = textBuilderOptions('Post-Research Response',['CanDo - everything','CanDo + Can’tDo','Can’tDo - private attorney','Can’tDo - out of network','Can’tDo - repeat attempt','Nothing Found','Walk-In Client'],'chooseResearchType',false,false,true) + textBuilderActions();
                               else if (s === 'eligibleDropin') html = textBuilderTextarea('Eligible Cases Drop-In','Enter summary of eligible cases','confirmEligible','eligibleCases');
                               else if (s === 'ineligibleDropin') html = textBuilderTextarea('Ineligible Cases Drop-In',textBuilderState.data.ineligiblePlaceholder || 'Enter summary of ineligible cases','confirmIneligible','ineligibleCases');
                               else if (s === 'privateAttorneyDropin') html = textBuilderTextarea('Ineligible Cases Drop-In','Enter summary of cases in eligible courts, with private attorney','confirmPrivateAttorney','privateAttorneyCases');
                               else if (s === 'remainingIneligibleDropin') html = textBuilderTextarea('Ineligible Cases Drop-In','Enter summary of remaining ineligible cases (Optional)','confirmRemainingIneligible','remainingIneligibleCases');
-                              else if (s === 'courts') html = textBuilderOptions('Court Options',TEXT_BUILDER_COURTS,'toggleCourt',true) + `<div class="moTextBuilderNote">Select one or more courts.</div>` + textBuilderActions('confirmCourts');
+                              else if (s === 'courts') html = textBuilderOptions('Court Options',TEXT_BUILDER_COURTS,'toggleCourt',true,false,true) + `<div class="moTextBuilderNote">Select one or more courts.</div>` + textBuilderActions('confirmCourts');
                               else if (s === 'address') html = textBuilderOptions('Address',['Have Address','Need Address'],'chooseAddress',false) + textBuilderActions();
                               else if (s === 'addressInput') html = textBuilderTextarea('Address','Enter address','confirmAddress','address');
                               else if (s === 'followUp') html = textBuilderOptions('Follow-Up',['Ready to Submit','New Court Date'],'chooseFollowUp',false) + textBuilderActions();
@@ -767,6 +772,7 @@ function render() {const log = loadLog();
                    $content.innerHTML = '';
                    $content.classList.toggle('moContentStretch',['home','text','track'].includes(appView));
                    $content.classList.toggle('moTextBuilderContent',appView === 'text');
+                   dock.classList.toggle('moTextBuilderDock',appView === 'text');
                    const copyBtn = dock.querySelector('#moJsonCopy');
                    if (copyBtn) copyBtn.textContent = `Copy (${log.length})`;
                    const nav = dock.querySelector('#moJsonNavButtons');
