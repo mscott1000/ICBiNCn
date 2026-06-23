@@ -3538,7 +3538,7 @@ GM_addStyle(`:root{ --mo-bg: #f5f7fb;          /* page chrome */
                           height:100%;
                           min-height:52px;
                           padding:14px 16px;
-                          font-size:14px;
+                          font-size:17px;
                           font-weight:950;
                           text-align:center;}
             .moFeaturePlaceholder{min-height:180px;}
@@ -3680,6 +3680,31 @@ GM_addStyle(`:root{ --mo-bg: #f5f7fb;          /* page chrome */
                                                                         flex-direction:column;
                                                                         flex:1 1 auto;
                                                                         min-height:0;}
+            #moJsonContent.moTextBuilderContent .moTextBuilderRootBlock .moTextBuilderOptions{flex:1 1 auto;
+                                                                                              min-height:0;
+                                                                                              margin-top:0;
+                                                                                              margin-bottom:0;}
+            #moJsonContent.moTextBuilderContent .moTextBuilderRootBlock .moTextBuilderOption{flex:1 1 0;
+                                                                                             display:flex;
+                                                                                             align-items:center;
+                                                                                             justify-content:center;}
+            .moTextBuilderStaffBlock .moTextBuilderOption,
+            .moTextBuilderResearchBlock .moTextBuilderOption,
+            .moTextBuilderCourtsBlock .moTextBuilderOption{text-align:left;}
+            #moJsonContent.moTextBuilderContent .moTextBuilderCourtsBlock{overflow:hidden;}
+            #moJsonContent.moTextBuilderContent .moTextBuilderCourtsBlock .moTextBuilderOptions{overflow:auto;
+                                                                                                flex:1 1 auto;
+                                                                                                min-height:0;
+                                                                                                margin-top:0;
+                                                                                                margin-bottom:0;}
+            #moJsonContent.moTextBuilderContent .moTextBuilderTextareaBlock{display:flex;
+                                                                            flex-direction:column;
+                                                                            flex:1 1 auto;
+                                                                            min-height:0;
+                                                                            margin-bottom:0;}
+            #moJsonContent.moTextBuilderContent .moTextBuilderTextareaBlock .moTextBuilderTextArea{flex:1 1 auto;
+                                                                                                   min-height:0;
+                                                                                                   resize:none;}
             .moTextBuilderOptions.moCentered{width:100%;
                                              align-self:stretch;}
             .moTextBuilderOptions{display:flex;
@@ -3873,7 +3898,7 @@ textBuilderPanel.innerHTML = `
 (document.body || document.documentElement).appendChild(textBuilderPanel);
 const textBuilderBody = textBuilderPanel.querySelector('#moJsonTextBuilderBody');
 const TEXT_BUILDER_STAFF = ['Anna','Dylan','Kyle','Mason','Miranda'];
-const TEXT_BUILDER_COURTS = ['St. Louis County Circuit','St. Louis City Circuit','St. Louis City Municipal','Florissant','University City','Kirkwood','Manchester','Webster Groves'];
+const TEXT_BUILDER_COURTS = ['Florissant','Kirkwood','Manchester','St. Louis City Circuit','St. Louis City Municipal','St. Louis County Circuit','University City','Webster Groves'];
 const TEXT_BUILDER_LIMIT_NOTICE = '**GOOGLE VOICE LIMIT - SEPARATE INTO MULTIPLE TEXTS HERE OR EARLIER**';
 let textBuilderState = {screen:'root',history:[],data:{courts:[]}};
 function textBuilderInitialState() {return {screen:'root',history:[],data:{courts:[]}};}
@@ -3896,12 +3921,19 @@ function textBuilderBack() {const prev = textBuilderState.history.pop();
                             else {textBuilderState.screen = prev.screen;
                                   textBuilderState.data = prev.data;}
                             renderTextBuilder();}
-function textBuilderOptions(title,options,action,multi,centered,tall) {const heading = title ? `<h3>${escapeHtml(title)}</h3>` : '';
-                                                          const optionsClass = `moTextBuilderOptions${centered ? ' moCentered' : ''}`;
-                                                          const blockClass = `moBlock moTextBuilderOptionBlock${tall ? ' moTextBuilderTall' : ''}`;
-                                                          return `<div class="${blockClass}">${heading}<div class="${optionsClass}">${options.map((opt) => `<button class="moTextBuilderOption ${multi && (textBuilderState.data.courts || []).includes(opt) ? 'moSelected' : ''}" data-tb-action="${escapeHtml(action)}" data-tb-value="${escapeHtml(opt)}">${escapeHtml(opt)}</button>`).join('')}</div></div>`;}
+function textBuilderScreenTitle() {const map = {staff:'Tap In Staff',researchType:'Post-Research Response',eligibleDropin:'Eligible Cases Drop-In',ineligibleDropin:'Ineligible Cases Drop-In',privateAttorneyDropin:'Ineligible Cases Drop-In',remainingIneligibleDropin:'Ineligible Cases Drop-In',courts:'Court Options (select all Courts in which a case was found)',address:'Address',addressInput:'Address',followUp:'Follow-Up',followUpReadyDay:'Ready to Submit',newCourtDateInput:'New Court Date',message:'Constructed Message'};
+                                  const suffix = map[textBuilderState.screen];
+                                  return suffix ? `Text Builder - ${suffix}` : 'Text Builder';}
+function textBuilderOptionBlockClass(title,centered) {if (centered) return ' moTextBuilderRootBlock';
+                                                     if (title === 'Tap In Staff') return ' moTextBuilderStaffBlock';
+                                                     if (title === 'Post-Research Response') return ' moTextBuilderResearchBlock';
+                                                     if (title && title.startsWith('Court Options')) return ' moTextBuilderCourtsBlock';
+                                                     return '';}
+function textBuilderOptions(title,options,action,multi,centered,tall) {const optionsClass = `moTextBuilderOptions${centered ? ' moCentered' : ''}`;
+                                                          const blockClass = `moBlock moTextBuilderOptionBlock${tall ? ' moTextBuilderTall' : ''}${textBuilderOptionBlockClass(title,centered)}`;
+                                                          return `<div class="${blockClass}"><div class="${optionsClass}">${options.map((opt) => `<button class="moTextBuilderOption ${multi && (textBuilderState.data.courts || []).includes(opt) ? 'moSelected' : ''}" data-tb-action="${escapeHtml(action)}" data-tb-value="${escapeHtml(opt)}">${escapeHtml(opt)}</button>`).join('')}</div></div>`;}
 function textBuilderActions(confirmAction) {return `<div class="moTextBuilderActions"><button class="moBtn" data-tb-action="back">Back</button>${confirmAction ? `<button class="moBtn" data-tb-action="${escapeHtml(confirmAction)}">Confirm</button>` : ''}</div>`;}
-function textBuilderTextarea(title,placeholder,confirmAction,valueKey) {return `<div class="moBlock"><h3>${escapeHtml(title)}</h3><textarea class="moTextBuilderTextArea" data-tb-input="${escapeHtml(valueKey)}" placeholder="${escapeHtml(placeholder)}">${escapeHtml(textBuilderState.data[valueKey] || '')}</textarea></div>${textBuilderActions(confirmAction)}`;}
+function textBuilderTextarea(title,placeholder,confirmAction,valueKey) {return `<div class="moBlock moTextBuilderTextareaBlock"><textarea class="moTextBuilderTextArea" data-tb-input="${escapeHtml(valueKey)}" placeholder="${escapeHtml(placeholder)}">${escapeHtml(textBuilderState.data[valueKey] || '')}</textarea></div>${textBuilderActions(confirmAction)}`;}
 function textBuilderOptionalBlock(text,blockBuilder) {const value = String(text || '').trim();
                                                     return value ? blockBuilder(value) : '';}
 function textBuilderAddressLine(canDoPhrase) {if (textBuilderState.data.addressMode === 'Have Address') return `To proceed${canDoPhrase}, can you confirm that ${textBuilderState.data.address || ''} is the best place for the Court to send physical mail?`;
@@ -3910,7 +3942,7 @@ function textBuilderEligibleIntro() {const labels = (textBuilderState.data.court
                                      if (labels.length <= 1) return `This is ${textBuilderState.data.staff} with the Tap In Center. Thank you for submitting an intake form! We were able to find a warrant in the ${labels[0] || ''} Court. This court is partnered with us, so we can submit a request to recall:`;
                                      return `This is ${textBuilderState.data.staff} with the Tap In Center. Thank you for submitting an intake form! We were able to find warrants in the ${textBuilderList(labels)} Courts. These Courts are partnered with us, so we can submit a request to recall:`;}
 function textBuilderDropInIneligibleMessage() {const d = textBuilderState.data;
-                                           return `This is ${d.staff} from Tap In, thank you for speaking with me today. Here is a summary of the cases we found and the phone number of the clerk for each court - they are the best source of information in their municipality, especially when their Court does not work with Tap In.\n\n- - -\n\n${d.ineligibleCases || ''}\n\n- - -\n\nThese Courts do not work with the Tap In program, and we recommend contacting them for information.`;}
+                                           return `This is ${d.staff} from Tap In, thank you for speaking with me today. Here is a summary of the cases we found and the phone number of the clerk for each court - they are the best source of information in their municipality, especially when their Court does not work with Tap In.\n\n${d.ineligibleCases || ''}\n\nThese Courts do not work with the Tap In program, and we recommend contacting them for information.`;}
 function textBuilderDropInEligibleMessage(includeStaffIntro) {const d = textBuilderState.data;
                                          const intro = includeStaffIntro ? `This is ${d.staff}, thank you for speaking with me today. Here is what we discussed - we are requesting a recall for:` : 'Here is what we discussed today - we are requesting a recall for:';
                                          return `${intro}\n\n${d.eligibleCases || ''}\n\nWe will prepare our report and submit tomorrow morning, then the Judge makes their decision. This typically takes about one week, but can be longer depending on caseload.\n\nThe Court will send mail to the address provided, and we will update you from this phone number when we hear from the clerk. Feel free to text back with questions!`;}
@@ -3928,7 +3960,7 @@ function textBuilderBuildMessage() {const d = textBuilderState.data;
                                                                        if (hasEligible && !hasIneligible) return textBuilderDropInEligibleMessage(true);
                                                                        if (hasIneligible) return textBuilderDropInIneligibleMessage();
                                                                        return textBuilderDropInEligibleMessage(true);}
-                                    if (d.workflow === 'initial') return `Hi this is ${d.staff}, thank you for contacting the Tap In Center. We assist in recalling warrants issued due to missing a court date in these courts only:\n\nSt. Louis County Circuit Court (felony and misdemeanor cases only)\nSt. Louis City Circuit Court (felony and misdemeanor cases)\nSt. Louis City Municipal Court \nFlorissant\nKirkwood\nManchester\nUniversity City\nWebster Groves\n\nPlease complete our intake form to apply for assistance:\n https://www.slcl.org/library-services/tap-in-center/intake-form\n\nThe Tap In Center operates every Tuesday from 6-8 pm at the Florissant Valley Library Branch (195 S New Florissant Rd). Anyone is welcome to walk in during these hours, text 314-669-6185, or email TapInSTL@gmail.com for assistance.`;
+                                    if (d.workflow === 'initial') return `Hi this is ${d.staff}, thank you for contacting the Tap In Center. We assist in recalling warrants issued due to missing a court date in these courts only:\n\nSt. Louis County Circuit Court (felony and misdemeanor cases only)\nSt. Louis City Circuit Court (felony and misdemeanor cases)\nSt. Louis City Municipal Court \nFlorissant\nKirkwood\nManchester\nUniversity City\nWebster Groves\n\nPlease complete our intake form to apply for assistance:\nhttps://www.slcl.org/library-services/tap-in-center/intake-form\n\nThe Tap In Center operates every Tuesday from 6-8 pm at the Florissant Valley Library Branch (195 S New Florissant Rd). Anyone is welcome to walk in during these hours, text 314-669-6185, or email TapInSTL@gmail.com for assistance.`;
                                     if (d.researchType === 'Nothing Found') return `Hello, this is ${d.staff} with the Tap In Center. We were unable to find any court records under the information provided. If you feel this is a mistake, please double check this information for accuracy/typos:`;
                                     if (d.researchType === 'Can’tDo - out of network') return `This is ${d.staff} from Tap In. We can only request a recall for warrants from missing a court date in Courts where the Judge has agreed to work with us. These are the Courts:\n\nSt. Louis County Circuit (felony/misdemeanor cases only)\nSt. Louis City Circuit/Municipal (felony/misdemeanor/ordinance)\nFlorissant\nKirkwood\nManchester\nUniversity City\nWebster Groves\n\nWe were unable to find any warrants in these Courts under your information. If you feel we have missed something, please share the case number for your cases and we will take a look.${textBuilderOptionalBlock(d.ineligibleCases,(cases) => `\n\nHere is a summary of the cases we found that we CANNOT assist with. We have listed the phone number for each Court clerk - we recommend calling before appearing anywhere in person, and they are the best source of information for cases in their Court:\n\n${cases}`)}`;
                                     if (d.researchType === 'Can’tDo - repeat attempt') return `This is ${d.staff} from Tap In.${textBuilderOptionalBlock(d.ineligibleCases,(cases) => ` After researching your public record, here is what we found:\n\n${cases}`)}\n\nWe are allowed by the Judge no more than one recall on each case, meaning we cannot submit another request. We recommend calling the Court clerk for information.`;
@@ -3937,7 +3969,9 @@ function textBuilderBuildMessage() {const d = textBuilderState.data;
                                     if (d.researchType === 'CanDo + Can’tDo') msg += `${textBuilderOptionalBlock(d.ineligibleCases,(cases) => `Here is a summary of the cases we found under your information that we CANNOT assist with. We have listed the phone number for each Court clerk - we recommend calling before appearing anywhere in person, and they are the best source of information for cases in their Court:\n\n${cases}\n\n`)}${textBuilderAddressLine(' with the cases that we CAN do')}`;
                                     else msg += textBuilderAddressLine('');
                                     return msg;}
-function renderTextBuilder() {let html = '';
+function renderTextBuilder() {const dockTitle = dock.querySelector('#moJsonTitle');
+                              if (dockTitle && appView === 'text') dockTitle.textContent = textBuilderScreenTitle();
+                              let html = '';
                               const s = textBuilderState.screen;
                               if (s === 'root') html = textBuilderOptions('', ['Initial Text','Post-Research Response','Follow-Up'],'chooseRoot',false,true);
                               else if (s === 'staff') html = textBuilderOptions('Tap In Staff',TEXT_BUILDER_STAFF,'chooseStaff',false) + textBuilderActions();
@@ -3946,7 +3980,7 @@ function renderTextBuilder() {let html = '';
                               else if (s === 'ineligibleDropin') html = textBuilderTextarea('Ineligible Cases Drop-In',textBuilderState.data.ineligiblePlaceholder || 'Enter summary of ineligible cases','confirmIneligible','ineligibleCases');
                               else if (s === 'privateAttorneyDropin') html = textBuilderTextarea('Ineligible Cases Drop-In','Enter summary of cases in eligible courts, with private attorney','confirmPrivateAttorney','privateAttorneyCases');
                               else if (s === 'remainingIneligibleDropin') html = textBuilderTextarea('Ineligible Cases Drop-In','Enter summary of remaining ineligible cases (Optional)','confirmRemainingIneligible','remainingIneligibleCases');
-                              else if (s === 'courts') html = textBuilderOptions('Court Options',TEXT_BUILDER_COURTS,'toggleCourt',true,false,true) + `<div class="moTextBuilderNote">Select one or more courts.</div>` + textBuilderActions('confirmCourts');
+                              else if (s === 'courts') html = textBuilderOptions('Court Options (select all Courts in which a case was found)',TEXT_BUILDER_COURTS,'toggleCourt',true,false,true) + textBuilderActions('confirmCourts');
                               else if (s === 'address') html = textBuilderOptions('Address',['Have Address','Need Address'],'chooseAddress',false) + textBuilderActions();
                               else if (s === 'addressInput') html = textBuilderTextarea('Address','Enter address','confirmAddress','address');
                               else if (s === 'followUp') html = textBuilderOptions('Follow-Up',['Ready to Submit','New Court Date'],'chooseFollowUp',false) + textBuilderActions();
@@ -4087,7 +4121,7 @@ const SHOW_TRACK_THIS_CASE_UI = false; // Temporarily disconnect visible Track T
 
 function render() {const log = loadLog();
                    const title = dock.querySelector('#moJsonTitle');
-                   if (title) title.textContent = APP_VIEWS[appView] || APP_VIEWS.home;
+                   if (title) title.textContent = appView === 'text' ? textBuilderScreenTitle() : (APP_VIEWS[appView] || APP_VIEWS.home);
                    $content.innerHTML = '';
                    $content.classList.toggle('moContentStretch',['home','text','track'].includes(appView));
                    $content.classList.toggle('moTextBuilderContent',appView === 'text');
