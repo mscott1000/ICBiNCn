@@ -9,10 +9,10 @@
 
   dock.addEventListener('click',async (e) => {const id = e?.target?.id;
                                              if (id === 'moHomeNameSearch') {setAppView('name'); return;}
-                                             if (id === 'moHomeTextBuilder') {setAppView('text'); return;}
+                                             if (id === 'moHomeTextBuilder') {resetTextBuilder(); setAppView('text'); return;}
                                              if (id === 'moHomeUpcomingCourtDates') {setAppView('upcoming'); return;}
                                              if (id === 'moHomeTrackThisCase') {setAppView('track'); return;}
-                                             if (id === 'moJsonBackBtn') {goBackView(); return;}
+                                             if (id === 'moJsonBackBtn') {goHomeView(); return;}
                                              if (id === 'moJsonNameSearch') {const params = {first: norm(document.getElementById('moNsFirst')?.value || ''),
                                                                                            middle: norm(document.getElementById('moNsMiddle')?.value || ''),
                                                                                            last: norm(document.getElementById('moNsLast')?.value || ''),

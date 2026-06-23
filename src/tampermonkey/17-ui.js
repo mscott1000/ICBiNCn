@@ -25,7 +25,7 @@ GM_addStyle(`:root{ --mo-bg: #f5f7fb;          /* page chrome */
                         box-sizing:border-box;
                         display:flex;
                         flex-direction:column;}
-            #moJsonDock.moTextBuilderDock{height:min(720px,calc(100vh - 24px));}
+            #moJsonDock.moTextBuilderDock{height:min(576px,calc(100vh - 24px));}
             #moJsonDock.moHidden{display:none;}
 
             #moJsonLauncher{position:fixed;
@@ -369,11 +369,17 @@ GM_addStyle(`:root{ --mo-bg: #f5f7fb;          /* page chrome */
                                    flex-direction:column;
                                    gap:10px;}
             #moJsonTextBuilderBody .moBlock > h3,
-            #moJsonContent.moTextBuilderContent .moBlock > h3{text-align:center;}
+            #moJsonContent.moTextBuilderContent .moBlock > h3{text-align:center;
+                                                             font-size:14px;
+                                                             margin-bottom:10px;}
             #moJsonTextBuilderBody .moTextBuilderPane > h3,
-            #moJsonContent.moTextBuilderContent .moTextBuilderPane > h3{text-align:center;}
-            #moJsonContent.moTextBuilderContent .moTextBuilderOptionBlock{flex:0 0 auto;
-                                                                        min-height:max-content;}
+            #moJsonContent.moTextBuilderContent .moTextBuilderPane > h3{text-align:center;
+                                                                        font-size:14px;
+                                                                        margin-bottom:2px;}
+            #moJsonContent.moTextBuilderContent .moTextBuilderOptionBlock{display:flex;
+                                                                        flex-direction:column;
+                                                                        flex:1 1 auto;
+                                                                        min-height:0;}
             .moTextBuilderOptions.moCentered{width:100%;
                                              align-self:stretch;}
             .moTextBuilderOptions{display:flex;
@@ -384,7 +390,9 @@ GM_addStyle(`:root{ --mo-bg: #f5f7fb;          /* page chrome */
                                   margin-left:0;
                                   margin-right:auto;
                                   gap:9px;
-                                  flex:0 0 auto;}
+                                  flex:0 0 auto;
+                                  margin-top:auto;
+                                  margin-bottom:auto;}
             .moTextBuilderOption{background:#fff;
                                  border:1.5px solid #bfdbfe;
                                  color:#0f172a;
@@ -440,7 +448,9 @@ GM_addStyle(`:root{ --mo-bg: #f5f7fb;          /* page chrome */
             .moTextBuilderActions{display:flex;
                                   gap:8px;
                                   flex-wrap:wrap;
-                                  justify-content:space-between;}
+                                  justify-content:space-between;
+                                  margin-top:auto;
+                                  flex:0 0 auto;}
             .moTextBuilderTall .moTextBuilderOptions{gap:7px;}
             .moTextBuilderTall .moTextBuilderOption{padding:9px 12px;}
             .moTextBuilderTall .moTextBuilderActions{margin-top:auto;}
@@ -566,6 +576,8 @@ const TEXT_BUILDER_STAFF = ['Anna','Dylan','Kyle','Mason','Miranda'];
 const TEXT_BUILDER_COURTS = ['St. Louis County Circuit','St. Louis City Circuit','St. Louis City Municipal','Florissant','University City','Kirkwood','Manchester','Webster Groves'];
 const TEXT_BUILDER_LIMIT_NOTICE = '**GOOGLE VOICE LIMIT - SEPARATE INTO MULTIPLE TEXTS HERE OR EARLIER**';
 let textBuilderState = {screen:'root',history:[],data:{courts:[]}};
+function textBuilderInitialState() {return {screen:'root',history:[],data:{courts:[]}};}
+function resetTextBuilder() {textBuilderState = textBuilderInitialState();}
 function textBuilderCourtLabel(court) {const map = {'Florissant':'Florissant Municipal','University City':'University City Municipal','Kirkwood':'Kirkwood Municipal','Manchester':'Manchester Municipal','Webster Groves':'Webster Groves Municipal'};
                                       return map[court] || court;}
 function textBuilderList(items) {if (items.length <= 1) return items[0] || '';
@@ -580,7 +592,7 @@ function textBuilderSet(screen,patch) {textBuilderState.history.push({screen:tex
                                        textBuilderState.data = {...textBuilderState.data,...(patch || {})};
                                        renderTextBuilder();}
 function textBuilderBack() {const prev = textBuilderState.history.pop();
-                            if (!prev) {textBuilderState = {screen:'root',history:[],data:{courts:[]}};}
+                            if (!prev) {resetTextBuilder();}
                             else {textBuilderState.screen = prev.screen;
                                   textBuilderState.data = prev.data;}
                             renderTextBuilder();}
@@ -718,7 +730,14 @@ function setAppView(view) {if (!APP_VIEWS[view]) return;
                            closeHelpPanel();
                            closeTextBuilderPanel();
                            render();}
+function goHomeView() {appHistory.length = 0;
+                       appView = 'home';
+                       resetTextBuilder();
+                       closeHelpPanel();
+                       closeTextBuilderPanel();
+                       render();}
 function goBackView() {appView = appHistory.pop() || 'home';
+                       if (appView === 'home') resetTextBuilder();
                        closeHelpPanel();
                        closeTextBuilderPanel();
                        render();}
