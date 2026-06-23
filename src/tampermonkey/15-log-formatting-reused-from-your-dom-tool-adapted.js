@@ -630,26 +630,31 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
                                           if (!normalizedAttorney) return '';
                                           return `, ${normalizedAttorney}`;}
 
+  function getFlorissantSeatBeltSummarySuffix(e) {const jurisdiction = municipalityMatchKey(e?.jurisdiction || e?.location || '');
+                                                 const charge = norm(String(e?.chargeText || e?.charge || ''));
+                                                 return jurisdiction.includes('FLORISSANT') && charge === 'Seat Belt Violation - Other' ? ', $10' : '';}
+
   function getSummaryLineStatus(e) {const warrantLabel = getWarrantLabelForSummary(e);
                                    const fineSuffix = getFineSuffixForSummary(e);
                                    const attorneySuffix = getAttorneySuffixForSummary(e);
-                                   return `${warrantLabel}${fineSuffix}${attorneySuffix}`;}
+                                   const florissantSeatBeltSuffix = getFlorissantSeatBeltSummarySuffix(e);
+                                   return `${warrantLabel}${fineSuffix}${attorneySuffix}${florissantSeatBeltSuffix}`;}
 
   function isMuniWarrantStatusForSummary(value) {return /^warrant$/i.test(norm(String(value || '')));}
 
   function isMuniOpenStatusForSummary(value) {return /^open$/i.test(norm(String(value || '')));}
 
   function getMunicourtSummaryLineStatus(e) {const statusCandidates = [e?.disposition,e?.warrantEvent,e?.status,e?.caseStatus];
-                                            if (statusCandidates.some(isMuniWarrantStatusForSummary)) return 'warrant';
+                                            if (statusCandidates.some(isMuniWarrantStatusForSummary)) return `warrant${getFlorissantSeatBeltSummarySuffix(e)}`;
                                             const warrantLabel = getWarrantLabelForSummary(e);
                                             const normalized = norm(String(warrantLabel || '')).toLowerCase();
-                                            if (normalized.includes('hold')) return 'hold';
-                                            if (statusCandidates.some(isMuniOpenStatusForSummary)) return 'open (no warrant found)';
-                                            if (!normalized) return 'nonwarrant';
-                                            if (/^warrant\b/.test(normalized)) return 'warrant';
-                                            if (/^nonwarrant\b/.test(normalized)) return 'open (no warrant found)';
-                                            if (normalized.includes('upcoming')) return 'upcoming';
-                                            return normalized;}
+                                            if (normalized.includes('hold')) return `hold${getFlorissantSeatBeltSummarySuffix(e)}`;
+                                            if (statusCandidates.some(isMuniOpenStatusForSummary)) return `open (no warrant found)${getFlorissantSeatBeltSummarySuffix(e)}`;
+                                            if (!normalized) return `nonwarrant${getFlorissantSeatBeltSummarySuffix(e)}`;
+                                            if (/^warrant\b/.test(normalized)) return `warrant${getFlorissantSeatBeltSummarySuffix(e)}`;
+                                            if (/^nonwarrant\b/.test(normalized)) return `open (no warrant found)${getFlorissantSeatBeltSummarySuffix(e)}`;
+                                            if (normalized.includes('upcoming')) return `upcoming${getFlorissantSeatBeltSummarySuffix(e)}`;
+                                            return `${normalized}${getFlorissantSeatBeltSummarySuffix(e)}`;}
 
   function parseUpcomingCourtDate(e) {const raw = norm(e?.nextDocketDate || '');
                                      if (!raw || raw === '- - -') return '';
