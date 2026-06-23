@@ -513,6 +513,7 @@ function buildHelpImageHtml() {const urls = (HELP_IMAGE_URLS || []).filter(Boole
 
 const dock = document.createElement('div');
 dock.id = 'moJsonDock';
+dock.className = 'moHidden';
 dock.innerHTML = `
   <div id="moJsonHeader">
     <div class="title" id="moJsonTitle">I Can't Believe it's Not CaseNet!</div>
@@ -656,7 +657,7 @@ function textBuilderDropInEligibleMessage(includeStaffIntro) {const d = textBuil
 function textBuilderFollowUpNewCourtDateMessage() {const d = textBuilderState.data;
                                                    const labels = (d.courts || []).map(textBuilderCourtLabel);
                                                    const courtText = labels.length <= 1 ? `The ${labels[0] || ''} Court has agreed to recall the warrant` : `The ${textBuilderList(labels)} Courts have agreed to recall the warrants`;
-                                                   return `This is ${d.staff} - good news! ${courtText} and you have a NEW COURT DATE:\n\n${d.newCourtDate || ''}\n\nYou MUST appear in-person or a warrant will be issued. The Tap In Center is only able to request this recall ONCE PER CASE.`;}
+                                                   return `This is ${d.staff} from the Tap In Center - good news! ${courtText} and you have a NEW COURT DATE:\n\n${d.newCourtDate || ''}\n\nYou MUST appear in-person or a warrant will be issued. The Tap In Center is only able to request this recall ONCE PER CASE.`;}
 function textBuilderBuildMessage() {const d = textBuilderState.data;
                                     if (d.workflow === 'followUpReady' && d.followUpDay === 'Today is Monday') return `Thank you, we should have everything we need. You do NOT need to come in-person to the Tap In Center program tomorrow evening - though you are always welcome.\n\nWe will be in touch when we hear from our Court partners, and if the request is granted the Court will mail you a new summons with your court date information.`;
                                     if (d.workflow === 'followUpReady' && d.followUpDay === 'Today is Tuesday') return `Thank you, we should have everything we need. You do NOT need to come in-person to the Tap In Center program this evening - though you are always welcome.\n\nWe will be in touch when we hear from our Court partners, and if the request is granted the Court will mail you a new summons with your court date information.`;
@@ -828,7 +829,7 @@ function addBlock(title,htmlInner) {const div = document.createElement('div');
                                    $content.appendChild(div);}
 
 launcher.addEventListener('click',() => {expandDock();});
-expandDock();
+minimizeDock();
 
 const SHOW_TRACK_THIS_CASE_UI = false; // Temporarily disconnect visible Track This Case UI without removing its automation architecture.
 

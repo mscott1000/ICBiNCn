@@ -3033,26 +3033,31 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
                                           if (!normalizedAttorney) return '';
                                           return `, ${normalizedAttorney}`;}
 
+  function getFlorissantSeatBeltSummarySuffix(e) {const jurisdiction = municipalityMatchKey(e?.jurisdiction || e?.location || '');
+                                                 const charge = norm(String(e?.chargeText || e?.charge || ''));
+                                                 return jurisdiction.includes('FLORISSANT') && charge === 'Seat Belt Violation - Other' ? ', $10' : '';}
+
   function getSummaryLineStatus(e) {const warrantLabel = getWarrantLabelForSummary(e);
                                    const fineSuffix = getFineSuffixForSummary(e);
                                    const attorneySuffix = getAttorneySuffixForSummary(e);
-                                   return `${warrantLabel}${fineSuffix}${attorneySuffix}`;}
+                                   const florissantSeatBeltSuffix = getFlorissantSeatBeltSummarySuffix(e);
+                                   return `${warrantLabel}${fineSuffix}${attorneySuffix}${florissantSeatBeltSuffix}`;}
 
   function isMuniWarrantStatusForSummary(value) {return /^warrant$/i.test(norm(String(value || '')));}
 
   function isMuniOpenStatusForSummary(value) {return /^open$/i.test(norm(String(value || '')));}
 
   function getMunicourtSummaryLineStatus(e) {const statusCandidates = [e?.disposition,e?.warrantEvent,e?.status,e?.caseStatus];
-                                            if (statusCandidates.some(isMuniWarrantStatusForSummary)) return 'warrant';
+                                            if (statusCandidates.some(isMuniWarrantStatusForSummary)) return `warrant${getFlorissantSeatBeltSummarySuffix(e)}`;
                                             const warrantLabel = getWarrantLabelForSummary(e);
                                             const normalized = norm(String(warrantLabel || '')).toLowerCase();
-                                            if (normalized.includes('hold')) return 'hold';
-                                            if (statusCandidates.some(isMuniOpenStatusForSummary)) return 'open (no warrant found)';
-                                            if (!normalized) return 'nonwarrant';
-                                            if (/^warrant\b/.test(normalized)) return 'warrant';
-                                            if (/^nonwarrant\b/.test(normalized)) return 'open (no warrant found)';
-                                            if (normalized.includes('upcoming')) return 'upcoming';
-                                            return normalized;}
+                                            if (normalized.includes('hold')) return `hold${getFlorissantSeatBeltSummarySuffix(e)}`;
+                                            if (statusCandidates.some(isMuniOpenStatusForSummary)) return `open (no warrant found)${getFlorissantSeatBeltSummarySuffix(e)}`;
+                                            if (!normalized) return `nonwarrant${getFlorissantSeatBeltSummarySuffix(e)}`;
+                                            if (/^warrant\b/.test(normalized)) return `warrant${getFlorissantSeatBeltSummarySuffix(e)}`;
+                                            if (/^nonwarrant\b/.test(normalized)) return `open (no warrant found)${getFlorissantSeatBeltSummarySuffix(e)}`;
+                                            if (normalized.includes('upcoming')) return `upcoming${getFlorissantSeatBeltSummarySuffix(e)}`;
+                                            return `${normalized}${getFlorissantSeatBeltSummarySuffix(e)}`;}
 
   function parseUpcomingCourtDate(e) {const raw = norm(e?.nextDocketDate || '');
                                      if (!raw || raw === '- - -') return '';
@@ -3813,6 +3818,7 @@ function buildHelpImageHtml() {const urls = (HELP_IMAGE_URLS || []).filter(Boole
 
 const dock = document.createElement('div');
 dock.id = 'moJsonDock';
+dock.className = 'moHidden';
 dock.innerHTML = `
   <div id="moJsonHeader">
     <div class="title" id="moJsonTitle">I Can't Believe it's Not CaseNet!</div>
@@ -3956,7 +3962,7 @@ function textBuilderDropInEligibleMessage(includeStaffIntro) {const d = textBuil
 function textBuilderFollowUpNewCourtDateMessage() {const d = textBuilderState.data;
                                                    const labels = (d.courts || []).map(textBuilderCourtLabel);
                                                    const courtText = labels.length <= 1 ? `The ${labels[0] || ''} Court has agreed to recall the warrant` : `The ${textBuilderList(labels)} Courts have agreed to recall the warrants`;
-                                                   return `This is ${d.staff} - good news! ${courtText} and you have a NEW COURT DATE:\n\n${d.newCourtDate || ''}\n\nYou MUST appear in-person or a warrant will be issued. The Tap In Center is only able to request this recall ONCE PER CASE.`;}
+                                                   return `This is ${d.staff} from the Tap In Center - good news! ${courtText} and you have a NEW COURT DATE:\n\n${d.newCourtDate || ''}\n\nYou MUST appear in-person or a warrant will be issued. The Tap In Center is only able to request this recall ONCE PER CASE.`;}
 function textBuilderBuildMessage() {const d = textBuilderState.data;
                                     if (d.workflow === 'followUpReady' && d.followUpDay === 'Today is Monday') return `Thank you, we should have everything we need. You do NOT need to come in-person to the Tap In Center program tomorrow evening - though you are always welcome.\n\nWe will be in touch when we hear from our Court partners, and if the request is granted the Court will mail you a new summons with your court date information.`;
                                     if (d.workflow === 'followUpReady' && d.followUpDay === 'Today is Tuesday') return `Thank you, we should have everything we need. You do NOT need to come in-person to the Tap In Center program this evening - though you are always welcome.\n\nWe will be in touch when we hear from our Court partners, and if the request is granted the Court will mail you a new summons with your court date information.`;
@@ -4128,7 +4134,7 @@ function addBlock(title,htmlInner) {const div = document.createElement('div');
                                    $content.appendChild(div);}
 
 launcher.addEventListener('click',() => {expandDock();});
-expandDock();
+minimizeDock();
 
 const SHOW_TRACK_THIS_CASE_UI = false; // Temporarily disconnect visible Track This Case UI without removing its automation architecture.
 
