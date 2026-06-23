@@ -3638,7 +3638,7 @@ GM_addStyle(`:root{ --mo-bg: #f5f7fb;          /* page chrome */
                                     bottom:12px;
                                     width:75ch;
                                     max-width:min(75ch,calc(100vw - 24px));
-                                    max-height:66vh;
+                                    max-height:calc(100vh - 24px);
                                     overflow:auto;
                                     background:#f8fbff;
                                     border:1px solid #93c5fd;
@@ -3671,17 +3671,19 @@ GM_addStyle(`:root{ --mo-bg: #f5f7fb;          /* page chrome */
             #moJsonContent.moTextBuilderContent .moBlock > h3{text-align:center;}
             #moJsonTextBuilderBody .moTextBuilderPane > h3,
             #moJsonContent.moTextBuilderContent .moTextBuilderPane > h3{text-align:center;}
+            #moJsonContent.moTextBuilderContent .moTextBuilderOptionBlock{flex:0 0 auto;
+                                                                        min-height:max-content;}
             .moTextBuilderOptions.moCentered{width:100%;
                                              align-self:stretch;}
-            .moTextBuilderOptions{display:grid;
-                                  grid-template-columns:repeat(auto-fit,minmax(min(100%, 16ch),1fr));
-                                  grid-auto-rows:minmax(42px,auto);
+            .moTextBuilderOptions{display:flex;
+                                  flex-direction:column;
+                                  align-items:flex-start;
                                   width:100%;
                                   max-width:100%;
-                                  margin-left:auto;
+                                  margin-left:0;
                                   margin-right:auto;
                                   gap:9px;
-                                  flex:1 1 auto;}
+                                  flex:0 0 auto;}
             .moTextBuilderOption{background:#fff;
                                  border:1.5px solid #bfdbfe;
                                  color:#0f172a;
@@ -3689,8 +3691,9 @@ GM_addStyle(`:root{ --mo-bg: #f5f7fb;          /* page chrome */
                                  border-radius:10px;
                                  font-weight:900;
                                  cursor:pointer;
-                                 text-align:right;
+                                 text-align:left;
                                  min-width:0;
+                                 width:min(100%, 28ch);
                                  max-width:100%;
                                  white-space:normal;
                                  overflow-wrap:anywhere;}
@@ -3879,7 +3882,7 @@ function textBuilderBack() {const prev = textBuilderState.history.pop();
                             renderTextBuilder();}
 function textBuilderOptions(title,options,action,multi,centered) {const heading = title ? `<h3>${escapeHtml(title)}</h3>` : '';
                                                           const optionsClass = `moTextBuilderOptions${centered ? ' moCentered' : ''}`;
-                                                          return `<div class="moBlock">${heading}<div class="${optionsClass}">${options.map((opt) => `<button class="moTextBuilderOption ${multi && (textBuilderState.data.courts || []).includes(opt) ? 'moSelected' : ''}" data-tb-action="${escapeHtml(action)}" data-tb-value="${escapeHtml(opt)}">${escapeHtml(opt)}</button>`).join('')}</div></div>`;}
+                                                          return `<div class="moBlock moTextBuilderOptionBlock">${heading}<div class="${optionsClass}">${options.map((opt) => `<button class="moTextBuilderOption ${multi && (textBuilderState.data.courts || []).includes(opt) ? 'moSelected' : ''}" data-tb-action="${escapeHtml(action)}" data-tb-value="${escapeHtml(opt)}">${escapeHtml(opt)}</button>`).join('')}</div></div>`;}
 function textBuilderActions(confirmAction) {return `<div class="moTextBuilderActions"><button class="moBtn" data-tb-action="back">Back</button>${confirmAction ? `<button class="moBtn" data-tb-action="${escapeHtml(confirmAction)}">Confirm</button>` : ''}</div>`;}
 function textBuilderTextarea(title,placeholder,confirmAction,valueKey) {return `<div class="moBlock"><h3>${escapeHtml(title)}</h3><textarea class="moTextBuilderTextArea" data-tb-input="${escapeHtml(valueKey)}" placeholder="${escapeHtml(placeholder)}">${escapeHtml(textBuilderState.data[valueKey] || '')}</textarea></div>${textBuilderActions(confirmAction)}`;}
 function textBuilderOptionalBlock(text,blockBuilder) {const value = String(text || '').trim();
