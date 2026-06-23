@@ -21,8 +21,9 @@
                                                                             setRun(false);
                                                                             saveDraft({...params});
                                                                             const passes = buildNameSearchPasses(params);
-                                                                            saveNameState({active:true,passIndex:0,passes,step:'go_search',params,casenetAddedTotal:0,});
+                                                                            saveNameState({active:true,passIndex:0,passes,step:'go_search',params,casenetAddedTotal:0,autoMinimized:true,});
                                                                             uiStatus('Searching…');
+                                                                            minimizeDock();
                                                                             dbg('namesearch_start',{params});
                                                                             if (!isNameSearchPage()) {location.href = canonicalNameSearchUrl();}
                                                                             else {try {await nameSearchTick();} catch {}}
@@ -208,6 +209,7 @@
                                                 const casenetAdded = Number(st.casenetAddedTotal || 0);
                                                 dbg('namesearch_done',{casenetAdded,muniAdded});
                                                 clearNameState();
+                                                expandDock();
                                                 uiStatus(`Done. Case.net: ${casenetAdded}  Municourt.net: ${muniAdded}`);
                                                 render();
                                                 return;}
