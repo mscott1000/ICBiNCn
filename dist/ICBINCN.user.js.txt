@@ -3326,6 +3326,7 @@ GM_addStyle(`:root{ --mo-bg: #f5f7fb;          /* page chrome */
                         display:flex;
                         flex-direction:column;}
             #moJsonDock.moTextBuilderDock{height:min(576px,calc(100vh - 24px));}
+            #moJsonDock.moHelpOpen{transform:translate(-20%,-50%);}
             #moJsonDock.moHidden{display:none;}
 
             #moJsonLauncher{position:fixed;
@@ -3453,6 +3454,9 @@ GM_addStyle(`:root{ --mo-bg: #f5f7fb;          /* page chrome */
             #moJsonCopy{background:var(--mo-primary);
                         border:1.5px solid var(--mo-border);
                         color:#fff;}
+            #moJsonHeader .btnRow #moJsonSummary,
+            #moJsonHeader .btnRow #moJsonCopy{padding:6.9px 11.5px;
+                                               font-size:13.8px;}
             #moJsonCopy:hover{background:var(--mo-primary-dk);}
 
             #moJsonStop,#moUpcomingStop{background:var(--mo-danger);
@@ -3551,6 +3555,9 @@ GM_addStyle(`:root{ --mo-bg: #f5f7fb;          /* page chrome */
                                   border:1.5px solid #5b21b6;
                                   color:#ffffff;}
             #moJsonTextBuilderBtn:hover{background:#8b5cf6;}
+            #moJsonBackBtn,
+            .moBtn[data-tb-action="back"]{padding-left:11.5px;
+                                             padding-right:11.5px;}
 
             #moJsonHelpPanel{position:fixed;
                              right:542px;
@@ -3990,12 +3997,12 @@ function renderTextBuilder() {const dockTitle = dock.querySelector('#moJsonTitle
                                                                                            const hasIneligible = String(textBuilderState.data.ineligibleCases || '').trim();
                                                                                            if (hasEligible && hasIneligible) {const ineligibleMsg = textBuilderLimitMessage(textBuilderDropInIneligibleMessage());
                                                                                                                              const eligibleMsg = textBuilderLimitMessage(textBuilderDropInEligibleMessage(false));
-                                                                                                                             html = `<div class="moBlock"><h3>Constructed Message</h3><div class="moTextBuilderDual"><div class="moTextBuilderPane"><h3>Ineligible Cases</h3><div class="moTextBuilderMessage" id="moTextBuilderConstructedIneligible">${escapeHtml(ineligibleMsg)}</div><button class="moBtn" data-tb-action="copyIneligibleMessage">Copy Message</button></div><div class="moTextBuilderPane"><h3>Eligible Cases</h3><div class="moTextBuilderMessage" id="moTextBuilderConstructedEligible">${escapeHtml(eligibleMsg)}</div><button class="moBtn" data-tb-action="copyEligibleMessage">Copy Message</button></div></div></div><div class="moTextBuilderActions"><button class="moBtn" data-tb-action="back">Back</button></div>`;}
+                                                                                                                             html = `<div class="moBlock"><div class="moTextBuilderDual"><div class="moTextBuilderPane"><h3>Ineligible Cases</h3><div class="moTextBuilderMessage" id="moTextBuilderConstructedIneligible">${escapeHtml(ineligibleMsg)}</div><button class="moBtn" data-tb-action="copyIneligibleMessage">Copy Message</button></div><div class="moTextBuilderPane"><h3>Eligible Cases</h3><div class="moTextBuilderMessage" id="moTextBuilderConstructedEligible">${escapeHtml(eligibleMsg)}</div><button class="moBtn" data-tb-action="copyEligibleMessage">Copy Message</button></div></div></div><div class="moTextBuilderActions"><button class="moBtn" data-tb-action="back">Back</button></div>`;}
                                                                                            else {const msg = textBuilderLimitMessage(textBuilderBuildMessage());
                                                                                                  const title = hasEligible ? 'Eligible Cases' : 'Ineligible Cases';
-                                                                                                 html = `<div class="moBlock"><h3>Constructed Message</h3><div class="moTextBuilderPane"><h3>${escapeHtml(title)}</h3><div class="moTextBuilderMessage" id="moTextBuilderConstructed">${escapeHtml(msg)}</div></div></div><div class="moTextBuilderActions"><button class="moBtn" data-tb-action="back">Back</button><button class="moBtn" data-tb-action="copyMessage">Copy Message</button></div>`;}}
+                                                                                                 html = `<div class="moBlock"><div class="moTextBuilderPane"><h3>${escapeHtml(title)}</h3><div class="moTextBuilderMessage" id="moTextBuilderConstructed">${escapeHtml(msg)}</div></div></div><div class="moTextBuilderActions"><button class="moBtn" data-tb-action="back">Back</button><button class="moBtn" data-tb-action="copyMessage">Copy Message</button></div>`;}}
                                                          else {const msg = textBuilderLimitMessage(textBuilderBuildMessage());
-                                                               html = `<div class="moBlock"><h3>Constructed Message</h3><div class="moTextBuilderMessage" id="moTextBuilderConstructed">${escapeHtml(msg)}</div></div><div class="moTextBuilderActions"><button class="moBtn" data-tb-action="back">Back</button><button class="moBtn" data-tb-action="copyMessage">Copy Message</button></div>`;}}
+                                                               html = `<div class="moBlock"><div class="moTextBuilderMessage" id="moTextBuilderConstructed">${escapeHtml(msg)}</div></div><div class="moTextBuilderActions"><button class="moBtn" data-tb-action="back">Back</button><button class="moBtn" data-tb-action="copyMessage">Copy Message</button></div>`;}}
                               (appView === 'text' ? $content : textBuilderBody).innerHTML = html;}
 function positionTextBuilderPanel() {const rect = dock.getBoundingClientRect();
                                      const right = Math.max(8,window.innerWidth - rect.left + 10);
@@ -4075,7 +4082,8 @@ function goBackView() {appView = appHistory.pop() || 'home';
                        closeHelpPanel();
                        closeTextBuilderPanel();
                        render();}
-function openBlankHelpPanel() {positionHelpPanel();
+function openBlankHelpPanel() {dock.classList.add('moHelpOpen');
+                               positionHelpPanel();
                                helpPanel.classList.remove('moHidden');
                                helpPanel.innerHTML = `<button id="moJsonHelpClose" title="Close Help">×</button><div style="min-height:320px;"></div>`;}
 function restoreNameHelpPanel() {helpPanel.innerHTML = helpPanelTemplate;}
@@ -4096,10 +4104,15 @@ function positionHelpPanel() {const rect = dock.getBoundingClientRect();
                               helpPanel.style.right = `${right}px`;
                               helpPanel.style.bottom = `${bottom}px`;}
 
-function openHelpPanel() {positionHelpPanel();
+function openHelpPanel() {dock.classList.add('moHelpOpen');
+                          positionHelpPanel();
                           helpPanel.classList.remove('moHidden');}
 
-function closeHelpPanel() {helpPanel.classList.add('moHidden');}
+function closeHelpPanel() {helpPanel.classList.add('moHidden');
+                           dock.classList.remove('moHelpOpen');}
+
+function toggleHelpPanel(openPanel) {if (!helpPanel.classList.contains('moHidden')) closeHelpPanel();
+                                    else openPanel();}
 
 helpPanel.addEventListener('click',(e) => {if (e?.target?.id === 'moJsonHelpClose') closeHelpPanel();});
 
@@ -5047,7 +5060,7 @@ function render() {const log = loadLog();
                                                                             return;}
                                              if (id === 'moJsonCloseX') {minimizeDock();
                                                                         return;}
-                                             if (id === 'moJsonHelpBtn') {if (appView === 'name') {restoreNameHelpPanel(); openHelpPanel();} else openBlankHelpPanel();
+                                             if (id === 'moJsonHelpBtn') {toggleHelpPanel(() => {if (appView === 'name') {restoreNameHelpPanel(); openHelpPanel();} else openBlankHelpPanel();});
                                                                           return;}
                                              if (id === 'moJsonTextBuilderBtn') {setAppView('text');
                                                                                  return;}
