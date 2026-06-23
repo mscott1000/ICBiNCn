@@ -13,7 +13,7 @@ GM_addStyle(`:root{ --mo-bg: #f5f7fb;          /* page chrome */
                     --mo-danger-dk: #912018;
                     --mo-shadow: 0 10px 28px rgba(15, 23, 42, .18);}
 
-            #moJsonDock{position:fixed; left:50%; top:50%; transform:translate(-50%,-50%);
+            #moJsonDock{position:fixed; left:50%; top:45%; transform:translate(-50%,-50%);
                         width:min(836px,calc(100vw - 24px)); height:min(499px,calc(100vh - 24px));
                         z-index:999999;
                         font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
@@ -367,15 +367,17 @@ GM_addStyle(`:root{ --mo-bg: #f5f7fb;          /* page chrome */
             #moJsonTextBuilderBody{display:flex;
                                    flex-direction:column;
                                    gap:10px;}
-            #moJsonTextBuilderBody .moBlock > h3{text-align:center;}
-            #moJsonTextBuilderBody .moTextBuilderPane > h3{text-align:center;}
+            #moJsonTextBuilderBody .moBlock > h3,
+            #moJsonContent.moTextBuilderContent .moBlock > h3{text-align:center;}
+            #moJsonTextBuilderBody .moTextBuilderPane > h3,
+            #moJsonContent.moTextBuilderContent .moTextBuilderPane > h3{text-align:center;}
             .moTextBuilderOptions.moCentered{width:100%;
                                              align-self:stretch;}
-            .moTextBuilderOptions.moCentered .moTextBuilderOption{text-align:center;}
             .moTextBuilderOptions{display:grid;
-                                  grid-template-columns:1fr;
+                                  grid-template-columns:repeat(auto-fit,minmax(min(100%, 16ch),1fr));
                                   grid-auto-rows:minmax(42px,auto);
-                                  max-width:75ch;
+                                  width:100%;
+                                  max-width:100%;
                                   margin-left:auto;
                                   margin-right:auto;
                                   gap:9px;
@@ -387,7 +389,11 @@ GM_addStyle(`:root{ --mo-bg: #f5f7fb;          /* page chrome */
                                  border-radius:10px;
                                  font-weight:900;
                                  cursor:pointer;
-                                 text-align:left;}
+                                 text-align:right;
+                                 min-width:0;
+                                 max-width:100%;
+                                 white-space:normal;
+                                 overflow-wrap:anywhere;}
             .moTextBuilderOption:hover{background:#eff6ff;}
             .moTextBuilderOption.moSelected{background:#dbeafe;
                                             border-color:#2563eb;}
@@ -757,6 +763,7 @@ function render() {const log = loadLog();
                    if (title) title.textContent = APP_VIEWS[appView] || APP_VIEWS.home;
                    $content.innerHTML = '';
                    $content.classList.toggle('moContentStretch',['home','text','track'].includes(appView));
+                   $content.classList.toggle('moTextBuilderContent',appView === 'text');
                    const copyBtn = dock.querySelector('#moJsonCopy');
                    if (copyBtn) copyBtn.textContent = `Copy (${log.length})`;
                    const nav = dock.querySelector('#moJsonNavButtons');
@@ -774,7 +781,7 @@ function render() {const log = loadLog();
       </div>`); return;}
                    if (appView === 'text') {renderTextBuilder(); return;}
                    if (appView === 'upcoming') {renderUpcomingCourtDates(); return;}
-                   if (appView === 'track') {addBlock('Track This Case',`
+                   if (appView === 'track') {addBlock('',`
   <div class="moNameRow" style="grid-template-columns:minmax(0, 0.9fr) minmax(0, 1.3fr); align-items:end;">
     <div class="moField"><label>Case Number</label><input id="moTrackCaseNo" type="text" placeholder="e.g. 18SL-CR01234" value="${escapeHtml((loadTrackState()?.caseNumber) || (loadTrackDraft()?.caseNumber) || '')}"></div>
     <div class="moField"><label>Email Address</label><input id="moTrackEmail" type="email" placeholder="name@example.com" value="${escapeHtml((loadTrackState()?.email) || (loadTrackDraft()?.email) || '')}"></div>
