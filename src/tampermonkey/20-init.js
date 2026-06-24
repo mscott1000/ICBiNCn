@@ -2,6 +2,7 @@
  * INIT
  ************************************************************/
 uiStatus(getStatus() || 'Ready');
+restoreActiveNameSearchUiOnLoad();
 render();
 
 setInterval(() => {try {nameSearchTick();}
