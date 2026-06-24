@@ -802,17 +802,6 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
                                   const expected = norm(document.getElementById('moNsYob')?.value || '');
                                   const filteredLog = log.filter((e) => {const m = yobMatchesExpected(expected,e?.yobRaw || e?.yob || '');
                                                                          return m.ok;});
-                                  const summarySectionsLog = filteredLog.filter((e) => !hasUpcomingCourtDate(e));
-                                  const {eligibleJurisdictions,ineligibleJurisdictions} = buildOrderedJurisdictionGroups(summarySectionsLog);
-                                  const {sections: eligibleSections} = buildJurisdictionSummarySections(eligibleJurisdictions);
-                                  const {sections: ineligibleSections} = buildJurisdictionSummarySections(ineligibleJurisdictions);
-                                  const sections = [];
-                                  const eligibleText = eligibleSections.join('\n').trim();
-                                  const ineligibleText = ineligibleSections.join('\n').trim();
-                                  if (eligibleText) sections.push(`- - -\n\n${eligibleText}\n\n- - -`);
-                                  if (ineligibleText) {if (sections.length) sections.push('', '', '', '');
-                                                       sections.push(`- - -\n\n${ineligibleText}\n\n- - -`);}
-
                                   const upcomingByJurisdiction = new Map();
                                   for (const e of filteredLog) {const next = parseUpcomingCourtDate(e);
                                                                if (!next) continue;
@@ -820,12 +809,22 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
                                                                if (!upcomingByJurisdiction.has(jurisdiction)) upcomingByJurisdiction.set(jurisdiction,new Map());
                                                                if (!upcomingByJurisdiction.get(jurisdiction).has(next)) upcomingByJurisdiction.get(jurisdiction).set(next,[]);
                                                                upcomingByJurisdiction.get(jurisdiction).get(next).push(getCaseNumberForSummary(e));}
+                                  const hasUpcoming = upcomingByJurisdiction.size > 0;
+                                  const summarySectionsLog = filteredLog.filter((e) => !hasUpcomingCourtDate(e));
+                                  const {eligibleJurisdictions,ineligibleJurisdictions} = buildOrderedJurisdictionGroups(summarySectionsLog);
+                                  const {sections: eligibleSections} = buildJurisdictionSummarySections(eligibleJurisdictions);
+                                  const {sections: ineligibleSections} = buildJurisdictionSummarySections(ineligibleJurisdictions);
+                                  const sections = [];
+                                  const eligibleText = eligibleSections.join('\n').trim();
+                                  const ineligibleText = ineligibleSections.join('\n').trim();
+                                  if (eligibleText) sections.push(`- - -\n\n${eligibleText}${hasUpcoming ? '' : '\n\n- - -'}`);
+                                  if (ineligibleText) {if (sections.length) sections.push('', '', '', '');
+                                                       sections.push(`- - -\n\n${ineligibleText}${hasUpcoming ? '' : '\n\n- - -'}`);}
 
-                                  if (upcomingByJurisdiction.size) {sections.push('');
-                                                                   sections.push('Upcoming Court Dates:');
-                                                                   sections.push('');
-                                                                   for (const [jurisdiction,dateMap] of upcomingByJurisdiction.entries()) {sections.push(jurisdiction);
+                                  if (hasUpcoming) {sections.push('', '', 'Upcoming Court Dates:', '');
+                                                   for (const [jurisdiction,dateMap] of upcomingByJurisdiction.entries()) {sections.push(jurisdiction);
                                                                                                                               for (const [dt,caseNos] of dateMap.entries()) {sections.push(`${dt} (for ${formatCaseNumberList(caseNos)})`);}
-                                                                                                                              sections.push('');}}
+                                                                                                                              sections.push('');}
+                                                   sections.push('- - -');}
 
                                   return sections.join('\n').trim();}

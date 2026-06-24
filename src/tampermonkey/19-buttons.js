@@ -21,9 +21,10 @@
                                                                             setRun(false);
                                                                             saveDraft({...params});
                                                                             const passes = buildNameSearchPasses(params);
-                                                                            saveNameState({active:true,passIndex:0,passes,step:'go_search',params,casenetAddedTotal:0,autoMinimized:true,});
+                                                                            saveNameState({active:true,passIndex:0,passes,step:'go_search',params,casenetAddedTotal:0,autoMinimized:false,});
+                                                                            appView = 'name';
+                                                                            expandDock();
                                                                             uiStatus('Searching…');
-                                                                            minimizeDock();
                                                                             dbg('namesearch_start',{params});
                                                                             if (!isNameSearchPage()) {location.href = canonicalNameSearchUrl();}
                                                                             else {try {await nameSearchTick();} catch {}}
