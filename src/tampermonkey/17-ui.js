@@ -130,6 +130,24 @@ GM_addStyle(`:root{ --mo-bg: #f5f7fb;          /* page chrome */
                                                      min-height:0;
                                                      margin-bottom:0;}
             #moJsonContent.moContentStretch .moBlock > h3{flex:0 0 auto;}
+            #moJsonContent.moNameSearchContent .moBlock{padding:14px;}
+            #moJsonContent.moNameSearchContent .moBlock h3{font-size:16.8px;
+                                                            margin-bottom:8.4px;}
+            #moJsonContent.moNameSearchContent .moNameRow,
+            #moJsonContent.moNameSearchContent .moNameRowBottom{gap:11.2px;
+                                                                margin-top:11.2px;}
+            #moJsonContent.moNameSearchContent .moField{gap:5.6px;}
+            #moJsonContent.moNameSearchContent .moField label{font-size:16.8px;}
+            #moJsonContent.moNameSearchContent .moField input{padding:9.8px 12.6px;
+                                                              font-size:16.8px;
+                                                              border-radius:14px;}
+            #moJsonContent.moNameSearchContent .moField input::placeholder{font-size:16.8px;}
+            #moJsonContent.moNameSearchContent .moBtn{padding:8.4px 14px;
+                                                       border-radius:14px;
+                                                       font-size:16.8px;}
+            #moJsonContent.moNameSearchContent .moSearchBtn,
+            #moJsonContent.moNameSearchContent #moJsonClearEntries{height:44.8px;
+                                                                    font-size:16.8px;}
 
             .moBlock h3{margin:0 0 6px 0;
                         font-size:12px;
@@ -839,6 +857,7 @@ function render() {const log = loadLog();
                    $content.innerHTML = '';
                    $content.classList.toggle('moContentStretch',['home','text','track'].includes(appView));
                    $content.classList.toggle('moTextBuilderContent',appView === 'text');
+                   $content.classList.toggle('moNameSearchContent',appView === 'name');
                    dock.classList.toggle('moTextBuilderDock',appView === 'text');
                    const copyBtn = dock.querySelector('#moJsonCopy');
                    if (copyBtn) copyBtn.textContent = `Copy (${log.length})`;
@@ -874,6 +893,6 @@ function render() {const log = loadLog();
       </div>
       <div class="moNameRowBottom" style="grid-template-columns:minmax(0, 0.36fr) minmax(0, 1.64fr);">
         <div class="moField"><label style="color:var(--mo-text);">Birth Year</label><input id="moNsYob" type="text" placeholder="YYYY" maxlength="4" value="${escapeHtml(p?.yob || '')}"></div>
-        <div style="display:flex; gap:8px; align-items:end; width:100%;"><button class="moBtn moSearchBtn" id="moJsonNameSearch" style="flex:1;">Search</button><button class="moBtn" id="moJsonClearEntries" style="height:32px; flex:1;">Clear Entries</button></div>
+        <div style="display:flex; gap:8px; align-items:end; width:100%;"><button class="moBtn moSearchBtn" id="moJsonNameSearch" style="flex:1;">Search</button><button class="moBtn" id="moJsonClearEntries" style="flex:1;">Clear Entries</button></div>
       </div>`);
 }
