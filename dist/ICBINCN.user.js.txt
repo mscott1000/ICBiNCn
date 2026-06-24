@@ -3931,6 +3931,45 @@ const TEXT_BUILDER_STAFF = ['Anna','Dylan','Kyle','Mason','Miranda'];
 const TEXT_BUILDER_COURTS = ['Florissant','Kirkwood','Manchester','St. Louis City Circuit','St. Louis City Municipal','St. Louis County Circuit','University City','Webster Groves'];
 const TEXT_BUILDER_LIMIT_NOTICE = '**GOOGLE VOICE LIMIT - SEPARATE INTO MULTIPLE TEXTS HERE OR EARLIER**';
 let textBuilderState = {screen:'root',history:[],data:{courts:[]}};
+const TEXT_BUILDER_LEGAL_AID_MESSAGES = {
+  '3 Daughters and 1,000 Sons': `The organization 3 Daughters and 1,000 Sons offers an expungement clinic to provide education about Missouri expungement law, eligibility, and the overall record-clearing process. There is no cost to attend or receive information. For individuals who request individualized legal assistance, they offer record review and expungement petition preparation by a licensed attorney for a $369 fee, plus potential court filing fees. Their intake form is found here:
+https://www.jotform.com/250826119108151
+
+You can also seek expungement without an attorney. There are also court fees associated with this, I believe it can range from $250-$450. However, you can ask the court to waive the fee. The Missouri State Courts has the Petition for Expungement available online here:
+https://www.courts.mo.gov/page.jsp?id=191585`,
+  'Bar Association of Metropolitan St. Louis': `The Bar Association of Metropolitan St. Louis runs a St. Louis Bankruptcy Pro Se Assistance Program. It is a free legal clinic to help people without an attorney get answers to legal questions about bankruptcy. You can meet with a volunteer attorney for a consultation for up to 30 minutes. You can schedule an appointment online here:
+https://www.bamsl.org/?pg=BankruptcyAssistanceProject`,
+  'Catholic Legal Assistance Ministry/St. Francis': `The Catholic Legal Assistance Ministry/St. Francis Community Services may be able to help through their Family Law Project. You can submit an inquiry at this link or give them a call at 314-977-3993 on Tuesdays:
+https://sfcsstl.org/services/legal-aid/`,
+  'Clear My Record Missouri - expungement reqs': `Clear My Record Missouri has really good information about the requirements a person has to meet to be eligible for expungement, here:
+https://clearmyrecordmo.org/missouri-expungement-eligibility-requirements/`,
+  'Fathers & Families Support Center': `The Fathers & Families Support Center provides free and reduced-fee legal services on family law matters. Clients must first enroll and complete their Family Formation Program. This agency primarily assists fathers and children but may be able to help mothers in certain circumstances. Give them a call at 314-333-4170, or visit:
+https://fatherssupportcenter.org/services/family-formation/`,
+  'Holland Law Referral': `We would like to connect you with Attorney Shamon Moss at the Holland Law Firm at the Hub. They offer free legal services and resources to qualifying St. Louis residents and may be able to help you. The firm has a simple online intake form that you can fill out to see if you would be eligible for their services. Their team will reach out directly after they’ve had time to review your case to see if they can assist you.
+
+Please fill out this link and someone from the Holland Law Firm team will reach out to you:
+https://bit.ly/hlfatthehub-tapincenter`,
+  'Law Library Association of St. Louis': `The Law Library Association of St. Louis has a great website with legal resources, including a guide to representing yourself. Within the guide, there are several free or reduced cost agencies listed.
+https://llastl.org/legal-websites`,
+  'Legal Services of Eastern Missouri': `For civil cases, Legal Services of Eastern Missouri is an excellent, free resource based on financial need and occasionally other factors.
+https://lsem.org/get-help-now/`,
+  'Missouri Public Defender Application': `The best next step is to hire an attorney or apply for a Public Defender to represent you in this case. The Public Defender application can be completed here:
+https://publicdefender.mo.gov/client-application/`,
+  'New Covenant Legal Services': `New Covenant Legal Services may be able to help. They charge a sliding scale, and clients must reside in the City of St. Louis or St. Louis County. Give them a call at 314-726-6489 or visit:
+https://newcovenantlegalservices.org/faqs/`,
+  'Spongey - expungement tool': `Spongey is a DIY expungement tool designed to help people navigate the expungement process:
+https://spongey.app/`
+};
+const TEXT_BUILDER_LEGAL_AID_OPTIONS = {
+  'Bankruptcy': ['Bar Association of Metropolitan St. Louis'],
+  'Debt Collection': ['New Covenant Legal Services'],
+  'Expungement': ['3 Daughters and 1,000 Sons','Clear My Record Missouri - expungement reqs','New Covenant Legal Services','Spongey - expungement tool'],
+  'Family Law & Custody': ['Catholic Legal Assistance Ministry/St. Francis','Fathers & Families Support Center','Legal Services of Eastern Missouri'],
+  'General Resources': ['Holland Law Referral','Law Library Association of St. Louis','Legal Services of Eastern Missouri','Missouri Public Defender Application'],
+  'Landlord & Tenant Law': ['Catholic Legal Assistance Ministry/St. Francis','Legal Services of Eastern Missouri','New Covenant Legal Services']
+};
+const TEXT_BUILDER_LEGAL_AID_CATEGORIES = Object.keys(TEXT_BUILDER_LEGAL_AID_OPTIONS);
+
 function textBuilderInitialState() {return {screen:'root',history:[],data:{courts:[]}};}
 function resetTextBuilder() {textBuilderState = textBuilderInitialState();}
 function textBuilderCourtLabel(court) {const map = {'Florissant':'Florissant Municipal','University City':'University City Municipal','Kirkwood':'Kirkwood Municipal','Manchester':'Manchester Municipal','Webster Groves':'Webster Groves Municipal'};
@@ -3951,7 +3990,7 @@ function textBuilderBack() {const prev = textBuilderState.history.pop();
                             else {textBuilderState.screen = prev.screen;
                                   textBuilderState.data = prev.data;}
                             renderTextBuilder();}
-function textBuilderScreenTitle() {const map = {staff:'Tap In Staff',researchType:'Post-Research Response',eligibleDropin:'Eligible Cases Drop-In',ineligibleDropin:'Ineligible Cases Drop-In',privateAttorneyDropin:'Ineligible Cases Drop-In',remainingIneligibleDropin:'Ineligible Cases Drop-In',courts:'Court Options (select all Courts in which a case was found)',address:'Address',addressInput:'Address',followUp:'Follow-Up',followUpReadyDay:'Ready to Submit',newCourtDateInput:'New Court Date',message:'Constructed Message'};
+function textBuilderScreenTitle() {const map = {staff:'Tap In Staff',researchType:'Post-Research Response',eligibleDropin:'Eligible Cases Drop-In',ineligibleDropin:'Ineligible Cases Drop-In',privateAttorneyDropin:'Ineligible Cases Drop-In',remainingIneligibleDropin:'Ineligible Cases Drop-In',courts:'Court Options (select all Courts in which a case was found)',address:'Address',addressInput:'Address',followUp:'Follow-Up',followUpReadyDay:'Ready to Submit',newCourtDateInput:'New Court Date',legalAidResources:'Legal Aid Resources',legalAidResourceOptions:textBuilderState.data.legalAidCategory,legalAidMessage:'Constructed Message',message:'Constructed Message'};
                                   const suffix = map[textBuilderState.screen];
                                   return suffix ? `Text Builder - ${suffix}` : 'Text Builder';}
 function textBuilderOptionBlockClass(title,centered) {if (centered) return ' moTextBuilderRootBlock';
@@ -3985,6 +4024,7 @@ function textBuilderBuildMessage() {const d = textBuilderState.data;
                                     if (d.workflow === 'followUpReady' && d.followUpDay === 'Today is Tuesday') return `Thank you, we should have everything we need. You do NOT need to come in-person to the Tap In Center program this evening - though you are always welcome.\n\nWe will be in touch when we hear from our Court partners, and if the request is granted the Court will mail you a new summons with your court date information.`;
                                     if (d.workflow === 'followUpReady' && d.followUpDay === 'Today is Wed-Sun') return `Thank you, we should have everything we need. You do NOT need to come in-person to the Tap In Center program Tuesday evening - though you are always welcome.\n\nWe submit our request on Wednesday mornings and will be in touch when we hear from our Court partners. If the request is granted the Court will mail you a new summons with your court date information.`;
                                     if (d.workflow === 'followUpNewCourtDate') return textBuilderFollowUpNewCourtDateMessage();
+                                    if (d.workflow === 'legalAidResources') return TEXT_BUILDER_LEGAL_AID_MESSAGES[d.legalAidResource] || '';
                                     if (d.workflow === 'walkInDropIn') {const hasEligible = String(d.eligibleCases || '').trim();
                                                                        const hasIneligible = String(d.ineligibleCases || '').trim();
                                                                        if (hasEligible && !hasIneligible) return textBuilderDropInEligibleMessage(true);
@@ -4013,10 +4053,12 @@ function renderTextBuilder() {const dockTitle = dock.querySelector('#moJsonTitle
                               else if (s === 'courts') html = textBuilderOptions('Court Options (select all Courts in which a case was found)',TEXT_BUILDER_COURTS,'toggleCourt',true,false,true) + textBuilderActions('confirmCourts');
                               else if (s === 'address') html = textBuilderOptions('Address',['Have Address','Need Address'],'chooseAddress',false) + textBuilderActions();
                               else if (s === 'addressInput') html = textBuilderTextarea('Address','Enter address','confirmAddress','address');
-                              else if (s === 'followUp') html = textBuilderOptions('Follow-Up',['Ready to Submit','New Court Date'],'chooseFollowUp',false) + textBuilderActions();
+                              else if (s === 'followUp') html = textBuilderOptions('Follow-Up',['Legal Aid Resources','New Court Date','Ready to Submit'],'chooseFollowUp',false) + textBuilderActions();
+                              else if (s === 'legalAidResources') html = textBuilderOptions('Legal Aid Resources',TEXT_BUILDER_LEGAL_AID_CATEGORIES,'chooseLegalAidCategory',false,false,true) + textBuilderActions();
+                              else if (s === 'legalAidResourceOptions') html = textBuilderOptions(textBuilderState.data.legalAidCategory,TEXT_BUILDER_LEGAL_AID_OPTIONS[textBuilderState.data.legalAidCategory] || [],'chooseLegalAidResource',false,false,true) + textBuilderActions();
                               else if (s === 'followUpReadyDay') html = textBuilderOptions('Ready to Submit',['Today is Monday','Today is Tuesday','Today is Wed-Sun'],'chooseFollowUpReadyDay',false) + textBuilderActions();
                               else if (s === 'newCourtDateInput') html = textBuilderTextarea('New Court Date','Enter new court date information','confirmNewCourtDate','newCourtDate');
-                              else if (s === 'message') {if (textBuilderState.data.workflow === 'walkInDropIn') {const hasEligible = String(textBuilderState.data.eligibleCases || '').trim();
+                              else if (s === 'message' || s === 'legalAidMessage') {if (textBuilderState.data.workflow === 'walkInDropIn') {const hasEligible = String(textBuilderState.data.eligibleCases || '').trim();
                                                                                            const hasIneligible = String(textBuilderState.data.ineligibleCases || '').trim();
                                                                                            if (hasEligible && hasIneligible) {const ineligibleMsg = textBuilderLimitMessage(textBuilderDropInIneligibleMessage());
                                                                                                                              const eligibleMsg = textBuilderLimitMessage(textBuilderDropInEligibleMessage(false));
@@ -4072,7 +4114,11 @@ textBuilderPanel.addEventListener('click',(e) => {const action = e?.target?.data
                                                                                  if (textBuilderState.data.researchType === 'Can’tDo - private attorney') return textBuilderSet('message');
                                                                                  return textBuilderSet('address');}
                                                  if (action === 'chooseAddress') return value === 'Have Address' ? textBuilderSet('addressInput',{addressMode:value}) : textBuilderSet('message',{addressMode:value});
-                                                 if (action === 'chooseFollowUp') return value === 'Ready to Submit' ? textBuilderSet('followUpReadyDay',{workflow:'followUpReady'}) : textBuilderSet('staff',{workflow:'followUpNewCourtDate'});
+                                                 if (action === 'chooseFollowUp') {if (value === 'Legal Aid Resources') return textBuilderSet('legalAidResources',{workflow:'legalAidResources'});
+                                                                                 if (value === 'New Court Date') return textBuilderSet('staff',{workflow:'followUpNewCourtDate'});
+                                                                                 return textBuilderSet('followUpReadyDay',{workflow:'followUpReady'});}
+                                                 if (action === 'chooseLegalAidCategory') return textBuilderSet('legalAidResourceOptions',{legalAidCategory:value});
+                                                 if (action === 'chooseLegalAidResource') return textBuilderSet('legalAidMessage',{legalAidResource:value});
                                                  if (action === 'chooseFollowUpReadyDay') return textBuilderSet('message',{followUpDay:value});
                                                  if (action === 'confirmNewCourtDate') return textBuilderSet('message');
                                                  if (action === 'confirmAddress') return textBuilderSet('message');
@@ -5143,7 +5189,9 @@ function render() {const log = loadLog();
                                      if (action === 'toggleCourt') {const courts = new Set(textBuilderState.data.courts || []); courts.has(value) ? courts.delete(value) : courts.add(value); textBuilderState.data.courts = [...courts]; return renderTextBuilder();}
                                      if (action === 'confirmCourts') {if (textBuilderState.data.workflow === 'followUpNewCourtDate') return textBuilderSet('newCourtDateInput'); if (['CanDo - everything','CanDo + Can’tDo'].includes(textBuilderState.data.researchType)) return textBuilderSet('eligibleDropin'); if (textBuilderState.data.researchType === 'Can’tDo - private attorney') return textBuilderSet('message'); return textBuilderSet('address');}
                                      if (action === 'chooseAddress') return value === 'Have Address' ? textBuilderSet('addressInput',{addressMode:value}) : textBuilderSet('message',{addressMode:value});
-                                     if (action === 'chooseFollowUp') return value === 'Ready to Submit' ? textBuilderSet('followUpReadyDay',{workflow:'followUpReady'}) : textBuilderSet('staff',{workflow:'followUpNewCourtDate'});
+                                     if (action === 'chooseFollowUp') {if (value === 'Legal Aid Resources') return textBuilderSet('legalAidResources',{workflow:'legalAidResources'}); if (value === 'New Court Date') return textBuilderSet('staff',{workflow:'followUpNewCourtDate'}); return textBuilderSet('followUpReadyDay',{workflow:'followUpReady'});}
+                                     if (action === 'chooseLegalAidCategory') return textBuilderSet('legalAidResourceOptions',{legalAidCategory:value});
+                                     if (action === 'chooseLegalAidResource') return textBuilderSet('legalAidMessage',{legalAidResource:value});
                                      if (action === 'chooseFollowUpReadyDay') return textBuilderSet('message',{followUpDay:value});
                                      if (action === 'confirmNewCourtDate' || action === 'confirmAddress') return textBuilderSet('message');
                                      if (action === 'copyMessage') {GM_setClipboard(textBuilderBuildMessage(),'text'); return uiStatus('Text Builder message copied to clipboard');}
