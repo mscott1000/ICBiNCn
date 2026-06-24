@@ -1,11 +1,12 @@
 /************************************************************
  * INIT
  ************************************************************/
-uiStatus(getStatus() || 'Ready');
-restoreActiveNameSearchUiOnLoad();
-render();
+if (isJotformTablesPage()) {initializeJotformIntegration();}
+else {uiStatus(getStatus() || 'Ready');
+      restoreActiveNameSearchUiOnLoad();
+      render();
 
-setInterval(() => {try {nameSearchTick();}
-                   catch (e) {/* ignore */}
-                   try {trackTick();}
-                   catch (e) {}},900);})();
+      setInterval(() => {try {nameSearchTick();}
+                         catch (e) {/* ignore */}
+                         try {trackTick();}
+                         catch (e) {}},900);}})();

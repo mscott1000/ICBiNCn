@@ -8,6 +8,7 @@
 // @match        https://www.courts.mo.gov/cases/*
 // @match        https://www.courts.mo.gov/cnet/*
 // @match        https://www.municourt.net/*
+// @match        https://www.jotform.com/tables/*
 // @run-at       document-idle
 // @grant        GM_addStyle
 // @grant        GM_setClipboard
