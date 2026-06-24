@@ -817,6 +817,11 @@ function minimizeDock() {dock.classList.add('moHidden');
 function expandDock() {dock.classList.remove('moHidden');
                        launcher.classList.add('moHidden');}
 
+function restoreActiveNameSearchUiOnLoad() {const ns = loadNameState();
+                                            if (!ns?.active || isStop()) return;
+                                            appView = 'name';
+                                            expandDock();}
+
 function positionHelpPanel() {const rect = dock.getBoundingClientRect();
                               const right = Math.max(8,window.innerWidth - rect.left + 10);
                               const bottom = Math.max(8,window.innerHeight - rect.bottom);
