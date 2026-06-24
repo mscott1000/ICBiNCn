@@ -169,13 +169,13 @@ GM_addStyle(`:root{ --mo-bg: #f5f7fb;          /* page chrome */
             .moBtn:hover{filter:brightness(0.97);}
             .moBtn:active{transform:translateY(1px); filter:brightness(0.93);}
 
-            #moJsonCopy{background:var(--mo-primary);
+            #moJsonCopy,.moCopyBtn{background:var(--mo-primary);
                         border:1.5px solid var(--mo-border);
                         color:#fff;}
             #moJsonHeader .btnRow #moJsonSummary,
             #moJsonHeader .btnRow #moJsonCopy{padding:6.9px 11.5px;
                                                font-size:13.8px;}
-            #moJsonCopy:hover{background:var(--mo-primary-dk);}
+            #moJsonCopy:hover,.moCopyBtn:hover{background:var(--mo-primary-dk);}
 
             #moJsonStop,#moUpcomingStop{background:var(--mo-danger);
                         border:1.5px solid var(--mo-border);
@@ -282,7 +282,8 @@ GM_addStyle(`:root{ --mo-bg: #f5f7fb;          /* page chrome */
                              bottom:12px;
                              width:460px;
                              max-width:min(460px,calc(100vw - 24px));
-                             max-height:66vh;
+                             height:min(499px,calc(100vh - 24px));
+                             max-height:calc(100vh - 24px);
                              overflow:auto;
                              background:#fffef8;
                              border:1px solid #d9be6a;
@@ -410,6 +411,7 @@ GM_addStyle(`:root{ --mo-bg: #f5f7fb;          /* page chrome */
                                                                                               margin-top:0;
                                                                                               margin-bottom:0;}
             #moJsonContent.moTextBuilderContent .moTextBuilderRootBlock .moTextBuilderOption{flex:1 1 0;
+                                                                                             font-size:14px;
                                                                                              display:flex;
                                                                                              align-items:center;
                                                                                              justify-content:center;}
@@ -657,11 +659,11 @@ https://newcovenantlegalservices.org/faqs/`,
 https://spongey.app/`
 };
 const TEXT_BUILDER_LEGAL_AID_OPTIONS = {
+  'General Resources': ['Holland Law Referral','Law Library Association of St. Louis','Legal Services of Eastern Missouri','Missouri Public Defender Application'],
   'Bankruptcy': ['Bar Association of Metropolitan St. Louis'],
   'Debt Collection': ['New Covenant Legal Services'],
   'Expungement': ['3 Daughters and 1,000 Sons','Clear My Record Missouri - expungement reqs','New Covenant Legal Services','Spongey - expungement tool'],
   'Family Law & Custody': ['Catholic Legal Assistance Ministry/St. Francis','Fathers & Families Support Center','Legal Services of Eastern Missouri'],
-  'General Resources': ['Holland Law Referral','Law Library Association of St. Louis','Legal Services of Eastern Missouri','Missouri Public Defender Application'],
   'Landlord & Tenant Law': ['Catholic Legal Assistance Ministry/St. Francis','Legal Services of Eastern Missouri','New Covenant Legal Services']
 };
 const TEXT_BUILDER_LEGAL_AID_CATEGORIES = Object.keys(TEXT_BUILDER_LEGAL_AID_OPTIONS);
@@ -686,12 +688,12 @@ function textBuilderBack() {const prev = textBuilderState.history.pop();
                             else {textBuilderState.screen = prev.screen;
                                   textBuilderState.data = prev.data;}
                             renderTextBuilder();}
-function textBuilderScreenTitle() {const map = {staff:'Tap In Staff',researchType:'Post-Research Response',eligibleDropin:'Eligible Cases Drop-In',ineligibleDropin:'Ineligible Cases Drop-In',privateAttorneyDropin:'Ineligible Cases Drop-In',remainingIneligibleDropin:'Ineligible Cases Drop-In',courts:'Court Options (select all Courts in which a case was found)',address:'Address',addressInput:'Address',followUp:'Follow-Up',followUpReadyDay:'Ready to Submit',newCourtDateInput:'New Court Date',legalAidResources:'Legal Aid Resources',legalAidResourceOptions:textBuilderState.data.legalAidCategory,legalAidMessage:'Constructed Message',message:'Constructed Message'};
+function textBuilderScreenTitle() {const map = {staff:'Tap In Staff',researchType:'Post-Research Reply',eligibleDropin:'Eligible Cases Drop-In',ineligibleDropin:'Ineligible Cases Drop-In',privateAttorneyDropin:'Ineligible Cases Drop-In',remainingIneligibleDropin:'Ineligible Cases Drop-In',courts:'Court Options (select all Courts in which a case was found)',address:'Address',addressInput:'Address',followUp:'Follow-Up',followUpReadyDay:'Ready to Submit',newCourtDateInput:'New Court Date',legalAidResources:'Legal Aid Resources',legalAidResourceOptions:textBuilderState.data.legalAidCategory,legalAidMessage:'Constructed Message',message:'Constructed Message'};
                                   const suffix = map[textBuilderState.screen];
                                   return suffix ? `Text Builder - ${suffix}` : 'Text Builder';}
 function textBuilderOptionBlockClass(title,centered) {if (centered) return ' moTextBuilderRootBlock';
                                                      if (title === 'Tap In Staff') return ' moTextBuilderStaffBlock';
-                                                     if (title === 'Post-Research Response') return ' moTextBuilderResearchBlock';
+                                                     if (title === 'Post-Research Reply') return ' moTextBuilderResearchBlock';
                                                      if (title && title.startsWith('Court Options')) return ' moTextBuilderCourtsBlock';
                                                      return '';}
 function textBuilderOptions(title,options,action,multi,centered,tall) {const optionsClass = `moTextBuilderOptions${centered ? ' moCentered' : ''}`;
@@ -739,9 +741,9 @@ function renderTextBuilder() {const dockTitle = dock.querySelector('#moJsonTitle
                               if (dockTitle && appView === 'text') dockTitle.textContent = textBuilderScreenTitle();
                               let html = '';
                               const s = textBuilderState.screen;
-                              if (s === 'root') html = textBuilderOptions('', ['Initial Text','Post-Research Response','Follow-Up'],'chooseRoot',false,true);
+                              if (s === 'root') html = textBuilderOptions('', ['Initial Text','Post-Research Reply','Walk-In Client','Follow-Up'],'chooseRoot',false,true);
                               else if (s === 'staff') html = textBuilderOptions('Tap In Staff',TEXT_BUILDER_STAFF,'chooseStaff',false) + textBuilderActions();
-                              else if (s === 'researchType') html = textBuilderOptions('Post-Research Response',['CanDo - everything','CanDo + Can’tDo','Can’tDo - private attorney','Can’tDo - out of network','Can’tDo - repeat attempt','Nothing Found','Walk-In Client'],'chooseResearchType',false,false,true) + textBuilderActions();
+                              else if (s === 'researchType') html = textBuilderOptions('Post-Research Reply',['CanDo - everything','CanDo + Can’tDo','Can’tDo - private attorney','Can’tDo - out of network','Can’tDo - repeat attempt','Nothing Found'],'chooseResearchType',false,false,true) + textBuilderActions();
                               else if (s === 'eligibleDropin') html = textBuilderTextarea('Eligible Cases Drop-In','Enter summary of eligible cases','confirmEligible','eligibleCases');
                               else if (s === 'ineligibleDropin') html = textBuilderTextarea('Ineligible Cases Drop-In',textBuilderState.data.ineligiblePlaceholder || 'Enter summary of ineligible cases','confirmIneligible','ineligibleCases');
                               else if (s === 'privateAttorneyDropin') html = textBuilderTextarea('Ineligible Cases Drop-In','Enter summary of cases in eligible courts, with private attorney','confirmPrivateAttorney','privateAttorneyCases');
@@ -781,15 +783,16 @@ textBuilderPanel.addEventListener('click',(e) => {const action = e?.target?.data
                                                  if (action === 'moJsonTextBuilderClose') return closeTextBuilderPanel();
                                                  if (action === 'back') return textBuilderBack();
                                                  if (action === 'chooseRoot') {if (value === 'Initial Text') return textBuilderSet('staff',{workflow:'initial'});
-                                                                               if (value === 'Post-Research Response') return textBuilderSet('staff',{workflow:'postResearch'});
+                                                                               if (value === 'Post-Research Reply') return textBuilderSet('staff',{workflow:'postResearch'});
+                                                                               if (value === 'Walk-In Client') return textBuilderSet('staff',{workflow:'walkInDropIn',researchType:'Walk-In Client'});
                                                                                return textBuilderSet('followUp',{workflow:'followUp'});}
                                                  if (action === 'chooseStaff') {if (textBuilderState.data.workflow === 'initial') return textBuilderSet('message',{staff:value});
                                                                                 if (textBuilderState.data.workflow === 'followUpNewCourtDate') return textBuilderSet('courts',{staff:value,courts:[]});
+                                                                                if (textBuilderState.data.workflow === 'walkInDropIn') return textBuilderSet('eligibleDropin',{staff:value});
                                                                                 return textBuilderSet('researchType',{staff:value});}
                                                  if (action === 'chooseResearchType') {if (value === 'Nothing Found') return textBuilderSet('message',{researchType:value});
                                                                                       if (value === 'CanDo - everything') return textBuilderSet('courts',{researchType:value,courts:[]});
                                                                                       if (value === 'CanDo + Can’tDo') return textBuilderSet('courts',{researchType:value,courts:[]});
-                                                                                      if (value === 'Walk-In Client') return textBuilderSet('eligibleDropin',{researchType:value,workflow:'walkInDropIn'});
                                                                                       if (value === 'Can’tDo - private attorney') return textBuilderSet('privateAttorneyDropin',{researchType:value});
                                                                                       if (value === 'Can’tDo - out of network') return textBuilderSet('ineligibleDropin',{researchType:value,ineligiblePlaceholder:'Enter summary of ineligible cases'});
                                                                                       if (value === 'Can’tDo - repeat attempt') return textBuilderSet('ineligibleDropin',{researchType:value,ineligiblePlaceholder:'Enter summary of ineligible cases - make sure to identify which cases are repeats'});}
