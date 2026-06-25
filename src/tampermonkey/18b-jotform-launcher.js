@@ -49,6 +49,9 @@ function findJotformRowWrappers(sourceWrapper) {const submissionId = sourceWrapp
                                                 if ((!wrappers.length || wrappers.length === 1) && rowIndex !== '') wrappers = Array.from(document.querySelectorAll(`.jSheetRow-cellWrapper[data-row-index="${jotformCssEscape(rowIndex)}"]`));
                                                 return wrappers;}
 
+function getJotformNameWrapperForRowWrapper(rowWrapper) {const rowWrappers = findJotformRowWrappers(rowWrapper);
+                                                        return rowWrappers.find((w) => jotformCellType(w) === 'control_fullname' && jotformCellText(w));}
+
 function getJotformParamsForNameWrapper(nameWrapper) {const fullName = jotformCellText(nameWrapper).replace(/\bICBiNCn Search\b/g,'').trim();
                                                      const parsedName = parseJotformFullName(fullName);
                                                      if (!parsedName?.first || !parsedName?.last) throw new Error('Could not parse first and last name from this row.');
@@ -126,9 +129,12 @@ function updateJotformStatusDisplayLabels() {const statusColumnId = findJotformC
                                                                                                           wrapper.dataset.icbincnOriginalStatus = current;}}
 }
 
-function injectJotformSearchButtons() {const wrappers = Array.from(document.querySelectorAll('.jSheetRow-cellWrapper'))
-                                            .filter((w) => jotformCellType(w) === 'control_fullname' && jotformCellText(w));
+function injectJotformSearchButtons() {const statusColumnId = findJotformColumnIdByTitle('Status');
+                                      const wrappers = Array.from(document.querySelectorAll('.jSheetRow-cellWrapper'))
+                                            .filter((w) => statusColumnId ? w.dataset?.columnId === statusColumnId : jotformHeaderTitleByQid(w.dataset?.columnId).toLowerCase() === 'status');
                                       for (const wrapper of wrappers) {if (wrapper.querySelector(':scope > .icbincnJotformSearchBtn')) continue;
+                                                                      const nameWrapper = getJotformNameWrapperForRowWrapper(wrapper);
+                                                                      if (!nameWrapper) continue;
                                                                       const btn = document.createElement('button');
                                                                       btn.type = 'button';
                                                                       btn.className = 'icbincnJotformSearchBtn';
@@ -140,7 +146,7 @@ function injectJotformSearchButtons() {const wrappers = Array.from(document.quer
                                                                       btn.appendChild(img);
                                                                       btn.addEventListener('click',(e) => {e.preventDefault();
                                                                                                            e.stopPropagation();
-                                                                                                           try {const params = getJotformParamsForNameWrapper(wrapper);
+                                                                                                           try {const params = getJotformParamsForNameWrapper(nameWrapper);
                                                                                                                 startIcbincnSearchFromJotform(params);
                                                                                                                 btn.classList.add('isOpening');
                                                                                                                 setTimeout(() => {btn.classList.remove('isOpening');},2500);}
