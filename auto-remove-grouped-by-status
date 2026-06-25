@@ -1,0 +1,94 @@
+// ==UserScript==
+// @name         Auto-remove Grouped by Status
+// @namespace    mason.auto-remove-grouped-by-status
+// @version      1.0
+// @description  Automatically clicks the X on the "Grouped by Status" element when it appears.
+// @match        https://www.jotform.com/*
+// @run-at       document-idle
+// @grant        none
+// ==/UserScript==
+
+(function () {
+  'use strict';
+
+  const TARGET_GROUP_NAME = 'Status';
+  const CLICK_COOLDOWN_MS = 750;
+
+  let lastClickTime = 0;
+
+  function normalizeText(text) {
+    return String(text || '')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .toLowerCase();
+  }
+
+  function isVisible(el) {
+    if (!el) return false;
+
+    const style = window.getComputedStyle(el);
+    const rect = el.getBoundingClientRect();
+
+    return (
+      style.display !== 'none' &&
+      style.visibility !== 'hidden' &&
+      style.opacity !== '0' &&
+      rect.width > 0 &&
+      rect.height > 0
+    );
+  }
+
+  function removeGroupedByStatus() {
+    const groupingElements = document.querySelectorAll(
+      '.js-groupBy.forGrouping, .js-groupBy'
+    );
+
+    for (const groupingElement of groupingElements) {
+      const text = normalizeText(groupingElement.textContent);
+
+      const isGroupedByElement =
+        text.includes('grouped by') || text.includes('grouped bystatus');
+
+      const isStatusGrouping = text.includes(TARGET_GROUP_NAME.toLowerCase());
+
+      if (!isGroupedByElement || !isStatusGrouping) {
+        continue;
+      }
+
+      const removeButton = groupingElement.querySelector(
+        'button.js-removeGrouping, button[aria-label="Remove grouping"], .jSheetRemove'
+      );
+
+      if (!removeButton || !isVisible(removeButton)) {
+        continue;
+      }
+
+      const now = Date.now();
+      if (now - lastClickTime < CLICK_COOLDOWN_MS) {
+        return;
+      }
+
+      lastClickTime = now;
+      removeButton.click();
+
+      console.log('[Tampermonkey] Removed "Grouped by Status".');
+      return;
+    }
+  }
+
+  // Run once after page load.
+  removeGroupedByStatus();
+
+  // Watch for the element being added later by the web app.
+  const observer = new MutationObserver(() => {
+    removeGroupedByStatus();
+  });
+
+  observer.observe(document.documentElement, {
+    childList: true,
+    subtree: true
+  });
+
+  // Backup check in case the app changes the element without a clean DOM mutation.
+  setInterval(removeGroupedByStatus, 1000);
+})();
