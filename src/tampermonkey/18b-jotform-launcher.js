@@ -191,7 +191,9 @@ function updateJotformCaseyColumns() {jotformRefreshSuppressedUntil = Date.now()
 
 const JOTFORM_TARGET_GROUP_NAME = 'Status';
 const JOTFORM_GROUP_REMOVE_CLICK_COOLDOWN_MS = 750;
+const JOTFORM_FILTER_RESULT_CLOSE_CLICK_COOLDOWN_MS = 750;
 let jotformLastGroupRemoveClickTime = 0;
+let jotformLastFilterResultCloseClickTime = 0;
 
 function normalizeJotformGroupingText(text) {return String(text || '')
                                                    .replace(/\s+/g,' ')
@@ -228,8 +230,26 @@ function initializeJotformGroupedByStatusRemoval() {removeJotformGroupedByStatus
                                                    observer.observe(target,{childList:true,subtree:true});
                                                    setInterval(removeJotformGroupedByStatus,1000);}
 
+function closeJotformFilterResultBar() {const bars = document.querySelectorAll('.jSheetFilterResultBar');
+                                       for (const bar of bars) {const closeButton = bar.querySelector('button[aria-label="Close Filter"], .jSheetIconButton');
+                                                               if (!closeButton || !isVisibleJotformGroupingControl(closeButton)) continue;
+                                                               const now = Date.now();
+                                                               if (now - jotformLastFilterResultCloseClickTime < JOTFORM_FILTER_RESULT_CLOSE_CLICK_COOLDOWN_MS) return;
+                                                               jotformLastFilterResultCloseClickTime = now;
+                                                               closeButton.click();
+                                                               console.log('[ICBiNCn] Closed Jotform filter result message.');
+                                                               return;}}
+
+function initializeJotformFilterResultBarClosing() {closeJotformFilterResultBar();
+                                                  const target = document.body || document.documentElement;
+                                                  if (!target) return;
+                                                  const observer = new MutationObserver(() => {closeJotformFilterResultBar();});
+                                                  observer.observe(target,{childList:true,subtree:true});
+                                                  setInterval(closeJotformFilterResultBar,1000);}
+
 function initializeJotformIntegration() {hideIcbincnDockOnJotform();
                                         initializeJotformGroupedByStatusRemoval();
+                                        initializeJotformFilterResultBarClosing();
                                         GM_addStyle(`.icbincnJotformSearchBtn{position:absolute;right:4px;bottom:4px;z-index:99999;width:30px;height:30px;border:2px solid #1d4ed8;border-radius:999px;background:#fff;padding:0;cursor:pointer;box-shadow:0 2px 5px rgba(15,23,42,.22);overflow:hidden;}
                                                      .icbincnJotformSearchBtn img{display:block;width:100%;height:100%;object-fit:cover;}
                                                      .icbincnJotformSearchBtn:hover{border-color:#f97316;transform:translateY(-1px);}
