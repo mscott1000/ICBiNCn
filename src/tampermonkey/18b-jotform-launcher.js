@@ -106,6 +106,26 @@ function jotformPersistSearchResult(st) {const pending = st?.jotformPending || l
                                         saveJotformResult(pending.rowKey,{summary,copy,row:pending.row || {},params:pending.params || st?.params || {}});
                                         saveJson(KEY_JOTFORM_PENDING,null);}
 
+
+const JOTFORM_STATUS_DISPLAY_OVERRIDES = new Map([
+  ['kiddie pool','Form Complete'],
+  ['deep dive','Form Complete'],
+  ['pool rules','Birds and the Bees'],
+]);
+
+function jotformDisplayStatusText(statusText) {const normalized = norm(statusText).toLowerCase();
+                                               return JOTFORM_STATUS_DISPLAY_OVERRIDES.get(normalized) || statusText;}
+
+function updateJotformStatusDisplayLabels() {const statusColumnId = findJotformColumnIdByTitle('Status');
+                                             if (!statusColumnId) return;
+                                             const wrappers = Array.from(document.querySelectorAll(`.jSheetRow-cellWrapper[data-column-id="${jotformCssEscape(statusColumnId)}"]`));
+                                             for (const wrapper of wrappers) {const textNode = wrapper.querySelector('.textField.js-textField') || wrapper.querySelector('.jSheetRow-cellContent') || wrapper;
+                                                                             const current = norm(textNode?.textContent || '');
+                                                                             const replacement = jotformDisplayStatusText(current);
+                                                                             if (replacement !== current) {textNode.textContent = replacement;
+                                                                                                          wrapper.dataset.icbincnOriginalStatus = current;}}
+}
+
 function injectJotformSearchButtons() {const wrappers = Array.from(document.querySelectorAll('.jSheetRow-cellWrapper'))
                                             .filter((w) => jotformCellType(w) === 'control_fullname' && jotformCellText(w));
                                       for (const wrapper of wrappers) {if (wrapper.querySelector(':scope > .icbincnJotformSearchBtn')) continue;
@@ -215,8 +235,10 @@ function initializeJotformIntegration() {hideIcbincnDockOnJotform();
                                                      .icbincnJotformResultCell{padding:5px 8px;white-space:pre-wrap;overflow:auto;}`);
                                         injectJotformSearchButtons();
                                         updateJotformCaseyColumns();
+                                        updateJotformStatusDisplayLabels();
                                         const obs = new MutationObserver(() => {if (Date.now() < jotformRefreshSuppressedUntil) return;
                                                                                  injectJotformSearchButtons();
-                                                                                 updateJotformCaseyColumns();});
+                                                                                 updateJotformCaseyColumns();
+                                                                                 updateJotformStatusDisplayLabels();});
                                         obs.observe(document.body || document.documentElement,{childList:true,subtree:true});
-                                        setInterval(() => {injectJotformSearchButtons(); updateJotformCaseyColumns();},2000);}
+                                        setInterval(() => {injectJotformSearchButtons(); updateJotformCaseyColumns(); updateJotformStatusDisplayLabels();},2000);}
