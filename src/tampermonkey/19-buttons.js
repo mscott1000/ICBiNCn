@@ -211,6 +211,8 @@
                                                 catch (e) {dbg('namesearch_municourt_final_pass_error',{msg:String(e?.message || e)});}
                                                 const casenetAdded = Number(st.casenetAddedTotal || 0);
                                                 dbg('namesearch_done',{casenetAdded,muniAdded});
+                                                if (st.launchedFrom === 'jotform') {try {jotformPersistSearchResult(st);}
+                                                                                    catch (e) {dbg('jotform_result_persist_error',{msg:String(e?.message || e)});}}
                                                 clearNameState();
                                                 expandDock();
                                                 uiStatus(`Done. Case.net: ${casenetAdded}  Municourt.net: ${muniAdded}`);
