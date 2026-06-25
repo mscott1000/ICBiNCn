@@ -111,6 +111,9 @@ function jotformPersistSearchResult(st) {const pending = st?.jotformPending || l
 
 
 const JOTFORM_STATUS_DISPLAY_OVERRIDES = new Map([
+  ['4-kiddie pool','Form Complete'],
+  ['6-deep dive','Form Complete'],
+  ['5-pool rules','Birds and the Bees'],
   ['kiddie pool','Form Complete'],
   ['deep dive','Form Complete'],
   ['pool rules','Birds and the Bees'],
