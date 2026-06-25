@@ -3790,12 +3790,16 @@ GM_addStyle(`:root{ --mo-bg: #f5f7fb;          /* page chrome */
                                gap:10px;}
             .moTextBuilderPane{display:flex;
                                flex-direction:column;
-                               gap:8px;}
+                               gap:8px;
+                               min-height:0;}
             .moTextBuilderPane h3{margin:0;
                                     text-align:center;}
             .moTextBuilderPane .moBtn{align-self:flex-start;}
             .moTextBuilderMessage{white-space:pre-wrap;
                                   max-width:none;
+                                  max-height:min(420px,55vh);
+                                  overflow:auto;
+                                  overscroll-behavior:contain;
                                   margin-left:auto;
                                   margin-right:auto;
                                   border:1px solid #93c5fd;
