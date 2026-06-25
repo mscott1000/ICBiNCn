@@ -5226,7 +5226,48 @@ function updateJotformCaseyColumns() {jotformRefreshSuppressedUntil = Date.now()
                                                                                                                                                                            parent?.appendChild(cell);}}
 }
 
+
+const JOTFORM_TARGET_GROUP_NAME = 'Status';
+const JOTFORM_GROUP_REMOVE_CLICK_COOLDOWN_MS = 750;
+let jotformLastGroupRemoveClickTime = 0;
+
+function normalizeJotformGroupingText(text) {return String(text || '')
+                                                   .replace(/\s+/g,' ')
+                                                   .trim()
+                                                   .toLowerCase();}
+
+function isVisibleJotformGroupingControl(el) {if (!el) return false;
+                                             const style = window.getComputedStyle(el);
+                                             const rect = el.getBoundingClientRect();
+                                             return style.display !== 'none' &&
+                                                    style.visibility !== 'hidden' &&
+                                                    style.opacity !== '0' &&
+                                                    rect.width > 0 &&
+                                                    rect.height > 0;}
+
+function removeJotformGroupedByStatus() {const groupingElements = document.querySelectorAll('.js-groupBy.forGrouping, .js-groupBy');
+                                        for (const groupingElement of groupingElements) {const text = normalizeJotformGroupingText(groupingElement.textContent);
+                                                                                          const isGroupedByElement = text.includes('grouped by') || text.includes('grouped bystatus');
+                                                                                          const isStatusGrouping = text.includes(JOTFORM_TARGET_GROUP_NAME.toLowerCase());
+                                                                                          if (!isGroupedByElement || !isStatusGrouping) continue;
+                                                                                          const removeButton = groupingElement.querySelector('button.js-removeGrouping, button[aria-label="Remove grouping"], .jSheetRemove');
+                                                                                          if (!removeButton || !isVisibleJotformGroupingControl(removeButton)) continue;
+                                                                                          const now = Date.now();
+                                                                                          if (now - jotformLastGroupRemoveClickTime < JOTFORM_GROUP_REMOVE_CLICK_COOLDOWN_MS) return;
+                                                                                          jotformLastGroupRemoveClickTime = now;
+                                                                                          removeButton.click();
+                                                                                          console.log('[ICBiNCn] Removed Jotform "Grouped by Status" filter.');
+                                                                                          return;}}
+
+function initializeJotformGroupedByStatusRemoval() {removeJotformGroupedByStatus();
+                                                   const target = document.body || document.documentElement;
+                                                   if (!target) return;
+                                                   const observer = new MutationObserver(() => {removeJotformGroupedByStatus();});
+                                                   observer.observe(target,{childList:true,subtree:true});
+                                                   setInterval(removeJotformGroupedByStatus,1000);}
+
 function initializeJotformIntegration() {hideIcbincnDockOnJotform();
+                                        initializeJotformGroupedByStatusRemoval();
                                         GM_addStyle(`.icbincnJotformSearchBtn{position:absolute;right:4px;bottom:4px;z-index:99999;width:30px;height:30px;border:2px solid #1d4ed8;border-radius:999px;background:#fff;padding:0;cursor:pointer;box-shadow:0 2px 5px rgba(15,23,42,.22);overflow:hidden;}
                                                      .icbincnJotformSearchBtn img{display:block;width:100%;height:100%;object-fit:cover;}
                                                      .icbincnJotformSearchBtn:hover{border-color:#f97316;transform:translateY(-1px);}
