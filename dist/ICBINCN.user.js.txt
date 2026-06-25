@@ -5196,6 +5196,72 @@ function updateJotformStatusDisplayLabels() {const statusColumnId = findJotformC
                                                                                                           wrapper.dataset.icbincnOriginalStatus = current;}}
 }
 
+
+const JOTFORM_TAB_DROPDOWN_GROUPS = [
+  {key:'phases',title:'Phases',labels:['Phase 1','Phase 2','Phase 3','Phase 4','Phase 5']},
+  {key:'courtsReady',title:'Courts - Ready to Submit',labels:['Phase 3 - Florissant','Phase 3 - Kirkwood','Phase 3 - Manchester','Phase 3 - STL City Circuit Court','Phase 3 - STL City Municipal Court','Phase 3 - STL County Circuit Court','Phase 3 - University City','Phase 3 - Webster Groves']},
+];
+
+function jotformTabText(tab) {return norm(tab?.querySelector?.('.tab-text')?.textContent || tab?.textContent || '');}
+
+function findJotformVisibleTabByLabel(label) {const wanted = norm(label).toLowerCase();
+                                             return Array.from(document.querySelectorAll('.product-tab-item[role="tab"], .tab-item[role="tab"]'))
+                                                .find((tab) => jotformTabText(tab).toLowerCase() === wanted);}
+
+function buildJotformTabDropdown(group,tabs) {const wrap = document.createElement('div');
+                                             wrap.className = 'icbincnJotformTabDropdown';
+                                             wrap.dataset.icbincnTabGroup = group.key;
+                                             const button = document.createElement('button');
+                                             button.type = 'button';
+                                             button.className = 'icbincnJotformTabDropdownButton';
+                                             button.setAttribute('aria-haspopup','true');
+                                             button.setAttribute('aria-expanded','false');
+                                             button.textContent = group.title;
+                                             const menu = document.createElement('div');
+                                             menu.className = 'icbincnJotformTabDropdownMenu';
+                                             menu.setAttribute('role','menu');
+                                             for (const label of group.labels) {const item = document.createElement('button');
+                                                                               item.type = 'button';
+                                                                               item.className = 'icbincnJotformTabDropdownItem';
+                                                                               item.setAttribute('role','menuitem');
+                                                                               item.textContent = label;
+                                                                               item.addEventListener('click',(e) => {e.preventDefault();
+                                                                                                                       e.stopPropagation();
+                                                                                                                       wrap.classList.remove('isOpen');
+                                                                                                                       button.setAttribute('aria-expanded','false');
+                                                                                                                       const tab = findJotformVisibleTabByLabel(label);
+                                                                                                                       if (tab) tab.click();});
+                                                                               menu.appendChild(item);}
+                                             button.addEventListener('click',(e) => {e.preventDefault();
+                                                                                    e.stopPropagation();
+                                                                                    const nextOpen = !wrap.classList.contains('isOpen');
+                                                                                    for (const other of Array.from(document.querySelectorAll('.icbincnJotformTabDropdown.isOpen'))) {if (other !== wrap) {other.classList.remove('isOpen');
+                                                                                                                                                                                                            other.querySelector('.icbincnJotformTabDropdownButton')?.setAttribute('aria-expanded','false');}}
+                                                                                    wrap.classList.toggle('isOpen',nextOpen);
+                                                                                    button.setAttribute('aria-expanded',String(nextOpen));});
+                                             wrap.appendChild(button);
+                                             wrap.appendChild(menu);
+                                             const activeTab = tabs.find((tab) => tab.getAttribute('data-active') === 'true' || tab.classList.contains('active'));
+                                             if (activeTab) wrap.classList.add('hasActiveTab');
+                                             return wrap;}
+
+function consolidateJotformFilterTabs() {for (const group of JOTFORM_TAB_DROPDOWN_GROUPS) {const tabs = group.labels.map(findJotformVisibleTabByLabel).filter(Boolean);
+                                                                                         if (!tabs.length) continue;
+                                                                                         const firstTab = tabs[0];
+                                                                                         const parent = firstTab.parentElement;
+                                                                                         if (!parent) continue;
+                                                                                         let dropdown = parent.querySelector(`.icbincnJotformTabDropdown[data-icbincn-tab-group="${group.key}"]`);
+                                                                                         if (!dropdown) {dropdown = buildJotformTabDropdown(group,tabs);
+                                                                                                         parent.insertBefore(dropdown,firstTab);}
+                                                                                         dropdown.classList.toggle('hasActiveTab',tabs.some((tab) => tab.getAttribute('data-active') === 'true' || tab.classList.contains('active')));
+                                                                                         for (const tab of tabs) {tab.classList.add('icbincnJotformTabHidden');
+                                                                                                                   tab.setAttribute('aria-hidden','true');}}}
+
+function initializeJotformTabConsolidation() {consolidateJotformFilterTabs();
+                                             document.addEventListener('click',(e) => {if (e.target?.closest?.('.icbincnJotformTabDropdown')) return;
+                                                                                      for (const dropdown of Array.from(document.querySelectorAll('.icbincnJotformTabDropdown.isOpen'))) {dropdown.classList.remove('isOpen');
+                                                                                                                                                                                          dropdown.querySelector('.icbincnJotformTabDropdownButton')?.setAttribute('aria-expanded','false');}},true);}
+
 function injectJotformSearchButtons() {const statusColumnId = findJotformColumnIdByTitle('Status');
                                       const wrappers = Array.from(document.querySelectorAll('.jSheetRow-cellWrapper'))
                                             .filter((w) => statusColumnId ? w.dataset?.columnId === statusColumnId : jotformHeaderTitleByQid(w.dataset?.columnId).toLowerCase() === 'status');
@@ -5317,7 +5383,17 @@ function initializeJotformFilterResultBarClosing() {closeJotformFilterResultBar(
 function initializeJotformIntegration() {hideIcbincnDockOnJotform();
                                         initializeJotformGroupedByStatusRemoval();
                                         initializeJotformFilterResultBarClosing();
-                                        GM_addStyle(`.icbincnJotformSearchBtn{position:absolute;right:4px;bottom:4px;z-index:99999;width:30px;height:30px;border:2px solid #1d4ed8;border-radius:999px;background:#fff;padding:0;cursor:pointer;box-shadow:0 2px 5px rgba(15,23,42,.22);overflow:hidden;}
+                                        initializeJotformTabConsolidation();
+                                        GM_addStyle(`.icbincnJotformTabHidden{display:none!important;}
+                                                     .icbincnJotformTabDropdown{position:relative;display:inline-flex;align-items:center;margin-right:6px;height:36px;z-index:100000;}
+                                                     .icbincnJotformTabDropdownButton{height:36px;min-width:132px;border:0;border-radius:6px;padding:0 28px 0 12px;background:#1f2937;color:#fff;font:600 14px/1 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;cursor:pointer;box-shadow:inset 0 -1px 0 rgba(255,255,255,.18);position:relative;}
+                                                     .icbincnJotformTabDropdownButton::after{content:'▾';position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:12px;}
+                                                     .icbincnJotformTabDropdown.hasActiveTab .icbincnJotformTabDropdownButton{background:#fff;color:#183153;}
+                                                     .icbincnJotformTabDropdownMenu{display:none;position:absolute;top:40px;left:0;min-width:260px;max-height:70vh;overflow:auto;background:#fff;color:#0f172a;border:1px solid #cbd5e1;border-radius:8px;box-shadow:0 12px 28px rgba(15,23,42,.22);padding:6px;z-index:100001;}
+                                                     .icbincnJotformTabDropdown.isOpen .icbincnJotformTabDropdownMenu{display:block;}
+                                                     .icbincnJotformTabDropdownItem{display:block;width:100%;border:0;border-radius:6px;background:transparent;color:#0f172a;text-align:left;padding:8px 10px;font:500 13px/1.25 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;cursor:pointer;white-space:nowrap;}
+                                                     .icbincnJotformTabDropdownItem:hover,.icbincnJotformTabDropdownItem:focus{background:#e0f2fe;outline:none;}
+                                                     .icbincnJotformSearchBtn{position:absolute;right:4px;bottom:4px;z-index:99999;width:30px;height:30px;border:2px solid #1d4ed8;border-radius:999px;background:#fff;padding:0;cursor:pointer;box-shadow:0 2px 5px rgba(15,23,42,.22);overflow:hidden;}
                                                      .icbincnJotformSearchBtn img{display:block;width:100%;height:100%;object-fit:cover;}
                                                      .icbincnJotformSearchBtn:hover{border-color:#f97316;transform:translateY(-1px);}
                                                      .icbincnJotformSearchBtn.isOpening{outline:3px solid #22c55e;}
@@ -5332,9 +5408,10 @@ function initializeJotformIntegration() {hideIcbincnDockOnJotform();
                                         const obs = new MutationObserver(() => {if (Date.now() < jotformRefreshSuppressedUntil) return;
                                                                                  injectJotformSearchButtons();
                                                                                  updateJotformCaseyColumns();
-                                                                                 updateJotformStatusDisplayLabels();});
+                                                                                 updateJotformStatusDisplayLabels();
+                                                                                 consolidateJotformFilterTabs();});
                                         obs.observe(document.body || document.documentElement,{childList:true,subtree:true});
-                                        setInterval(() => {injectJotformSearchButtons(); updateJotformCaseyColumns(); updateJotformStatusDisplayLabels();},2000);}
+                                        setInterval(() => {injectJotformSearchButtons(); updateJotformCaseyColumns(); updateJotformStatusDisplayLabels(); consolidateJotformFilterTabs();},2000);}
 /************************************************************
    * Buttons
    ************************************************************/
