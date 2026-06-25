@@ -486,7 +486,7 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
                                                                                const divisionText = division ? `DIV ${division}` : 'DIV';
                                                                                const judgeText = judge ? `, Judge ${judge}` : '';
                                                                                const clerkText = clerk ? ` - Court Clerk: ${clerk}` : '';
-                                                                               return `- ${divisionText}${judgeText}${clerkText} -`;}
+                                                                               return `| ${divisionText}${judgeText}${clerkText} |`;}
 
   function groupedHasStLouisCountyCircuitHeaders(grouped) {for (const header of grouped.keys()) {if (isStLouisCountyCircuitHeader(header)) return true;}
                                                           return false;}
@@ -692,6 +692,8 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
   function isStLouisCountyCircuitJurisdiction(jurisdiction) {const key = municipalityMatchKey(jurisdiction);
                                                              return key.includes('ST LOUIS COUNTY CIRCUIT') || (key.includes('ST LOUIS COUNTY') && key.includes('CIRCUIT'));}
 
+  function isExactStLouisCountyCircuitJurisdiction(jurisdiction) {return municipalityMatchKey(jurisdiction) === 'ST LOUIS COUNTY CIRCUIT';}
+
   function getEligibleJurisdictionPriority(jurisdiction,entries) {return isStLouisCountyCircuitJurisdiction(jurisdiction) && entries.some(isFelonyChargeType) ? 1 : 0;}
 
   function buildOrderedJurisdictionGroups(entries) {const eligibleByJurisdiction = new Map();
@@ -732,18 +734,20 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
                                                                                                                               else {const header = getMunicipalityHeaderForSummary(jurisdiction,'') || jurisdiction.toUpperCase();
                                                                                                                                     grouped.set(header,entries);}
 
-                                                                                                                              if (includeJudgeDetails && grouped.size > 1 && groupedHasStLouisCountyCircuitHeaders(grouped)) {sections.push('ST. LOUIS COUNTY CIRCUIT');
+                                                                                                                              if (includeJudgeDetails && isExactStLouisCountyCircuitJurisdiction(jurisdiction) && groupedHasStLouisCountyCircuitHeaders(grouped)) {sections.push('ST. LOUIS COUNTY CIRCUIT');
+                                                                                                                                                                                                                         let groupIndex = 0;
                                                                                                                                                                                                                          for (const [header,headerEntries] of grouped.entries()) {const sortedEntries = headerEntries.map((entry,idx) => ({entry,idx}))
                                                                                                                                                                                                                                                                                 .sort((a,b) => {const priorityDiff = getSummaryStatusPriority(a.entry) - getSummaryStatusPriority(b.entry);
                                                                                                                                                                                                                                                                                                 if (priorityDiff) return priorityDiff;
                                                                                                                                                                                                                                                                                                 return a.idx - b.idx;})
                                                                                                                                                                                                                                                                                 .map(({entry}) => entry);
+                                                                                                                                                                                                                                                              if (groupIndex > 0) sections.push('');
                                                                                                                                                                                                                                                               sections.push(formatStLouisCountyCircuitJudgeSubheader(header,sortedEntries[0]?.judge || ''));
                                                                                                                                                                                                                                                               for (const e of sortedEntries) {const caseNo = getCaseNumberForSummary(e);
                                                                                                                                                                                                                                                                                         const charge = norm(e?.chargeDescription || '') || 'No Charges Found';
                                                                                                                                                                                                                                                                                         const lineStatus = getSummaryLineStatus(e);
                                                                                                                                                                                                                                                                                         sections.push(formatSummaryCaseLine(caseNo,charge,lineStatus));}
-                                                                                                                                                                                                                                                              sections.push('- - -');}
+                                                                                                                                                                                                                                                              groupIndex += 1;}
                                                                                                                                                                                                                          sections.push('');
                                                                                                                               continue;}
 
