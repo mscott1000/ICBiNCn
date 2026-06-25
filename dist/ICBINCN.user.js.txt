@@ -1,7 +1,7 @@
 // ==UserScript==
-// @name         ICBiNCn 6.24
+// @name         ICBiNCn 6.25
 // @namespace    http://tampermonkey.net/
-// @version      2026-06-24
+// @version      2026-06-25
 // @description  Background Case.net scraper using JSON/XHR endpoints. Navs to search results pages, pulls case data via POST requests, then writes to a persistent log for copying. Now with Track This Case.
 // @author       Mason Scott
 // @match        https://www.courts.mo.gov/casenet/*
@@ -3222,7 +3222,7 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
                                   const eligibleText = eligibleSections.join('\n').trim();
                                   const ineligibleText = ineligibleSections.join('\n').trim();
                                   if (eligibleText) sections.push(`- - -\n\n${eligibleText}${hasUpcoming ? '' : '\n\n- - -'}`);
-                                  if (ineligibleText) {if (sections.length) sections.push('', '', '', '');
+                                  if (ineligibleText) {if (sections.length) sections.push('', '');
                                                        sections.push(`- - -\n\n${ineligibleText}${hasUpcoming ? '' : '\n\n- - -'}`);}
 
                                   if (hasUpcoming) {sections.push('', '', 'Upcoming Court Dates:', '');
