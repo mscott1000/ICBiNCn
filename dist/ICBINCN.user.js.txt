@@ -5208,6 +5208,20 @@ function findJotformVisibleTabByLabel(label) {const wanted = norm(label).toLower
                                              return Array.from(document.querySelectorAll('.product-tab-item[role="tab"], .tab-item[role="tab"]'))
                                                 .find((tab) => jotformTabText(tab).toLowerCase() === wanted);}
 
+function closeJotformTabDropdown(dropdown) {dropdown?.classList?.remove('isOpen');
+                                             dropdown?.icbincnMenu?.classList?.remove('isOpen');
+                                             dropdown?.querySelector?.('.icbincnJotformTabDropdownButton')?.setAttribute('aria-expanded','false');}
+
+function positionJotformTabDropdownMenu(wrap) {const button = wrap?.querySelector?.('.icbincnJotformTabDropdownButton');
+                                              const menu = wrap?.icbincnMenu;
+                                              if (!button || !menu || !wrap.classList.contains('isOpen')) return;
+                                              const rect = button.getBoundingClientRect();
+                                              const menuWidth = Math.max(260,menu.offsetWidth || 260);
+                                              const left = Math.min(Math.max(8,rect.left),Math.max(8,window.innerWidth - menuWidth - 8));
+                                              menu.style.left = `${left}px`;
+                                              menu.style.top = `${Math.min(rect.bottom + 4,window.innerHeight - 8)}px`;
+                                              menu.style.minWidth = `${Math.max(260,rect.width)}px`;}
+
 function buildJotformTabDropdown(group,tabs) {const wrap = document.createElement('div');
                                              wrap.className = 'icbincnJotformTabDropdown';
                                              wrap.dataset.icbincnTabGroup = group.key;
@@ -5219,7 +5233,9 @@ function buildJotformTabDropdown(group,tabs) {const wrap = document.createElemen
                                              button.textContent = group.title;
                                              const menu = document.createElement('div');
                                              menu.className = 'icbincnJotformTabDropdownMenu';
+                                             menu.dataset.icbincnTabGroup = group.key;
                                              menu.setAttribute('role','menu');
+                                             wrap.icbincnMenu = menu;
                                              for (const label of group.labels) {const item = document.createElement('button');
                                                                                item.type = 'button';
                                                                                item.className = 'icbincnJotformTabDropdownItem';
@@ -5227,20 +5243,20 @@ function buildJotformTabDropdown(group,tabs) {const wrap = document.createElemen
                                                                                item.textContent = label;
                                                                                item.addEventListener('click',(e) => {e.preventDefault();
                                                                                                                        e.stopPropagation();
-                                                                                                                       wrap.classList.remove('isOpen');
-                                                                                                                       button.setAttribute('aria-expanded','false');
+                                                                                                                       closeJotformTabDropdown(wrap);
                                                                                                                        const tab = findJotformVisibleTabByLabel(label);
                                                                                                                        if (tab) tab.click();});
                                                                                menu.appendChild(item);}
                                              button.addEventListener('click',(e) => {e.preventDefault();
                                                                                     e.stopPropagation();
                                                                                     const nextOpen = !wrap.classList.contains('isOpen');
-                                                                                    for (const other of Array.from(document.querySelectorAll('.icbincnJotformTabDropdown.isOpen'))) {if (other !== wrap) {other.classList.remove('isOpen');
-                                                                                                                                                                                                            other.querySelector('.icbincnJotformTabDropdownButton')?.setAttribute('aria-expanded','false');}}
+                                                                                    for (const other of Array.from(document.querySelectorAll('.icbincnJotformTabDropdown.isOpen'))) {if (other !== wrap) closeJotformTabDropdown(other);}
+                                                                                    if (nextOpen && menu.parentElement !== document.body) document.body.appendChild(menu);
                                                                                     wrap.classList.toggle('isOpen',nextOpen);
-                                                                                    button.setAttribute('aria-expanded',String(nextOpen));});
+                                                                                    menu.classList.toggle('isOpen',nextOpen);
+                                                                                    button.setAttribute('aria-expanded',String(nextOpen));
+                                                                                    positionJotformTabDropdownMenu(wrap);});
                                              wrap.appendChild(button);
-                                             wrap.appendChild(menu);
                                              const activeTab = tabs.find((tab) => tab.getAttribute('data-active') === 'true' || tab.classList.contains('active'));
                                              if (activeTab) wrap.classList.add('hasActiveTab');
                                              return wrap;}
@@ -5253,14 +5269,17 @@ function consolidateJotformFilterTabs() {for (const group of JOTFORM_TAB_DROPDOW
                                                                                          let dropdown = parent.querySelector(`.icbincnJotformTabDropdown[data-icbincn-tab-group="${group.key}"]`);
                                                                                          if (!dropdown) {dropdown = buildJotformTabDropdown(group,tabs);
                                                                                                          parent.insertBefore(dropdown,firstTab);}
+                                                                                         else if (dropdown.icbincnMenu) dropdown.icbincnMenu.dataset.icbincnTabGroup = group.key;
                                                                                          dropdown.classList.toggle('hasActiveTab',tabs.some((tab) => tab.getAttribute('data-active') === 'true' || tab.classList.contains('active')));
                                                                                          for (const tab of tabs) {tab.classList.add('icbincnJotformTabHidden');
                                                                                                                    tab.setAttribute('aria-hidden','true');}}}
 
 function initializeJotformTabConsolidation() {consolidateJotformFilterTabs();
                                              document.addEventListener('click',(e) => {if (e.target?.closest?.('.icbincnJotformTabDropdown')) return;
-                                                                                      for (const dropdown of Array.from(document.querySelectorAll('.icbincnJotformTabDropdown.isOpen'))) {dropdown.classList.remove('isOpen');
-                                                                                                                                                                                          dropdown.querySelector('.icbincnJotformTabDropdownButton')?.setAttribute('aria-expanded','false');}},true);}
+                                                                                      if (e.target?.closest?.('.icbincnJotformTabDropdownMenu')) return;
+                                                                                      for (const dropdown of Array.from(document.querySelectorAll('.icbincnJotformTabDropdown.isOpen'))) closeJotformTabDropdown(dropdown);},true);
+                                             window.addEventListener('scroll',() => {for (const dropdown of Array.from(document.querySelectorAll('.icbincnJotformTabDropdown.isOpen'))) positionJotformTabDropdownMenu(dropdown);},true);
+                                             window.addEventListener('resize',() => {for (const dropdown of Array.from(document.querySelectorAll('.icbincnJotformTabDropdown.isOpen'))) positionJotformTabDropdownMenu(dropdown);});}
 
 function injectJotformSearchButtons() {const statusColumnId = findJotformColumnIdByTitle('Status');
                                       const wrappers = Array.from(document.querySelectorAll('.jSheetRow-cellWrapper'))
@@ -5385,12 +5404,12 @@ function initializeJotformIntegration() {hideIcbincnDockOnJotform();
                                         initializeJotformFilterResultBarClosing();
                                         initializeJotformTabConsolidation();
                                         GM_addStyle(`.icbincnJotformTabHidden{display:none!important;}
-                                                     .icbincnJotformTabDropdown{position:relative;display:inline-flex;align-items:center;margin-right:6px;height:36px;z-index:100000;}
+                                                     .icbincnJotformTabDropdown{position:relative;display:inline-flex;align-items:center;margin-right:6px;height:36px;z-index:2147483646;}
                                                      .icbincnJotformTabDropdownButton{height:36px;min-width:132px;border:0;border-radius:6px;padding:0 28px 0 12px;background:#1f2937;color:#fff;font:600 14px/1 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;cursor:pointer;box-shadow:inset 0 -1px 0 rgba(255,255,255,.18);position:relative;}
                                                      .icbincnJotformTabDropdownButton::after{content:'▾';position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:12px;}
                                                      .icbincnJotformTabDropdown.hasActiveTab .icbincnJotformTabDropdownButton{background:#fff;color:#183153;}
-                                                     .icbincnJotformTabDropdownMenu{display:none;position:absolute;top:40px;left:0;min-width:260px;max-height:70vh;overflow:auto;background:#fff;color:#0f172a;border:1px solid #cbd5e1;border-radius:8px;box-shadow:0 12px 28px rgba(15,23,42,.22);padding:6px;z-index:100001;}
-                                                     .icbincnJotformTabDropdown.isOpen .icbincnJotformTabDropdownMenu{display:block;}
+                                                     .icbincnJotformTabDropdownMenu{display:none;position:fixed;top:0;left:0;min-width:260px;max-height:70vh;overflow:auto;background:#fff;color:#0f172a;border:1px solid #cbd5e1;border-radius:8px;box-shadow:0 12px 28px rgba(15,23,42,.22);padding:6px;z-index:2147483647;}
+                                                     .icbincnJotformTabDropdownMenu.isOpen{display:block;}
                                                      .icbincnJotformTabDropdownItem{display:block;width:100%;border:0;border-radius:6px;background:transparent;color:#0f172a;text-align:left;padding:8px 10px;font:500 13px/1.25 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;cursor:pointer;white-space:nowrap;}
                                                      .icbincnJotformTabDropdownItem:hover,.icbincnJotformTabDropdownItem:focus{background:#e0f2fe;outline:none;}
                                                      .icbincnJotformSearchBtn{position:absolute;right:4px;bottom:4px;z-index:99999;width:30px;height:30px;border:2px solid #1d4ed8;border-radius:999px;background:#fff;padding:0;cursor:pointer;box-shadow:0 2px 5px rgba(15,23,42,.22);overflow:hidden;}
