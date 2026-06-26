@@ -5399,7 +5399,37 @@ function initializeJotformFilterResultBarClosing() {closeJotformFilterResultBar(
                                                   observer.observe(target,{childList:true,subtree:true});
                                                   setInterval(closeJotformFilterResultBar,1000);}
 
+function isJotformBrandingTextNode(node) {if (!node || node.nodeType !== Node.TEXT_NODE || norm(node.nodeValue) !== 'Jotform') return false;
+                                         const parent = node.parentElement;
+                                         if (!parent || parent.closest?.('input,textarea,select,[contenteditable="true"],.jSheetRow,.jSheetRow-cellWrapper,.jfSpreadsheet,.jSheetTable')) return false;
+                                         const rect = parent.getBoundingClientRect?.();
+                                         if (!rect || rect.width <= 0 || rect.height <= 0) return false;
+                                         if (rect.left > 360 || rect.top > 180) return false;
+                                         const ancestry = [];
+                                         for (let el = parent; el && el !== document.body && ancestry.length < 6; el = el.parentElement) {ancestry.push(`${el.className || ''} ${el.id || ''} ${el.getAttribute?.('aria-label') || ''} ${el.getAttribute?.('title') || ''} ${el.getAttribute?.('href') || ''}`);}
+                                         const haystack = ancestry.join(' ').toLowerCase();
+                                         return /logo|brand|header|navbar|topbar|app-header|jf/.test(haystack);}
+
+function updateJotformBrandingText(root = document.body) {if (!root) return;
+                                            const attrElements = root.querySelectorAll?.('[aria-label="Jotform"],[title="Jotform"],[alt="Jotform"]') || [];
+                                            for (const el of Array.from(attrElements)) {if (el.getAttribute('aria-label') === 'Jotform') el.setAttribute('aria-label','Notform');
+                                                                                      if (el.getAttribute('title') === 'Jotform') el.setAttribute('title','Notform');
+                                                                                      if (el.getAttribute('alt') === 'Jotform') el.setAttribute('alt','Notform');}
+                                            const walker = document.createTreeWalker(root,NodeFilter.SHOW_TEXT,{acceptNode(node) {return isJotformBrandingTextNode(node) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;}});
+                                            const matches = [];
+                                            for (let node = walker.nextNode(); node; node = walker.nextNode()) matches.push(node);
+                                            for (const node of matches) node.nodeValue = node.nodeValue.replace(/Jotform/g,'Notform');}
+
+function initializeJotformBrandingReplacement() {updateJotformBrandingText();
+                                               const observer = new MutationObserver((mutations) => {for (const mutation of mutations) {if (mutation.type === 'characterData') {const node = mutation.target;
+                                                                                                                                               if (isJotformBrandingTextNode(node)) node.nodeValue = node.nodeValue.replace(/Jotform/g,'Notform');}
+                                                                                                      for (const node of Array.from(mutation.addedNodes || [])) {if (node.nodeType === Node.TEXT_NODE) {if (isJotformBrandingTextNode(node)) node.nodeValue = node.nodeValue.replace(/Jotform/g,'Notform');}
+                                                                                                                                                                      else if (node.nodeType === Node.ELEMENT_NODE) updateJotformBrandingText(node);}}});
+                                               observer.observe(document.documentElement,{childList:true,subtree:true,characterData:true});
+                                               setInterval(updateJotformBrandingText,2000);}
+
 function initializeJotformIntegration() {hideIcbincnDockOnJotform();
+                                        initializeJotformBrandingReplacement();
                                         initializeJotformGroupedByStatusRemoval();
                                         initializeJotformFilterResultBarClosing();
                                         initializeJotformTabConsolidation();
