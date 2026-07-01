@@ -5406,11 +5406,29 @@ function isJotformBrandingTextNode(node) {if (!node || node.nodeType !== Node.TE
                                          const haystack = ancestry.join(' ').toLowerCase();
                                          return /logo|brand|header|navbar|topbar|app-header|jf/.test(haystack);}
 
+function jotformNotformLogoDataUrl() {const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="156" height="32" viewBox="0 0 156 32" role="img" aria-label="Notform Logo"><text x="0" y="24" fill="#0a1551" font-family="Inter, Arial, Helvetica, sans-serif" font-size="26" font-weight="700">Notform</text></svg>`;
+                                  return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;}
+
+function updateJotformBrandingLogoImages(root = document.body) {if (!root) return;
+                                                              const selector = 'img.jfLogo,img[src*="jotform-logo"],img[alt*="JotForm"],img[alt*="Jotform"],img[aria-label*="JotForm"],img[aria-label*="Jotform"],img[title*="JotForm"],img[title*="Jotform"]';
+                                                              const candidates = root.matches?.(selector) ? [root] : Array.from(root.querySelectorAll?.(selector) || []);
+                                                              for (const img of candidates) {const src = img.getAttribute('src') || '';
+                                                                                             const alt = img.getAttribute('alt') || '';
+                                                                                             const title = img.getAttribute('title') || '';
+                                                                                             const aria = img.getAttribute('aria-label') || '';
+                                                                                             const haystack = `${img.className || ''} ${src} ${alt} ${title} ${aria}`.toLowerCase();
+                                                                                             if (!/jotform|jflogo|jotform-logo/.test(haystack)) continue;
+                                                                                             img.setAttribute('src',jotformNotformLogoDataUrl());
+                                                                                             img.setAttribute('alt','Notform Logo');
+                                                                                             if (title) img.setAttribute('title',title.replace(/JotForm|Jotform/g,'Notform'));
+                                                                                             if (aria) img.setAttribute('aria-label',aria.replace(/JotForm|Jotform/g,'Notform'));
+                                                                                             img.dataset.icbincnNotformLogo = 'true';}}
+
 function updateJotformBrandingText(root = document.body) {if (!root) return;
-                                            const attrElements = root.querySelectorAll?.('[aria-label="Jotform"],[title="Jotform"],[alt="Jotform"]') || [];
-                                            for (const el of Array.from(attrElements)) {if (el.getAttribute('aria-label') === 'Jotform') el.setAttribute('aria-label','Notform');
-                                                                                      if (el.getAttribute('title') === 'Jotform') el.setAttribute('title','Notform');
-                                                                                      if (el.getAttribute('alt') === 'Jotform') el.setAttribute('alt','Notform');}
+                                            updateJotformBrandingLogoImages(root);
+                                            const attrElements = root.querySelectorAll?.('[aria-label*="Jotform"],[aria-label*="JotForm"],[title*="Jotform"],[title*="JotForm"],[alt*="Jotform"],[alt*="JotForm"]') || [];
+                                            for (const el of Array.from(attrElements)) {for (const attr of ['aria-label','title','alt']) {const value = el.getAttribute(attr);
+                                                                                                                                          if (value && /JotForm|Jotform/.test(value)) el.setAttribute(attr,value.replace(/JotForm|Jotform/g,'Notform'));}}
                                             const walker = document.createTreeWalker(root,NodeFilter.SHOW_TEXT,{acceptNode(node) {return isJotformBrandingTextNode(node) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;}});
                                             const matches = [];
                                             for (let node = walker.nextNode(); node; node = walker.nextNode()) matches.push(node);
