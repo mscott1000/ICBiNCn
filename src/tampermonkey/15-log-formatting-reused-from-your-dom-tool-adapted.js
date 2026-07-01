@@ -630,9 +630,16 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
                                           if (!normalizedAttorney) return '';
                                           return `, ${normalizedAttorney}`;}
 
-  function getFlorissantSeatBeltSummarySuffix(e) {const jurisdiction = municipalityMatchKey(e?.jurisdiction || e?.location || '');
-                                                 const charge = norm(String(e?.chargeText || e?.charge || ''));
-                                                 return jurisdiction.includes('FLORISSANT') && charge === 'Seat Belt Violation - Other' ? ', $10' : '';}
+  function getFlorissantSeatBeltChargeText(e) {return norm(String(e?.chargeText || e?.charge || e?.chargeDescription || ''));}
+
+  function isFlorissantSeatBeltSummaryEntry(e,jurisdictionOrHeader = '') {const jurisdiction = municipalityMatchKey(jurisdictionOrHeader || e?.jurisdiction || e?.location || '');
+                                                                         return jurisdiction.includes('FLORISSANT') && getFlorissantSeatBeltChargeText(e) === 'Seat Belt Violation - Other';}
+
+  function getFlorissantSeatBeltSummaryHeader(header) {const raw = formatSummaryHeader(header);
+                                                      const phoneMatch = raw.match(/\(314\)\s*921-3322/);
+                                                      return `FLORISSANT SEATBELT VIOLATIONS - ${phoneMatch ? phoneMatch[0] : '(314) 921-3322'}`;}
+
+  function getFlorissantSeatBeltSummarySuffix() {return '';}
 
   function getSummaryLineStatus(e) {const warrantLabel = getWarrantLabelForSummary(e);
                                    const fineSuffix = getFineSuffixForSummary(e);
@@ -786,8 +793,10 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
                                                                                                                                                                                                    return a.idx - b.idx;})
                                                                                                                                                                                    .map(({entry}) => entry);
                                                                                                                                                                                 sections.push(formatSummaryHeader(header));
-                                                                                                                                                                                const municourtEntries = sortedEntries.filter((e) => e?._source === 'municourt');
-                                                                                                                                                                                const nonMunicourtEntries = sortedEntries.filter((e) => e?._source !== 'municourt');
+                                                                                                                                                                                const florissantSeatBeltEntries = sortedEntries.filter((e) => isFlorissantSeatBeltSummaryEntry(e,header));
+                                                                                                                                                                                const mainEntries = sortedEntries.filter((e) => !isFlorissantSeatBeltSummaryEntry(e,header));
+                                                                                                                                                                                const municourtEntries = mainEntries.filter((e) => e?._source === 'municourt');
+                                                                                                                                                                                const nonMunicourtEntries = mainEntries.filter((e) => e?._source !== 'municourt');
                                                                                                                                                                                 if (municourtEntries.length) {
                                                                                                                                                                                                              for (const e of municourtEntries) {const caseNo = getCaseNumberForSummary(e);
                                                                                                                                                                                                                                             const charge = norm(e?.chargeDescription || '') || 'No Charges Found';
@@ -798,6 +807,12 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
                                                                                                                                                                                                              const charge = norm(e?.chargeDescription || '') || 'No Charges Found';
                                                                                                                                                                                                              const lineStatus = getSummaryLineStatus(e);
                                                                                                                                                                                                              sections.push(formatSummaryCaseLine(caseNo,charge,lineStatus));}
+                                                                                                                                                                                if (florissantSeatBeltEntries.length) {if (mainEntries.length) sections.push('');
+                                                                                                                                                                                                                  sections.push(getFlorissantSeatBeltSummaryHeader(header));
+                                                                                                                                                                                                                  for (const e of florissantSeatBeltEntries) {const caseNo = getCaseNumberForSummary(e);
+                                                                                                                                                                                                                                                                       const charge = norm(e?.chargeDescription || '') || 'No Charges Found';
+                                                                                                                                                                                                                                                                       const lineStatus = e?._source === 'municourt' ? getMunicourtSummaryLineStatus(e) : getSummaryLineStatus(e);
+                                                                                                                                                                                                                                                                       sections.push(formatSummaryCaseLine(caseNo,charge,lineStatus,e?._source === 'municourt' ? ' -' : ':'));}}
                                                                                                                                                                                 if (isFreshStartFridayHeader(header)) sections.push(FRESH_START_FRIDAY_TEXT);
                                                                                                                                                                                 sections.push('');}}
                                                                   return {sections};}
