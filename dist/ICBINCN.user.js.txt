@@ -1,7 +1,7 @@
 // ==UserScript==
-// @name         ICBiNCn 7.01
+// @name         ICBiNCn 7.02
 // @namespace    http://tampermonkey.net/
-// @version      2026-07-01
+// @version      2026-07-02
 // @description  Background Case.net scraper using JSON/XHR endpoints. Navs to search results pages, pulls case data via POST requests, then writes to a persistent log for copying. Now with Track This Case.
 // @author       Mason Scott
 // @match        https://www.courts.mo.gov/casenet/*
@@ -15,6 +15,7 @@
 // @grant        GM_getValue
 // @grant        GM_setValue
 // @grant        GM_xmlhttpRequest
+// @grant        GM_openInTab
 // @grant        unsafeWindow
 // @connect      www.municourt.net
 // ==/UserScript==
@@ -133,6 +134,12 @@
                                   const blob = new Blob([obj.html], { type: 'text/html' });
                                   const url = URL.createObjectURL(blob);
                                   window.open(url, '_blank', 'noopener,noreferrer');}
+
+  function openBackgroundTab(url) {try {if (typeof GM_openInTab === 'function') {const tab = GM_openInTab(url,{active:false,insert:true,setParent:false});
+                                                                       return tab || null;}}
+                               catch {}
+                               try {return window.open(url,'_blank','noopener,noreferrer');}
+                               catch {return null;}}
 
   function loadDraft() {return loadJson(KEY_UI_DRAFT, { first: '', middle: '', last: '', yob: '' });}
 
@@ -4895,7 +4902,7 @@ function render() {const log = loadLog();
   async function searchMuniViaRemoteWorker(params) {const taskId = `muni-${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
                                                     await gmSetValueSafe(MUNI_REMOTE_RESULT_KEY,null);
                                                     await gmSetValueSafe(MUNI_REMOTE_TASK_KEY,{id: taskId,createdAt: Date.now(),params: {...params}});
-                                                    try {window.open(getMuniRemoteOpenUrl(taskId),'_blank','noopener,noreferrer');}
+                                                    try {openBackgroundTab(getMuniRemoteOpenUrl(taskId));}
                                                     catch {}
                                                     const waitMs = 45000;
                                                     const start = Date.now();
@@ -5179,7 +5186,7 @@ function startIcbincnSearchFromJotform(params) {const cleaned = {first:norm(para
                                                            launchedFrom:'jotform',
                                                            jotformPending:pending,
                                                            launchedAt:new Date().toISOString(),});
-                                            window.open('https://www.courts.mo.gov/casenet/nameSearch.do?newSearch=Y','_blank','noopener,noreferrer');}
+                                            openBackgroundTab('https://www.courts.mo.gov/casenet/nameSearch.do?newSearch=Y');}
 
 function jotformPersistSearchResult(st) {const pending = st?.jotformPending || loadJson(KEY_JOTFORM_PENDING,null);
                                         if (!pending?.rowKey) return;
