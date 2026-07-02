@@ -212,14 +212,23 @@
   function saveNameState(s) {saveJson(KEY_NAMESEARCH,s || null);}
 
 
+  let icbincnTabBrandingObserver = null;
+  let icbincnTabBrandingInterval = null;
+
   function setIcbincnTabTitleText(text) {const cleaned = norm(text || '');
                                          GM_setValue(KEY_TAB_TITLE, cleaned);
-                                         applyIcbincnTabBranding();}
+                                         if (cleaned === 'Complete') {applyIcbincnTabBranding();
+                                                                     haltIcbincnTabBrandingObserver();
+                                                                     return;}
+                                         if (cleaned) startIcbincnTabBrandingObserver();
+                                         else applyIcbincnTabBranding();}
 
   function getIcbincnTabTitleText() {return norm(GM_getValue(KEY_TAB_TITLE, ''));}
 
-  function currentNameSearchTabTitleText() {const st = loadNameState();
-                                            if (!st?.active) return getIcbincnTabTitleText();
+  function currentNameSearchTabTitleText() {const storedTitle = getIcbincnTabTitleText();
+                                            if (storedTitle === 'Complete') return storedTitle;
+                                            const st = loadNameState();
+                                            if (!st?.active) return storedTitle;
                                             const idx = Math.min(2,Math.max(0,Number(st.passIndex || 0)));
                                             return `Searching (${idx + 1}/3)`;}
 
@@ -242,10 +251,17 @@
                                       const title = currentNameSearchTabTitleText();
                                       if (title && document.title !== title) document.title = title;}
 
+  function haltIcbincnTabBrandingObserver() {try {icbincnTabBrandingObserver?.disconnect?.();} catch {}
+                                            icbincnTabBrandingObserver = null;
+                                            if (icbincnTabBrandingInterval) {clearInterval(icbincnTabBrandingInterval);
+                                                                            icbincnTabBrandingInterval = null;}
+                                            GM_setValue(KEY_TAB_TITLE, '');}
+
   function startIcbincnTabBrandingObserver() {applyIcbincnTabBranding();
-                                             const obs = new MutationObserver(() => setTimeout(applyIcbincnTabBranding,0));
-                                             try {obs.observe(document.documentElement,{childList:true,subtree:true,characterData:true,attributes:true,attributeFilter:['href','rel']});} catch {}
-                                             setInterval(applyIcbincnTabBranding,1000);}
+                                             if (icbincnTabBrandingObserver || icbincnTabBrandingInterval) return;
+                                             icbincnTabBrandingObserver = new MutationObserver(() => setTimeout(applyIcbincnTabBranding,0));
+                                             try {icbincnTabBrandingObserver.observe(document.documentElement,{childList:true,subtree:true,characterData:true,attributes:true,attributeFilter:['href','rel']});} catch {}
+                                             icbincnTabBrandingInterval = setInterval(applyIcbincnTabBranding,1000);}
 
   function loadTrackState() {return loadJson(KEY_TRACK_STATE,null);}
 
