@@ -231,7 +231,9 @@
                                                                                                                                                                            if (priorityDiff) return priorityDiff;
                                                                                                                                                                            return a.idx - b.idx;})
                                                                                                                                                            .map(({entry}) => entry);
-                                                                                                                                for (const entry of sortedEntries) sections.push(formatEntry(applyMuniDetailFormatting(entry)),'','');
+                                                                                                                                const orderedEntries = sortedEntries.filter((e) => !isFlorissantSeatBeltSummaryEntry(e,e?.location || ''))
+                                                                                                                                                                  .concat(sortedEntries.filter((e) => isFlorissantSeatBeltSummaryEntry(e,e?.location || '')));
+                                                                                                                                for (const entry of orderedEntries) sections.push(formatEntry(applyMuniDetailFormatting(entry)),'','');
                                                                                                                                 sections.push('','','','');}}
                                   appendSections(eligibleJurisdictions);
                                   appendSections(ineligibleJurisdictions);
