@@ -191,14 +191,16 @@
 
   async function pullJsonFromResultsPage() {if (!isNameSearchResultsPage()) {uiStatus('Landed on non-results page.');
                                                                            render();
-                                                                           return;}
+                                                                           return {status:'not_ready',appendedCount: 0};}
                                            const ready = await waitForResultsReady();
                                            if (ready?.noMatches) {uiStatus('No matches found for this search.');
                                                                   render();
-                                                                  return {appendedCount: 0};}
+                                                                  dbg('pull_terminal_no_matches',{});
+                                                                  return {status:'no_matches',appendedCount: 0};}
                                            if (!ready?.ready) {uiStatus('Results are still loading. Try again in a moment.');
                                                                render();
-                                                               return {appendedCount: 0};}
+                                                               dbg('pull_not_ready',{reason:'results_ready_timeout'});
+                                                               return {status:'not_ready',appendedCount: 0};}
                                            setShowEntriesTo100();
                                            const ns = loadNameState();
                                            const searchParams = ns?.params || {};
@@ -219,9 +221,11 @@
                                                                                                     setShowEntriesTo100();
                                                                                                     cases = await harvestAllResultCaseKeys();}
                                            dbg('harvest_done',{count: cases.length});
-                                           if (!cases.length) {uiStatus('No case links found.');
+                                           if (!cases.length) {const stillNoMatches = isNoMatchesMessagePage();
+                                                               uiStatus(stillNoMatches ? 'No matches found for this search.' : 'Case links have not loaded yet. Retrying this pass…');
                                                                render();
-                                                               return {appendedCount: 0};}
+                                                               dbg(stillNoMatches ? 'pull_terminal_no_matches_after_harvest' : 'pull_no_links_yet',{stillNoMatches});
+                                                               return {status: stillNoMatches ? 'no_matches' : 'no_links_yet',appendedCount: 0};}
                                            setStop(false);
                                            setRun(true);
                                            uiStatus('Reading...');
@@ -231,7 +235,7 @@
                                                 const seen = new Set(existing.map((e) => e.caseKey));
                                                 const todo = cases.filter((c) => !seen.has(c.caseKey));
                                                 if (!todo.length) {uiStatus('Already ran these,clear log to run again');
-                                                                   return;}
+                                                                   return {status:'complete',appendedCount: 0};}
                                                 uiStatus(`Queue: ${todo.length}. Reading...`);
                                                 render();
                                                 let yobMismatchCount = 0;
@@ -264,9 +268,9 @@
                                                                         uiStatus(nextPrepMessages[nextPassIndex] || `Preparing pass ${nextPassIndex + 1}/3`);}
                                                       else uiStatus(`${okCount} Case.net cases added. YOB mismatches: ${yobMismatchCount}. Errors: ${errors.length}.`);}
                                                 if (errCount) dbg('run_errors',{errors: errors.slice(0,12)});
-                                                return {appendedCount};}
+                                                return {status:'complete',appendedCount};}
                                            catch (err) {dbg('fatal_pull',{msg: String(err?.message || err),stack: String(err?.stack || ''),});
                                                        uiStatus('*error*: ' + String(err?.message || err));}
                                            finally {setRun(false);
                                                     render();}
-                                           return {appendedCount: 0};}
+                                           return {status:'error',appendedCount: 0};}

@@ -250,6 +250,7 @@
                                                                                                       st.step = 'go_search';
                                                                                                       st.pullStartedAt = 0;
                                                                                                       saveNameState(st);}
+                                                                if (Number(st.resultsRetryAfter || 0) > Date.now()) return;
                                                                 setShowEntriesTo100();
                                                                 const dockYob = document.getElementById('moNsYob');
                                                                 if (dockYob) dockYob.value = st.params?.yob || '';
@@ -261,13 +262,23 @@
                                                                 try {pullStats = await pullJsonFromResultsPage();}
                                                                 catch (e) {dbg('namesearch_pull_fatal',{passKey,msg:String(e?.message || e)});
                                                                            setRun(false);}
+                                                                const pullStatus = pullStats?.status || 'error';
                                                                 st.casenetAddedTotal = Number(st.casenetAddedTotal || 0) + Number(pullStats?.appendedCount || 0);
-                                                                dbg('namesearch_pull_done',{passKey});
+                                                                dbg('namesearch_pull_done',{passKey,status:pullStatus,appendedCount:Number(pullStats?.appendedCount || 0)});
+                                                                if (pullStatus !== 'complete' && pullStatus !== 'no_matches') {st.step = 'go_search';
+                                                                                                                                 st.pullStartedAt = 0;
+                                                                                                                                 st.prepareStartedAt = Date.now();
+                                                                                                                                 st.resultsRetryAfter = Date.now() + 5000;
+                                                                                                                                 saveNameState(st);
+                                                                                                                                 uiStatus('Results are still loading; retrying this pass…');
+                                                                                                                                 render();
+                                                                                                                                 return;}
                                                                 st.passIndex = (st.passIndex || 0) + 1;
                                                                 st.step = 'go_search';
                                                                 st.pullStartedAt = 0;
                                                                 st.prepareStartedAt = Date.now();
                                                                 st.navPendingUntil = Date.now() + 3000;
+                                                                st.resultsRetryAfter = 0;
                                                                 saveNameState(st);
                                                                 location.href = canonicalNameSearchUrl();
                                                                 return;}
