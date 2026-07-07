@@ -10,6 +10,7 @@ This repository keeps the CaseNet userscript and supporting research materials o
 - `docs/` — requirements, analysis notes, and implementation documentation.
 - `assets/images/` — project images and visual references.
 - `data/network-captures/` — raw HAR/text captures used for parsing and debugging.
+- `data/jotform-captures/` — captured Jotform DOM/table examples for visual/table changes.
 - `data/reference/` — static reference artifacts used during development.
 - `userscripts/standalone/` — independent helper userscripts outside the main bundle.
 
@@ -28,4 +29,6 @@ The source parts are numbered so they concatenate in the correct order. The curr
 
 ## Design notes
 
+- Codex repository navigation map: `docs/repository-map-for-codex.md`
 - Case-number batch UI discovery checklist: `docs/case-number-batch-ui-requirements.md`
+- Jotform visual-change data requirements: `docs/jotform-table-visual-change-instructions.md`
