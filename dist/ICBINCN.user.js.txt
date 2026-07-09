@@ -3306,15 +3306,17 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
                                   const sections = [];
                                   const eligibleText = eligibleSections.join('\n').trim();
                                   const ineligibleText = ineligibleSections.join('\n').trim();
-                                  if (eligibleText) sections.push(`- - -\n\n${eligibleText}${hasUpcoming ? '' : '\n\n- - -'}`);
-                                  if (ineligibleText) {if (sections.length) sections.push('', '');
-                                                       sections.push(`- - -\n\n${ineligibleText}${hasUpcoming ? '' : '\n\n- - -'}`);}
-
-                                  if (hasUpcoming) {sections.push('', '', 'Upcoming Court Dates:', '');
-                                                   for (const [jurisdiction,dateMap] of upcomingByJurisdiction.entries()) {sections.push(jurisdiction);
-                                                                                                                              for (const [dt,caseNos] of dateMap.entries()) {sections.push(`${dt} (for ${formatCaseNumberList(caseNos)})`);}
-                                                                                                                              sections.push('');}
-                                                   sections.push('- - -');}
+                                  const upcomingLines = [];
+                                  if (hasUpcoming) {upcomingLines.push('Upcoming Court Dates:', '');
+                                                   for (const [jurisdiction,dateMap] of upcomingByJurisdiction.entries()) {upcomingLines.push(jurisdiction);
+                                                                                                                              for (const [dt,caseNos] of dateMap.entries()) {upcomingLines.push(`${dt} (for ${formatCaseNumberList(caseNos)})`);}
+                                                                                                                              upcomingLines.push('');}}
+                                  const upcomingText = upcomingLines.join('\n').trim();
+                                  const ineligibleBlock = [ineligibleText,upcomingText].filter(Boolean).join('\n\n');
+                                  const summaryBlocks = [eligibleText,ineligibleBlock].filter(Boolean);
+                                  for (const block of summaryBlocks) {if (sections.length) sections.push('', '');
+                                                                      sections.push('- - -', '', block);}
+                                  if (sections.length) sections.push('', '', '- - -');
 
                                   return sections.join('\n').trim();}
 /************************************************************
