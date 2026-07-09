@@ -705,15 +705,17 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
 
   function getEligibleJurisdictionPriority(jurisdiction,entries) {return isStLouisCountyCircuitJurisdiction(jurisdiction) && entries.some(isFelonyChargeType) ? 1 : 0;}
 
+  function getIneligibleJurisdictionPriority(entries) {return entries.some((entry) => isFlorissantSeatBeltSummaryEntry(entry,entry?.location || '')) ? 1 : 0;}
+
   function buildOrderedJurisdictionGroups(entries) {const eligibleByJurisdiction = new Map();
                                                    const ineligibleByJurisdiction = new Map();
                                                    const addEntry = (map,jurisdiction,entry) => {if (!map.has(jurisdiction)) map.set(jurisdiction,[]);
                                                                                                 map.get(jurisdiction).push(entry);};
                                                    for (const e of entries) {const jurisdiction = norm(e?.location || '') || '- - -';
-                                                                             const isEligibleForOrdering = isEligibleSummaryJurisdiction(jurisdiction) && !hasUpcomingCourtDate(e);
+                                                                             const isEligibleForOrdering = isEligibleSummaryJurisdiction(jurisdiction) && !hasUpcomingCourtDate(e) && !isFlorissantSeatBeltSummaryEntry(e,jurisdiction);
                                                                              addEntry(isEligibleForOrdering ? eligibleByJurisdiction : ineligibleByJurisdiction,jurisdiction,e);}
                                                    const sortGroups = (map,prioritizeEligibleCircuitFelonies = false) => Array.from(map.entries())
-                                                                                   .map(([jurisdiction,groupEntries],idx) => ({jurisdiction,entries: groupEntries,idx,score: getJurisdictionScore(groupEntries),priority: prioritizeEligibleCircuitFelonies ? getEligibleJurisdictionPriority(jurisdiction,groupEntries) : 0}))
+                                                                                   .map(([jurisdiction,groupEntries],idx) => ({jurisdiction,entries: groupEntries,idx,score: getJurisdictionScore(groupEntries),priority: prioritizeEligibleCircuitFelonies ? getEligibleJurisdictionPriority(jurisdiction,groupEntries) : getIneligibleJurisdictionPriority(groupEntries)}))
                                                                                    .sort((a,b) => {const priorityDiff = b.priority - a.priority;
                                                                                                    if (priorityDiff) return priorityDiff;
                                                                                                    const scoreDiff = b.score - a.score;
@@ -794,11 +796,11 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
                                                                                                                                                                                                    if (priorityDiff) return priorityDiff;
                                                                                                                                                                                                    return a.idx - b.idx;})
                                                                                                                                                                                    .map(({entry}) => entry);
-                                                                                                                                                                                sections.push(formatSummaryHeader(header));
                                                                                                                                                                                 const florissantSeatBeltEntries = sortedEntries.filter((e) => isFlorissantSeatBeltSummaryEntry(e,header));
                                                                                                                                                                                 const mainEntries = sortedEntries.filter((e) => !isFlorissantSeatBeltSummaryEntry(e,header));
                                                                                                                                                                                 const municourtEntries = mainEntries.filter((e) => e?._source === 'municourt');
                                                                                                                                                                                 const nonMunicourtEntries = mainEntries.filter((e) => e?._source !== 'municourt');
+                                                                                                                                                                                if (mainEntries.length) sections.push(formatSummaryHeader(header));
                                                                                                                                                                                 if (municourtEntries.length) {
                                                                                                                                                                                                              for (const e of municourtEntries) {const caseNo = getCaseNumberForSummary(e);
                                                                                                                                                                                                                                             const charge = norm(e?.chargeDescription || '') || 'No Charges Found';
