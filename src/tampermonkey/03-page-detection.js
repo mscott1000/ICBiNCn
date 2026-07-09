@@ -11,8 +11,8 @@
   function isNameSearchResultsPage() {return !!document.querySelector('select[name="nameSearchResult_length"]');}
 
   async function waitForResultsReady() {const start = Date.now();
+                                       let sawNoMatches = false;
                                        while (Date.now() - start < RESULTS_READY_TIMEOUT_MS) {
-                                         if (isNoMatchesMessagePage()) return {ready:true,noMatches:true};
                                          const hasAnyCaseLink = document.querySelector('a[href*="inputVO.caseNumber"]') ||
                                                                 document.querySelector('a[href*="caseNumber="]') ||
                                                                 document.querySelector('a[href*="ci="]');
@@ -25,5 +25,7 @@
                                          const hasNoData = /no data available/i.test(bodyText);
                                          if (hasAnyCaseLink) return {ready:true,noMatches:false};
                                          if (hasResultsLengthSelect && hasRows && !hasNoData && !isProcessing) return {ready:true,noMatches:false};
+                                         if (isNoMatchesMessagePage()) sawNoMatches = true;
                                          await sleep(RESULTS_READY_POLL_MS);}
+                                       if (sawNoMatches) return {ready:true,noMatches:true};
                                        return {ready:false,noMatches:false};}
