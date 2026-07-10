@@ -124,7 +124,8 @@
                                              if (id === 'moUpcomingStop') {upcomingStopRequested = true; if (upcomingActiveRun?.controller) upcomingActiveRun.controller.abort(); upcomingDebug('stop_requested',{}); upcomingSetStatus('Stopping...'); return;}
                                              if (id === 'moUpcomingClear') {upcomingStorageSet(UPCOMING_INPUT_KEY,''); upcomingStorageSet(UPCOMING_OUTPUT_KEY,''); render(); upcomingSetStatus('Upcoming Court Dates entries cleared.'); return;}
                                              if (id === 'moUpcomingCopy') {GM_setClipboard(document.getElementById('moUpcomingOutput')?.value || '','text'); upcomingSetStatus('Results copied to clipboard.'); return;}
-                                             if (id === 'moUpcomingClearResults') {upcomingStorageSet(UPCOMING_OUTPUT_KEY,''); const output = document.getElementById('moUpcomingOutput'); if (output) output.value = ''; upcomingSetStatus('Upcoming Court Dates results cleared.'); return;}
+                                             if (id === 'moUpcomingClearDebug') {clearUpcomingDebug(); return;}
+                                             if (id === 'moUpcomingClearResults') {upcomingStorageSet(UPCOMING_OUTPUT_KEY,''); const output = document.getElementById('moUpcomingOutput'); if (output) output.value = ''; upcomingSetStatus('Upcoming Court Dates results cleared.'); trackUpcomingClearResultsSecret(); return;}
                                              if (id === 'moJsonOpenLastHtml') {openLastHtmlInNewTab();
                                                                               return;}});
 
