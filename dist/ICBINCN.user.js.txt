@@ -2886,6 +2886,7 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
                                     const tokens = loose.split(' ').filter(Boolean).map((tok) => {if (tok === 'CO') return 'COUNTY';
                                                                                                    if (tok === 'MUNI' || tok === 'MUN') return 'MUNICIPAL';
                                                                                                    if (tok === 'SAINT') return 'ST';
+                                                                                                   if (tok === 'LOUS') return 'LOUIS';
                                                                                                    return tok;});
                                     return tokens.join(' ');}
 
@@ -3015,9 +3016,9 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
 
   function getMunicipalityHeaderForSummary(jurisdiction,judgeName = '') {const key = municipalityKey(jurisdiction);
                                                                         if (!key) return '';
-                                                                        if (key === 'CITY OF ST LOUIS') return 'City of St. Louis Circuit - (314) 622-4500';
                                                                         const looseKey = municipalityLooseKey(jurisdiction);
                                                                         const matchKey = municipalityMatchKey(jurisdiction);
+                                                                        if (matchKey === 'CITY OF ST LOUIS') return 'City of St. Louis Circuit - (314) 622-4500';
                                                                         const candidateKeys = [key];
                                                                         if (!/ MUNICIPAL$/.test(key)) candidateKeys.push(`${key} MUNICIPAL`);
                                                                         if (/ MUNICIPAL$/.test(key)) candidateKeys.push(key.replace(/ MUNICIPAL$/,''));
