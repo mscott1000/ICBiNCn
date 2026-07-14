@@ -265,6 +265,7 @@ CHAMP MUNICIPAL - (314) 291-6036
 CHARLACK MUNICIPAL (OPERATES IN ST. ANN MUNICIPAL) - (314) 428-6811 EXT 5
 CHESTERFIELD MUNICIPAL - (636) 537-4000
 CLARKSON VALLEY MUNICIPAL - (636) 537-4718
+CITY OF ST. LOUIS CIRCUIT - (314) 622-4500
 CITY OF ST. LOUIS MUNICIPAL - (314) 622-3231
 CLAYTON MUNICIPAL - (314) 290-8441
 COOL VALLEY (OPERATES IN NORMANDY MUNICIPAL) - (314) 385-3300 EXT. 3029
@@ -546,8 +547,7 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
 
   function getMunicipalityHeaderForSummary(jurisdiction,judgeName = '') {const key = municipalityKey(jurisdiction);
                                                                         if (!key) return '';
-                                                                        if (key === 'CITY OF ST LOUIS') {const judgeKey = normalizeJudgeName(judgeName);
-                                                                                                       return judgeKey && shouldIncludeJudgeDetails(jurisdiction) ? `${key} - Judge ${formatJudgeDisplayName(judgeKey)}` : key;}
+                                                                        if (key === 'CITY OF ST LOUIS') return 'City of St. Louis Circuit - (314) 622-4500';
                                                                         const looseKey = municipalityLooseKey(jurisdiction);
                                                                         const matchKey = municipalityMatchKey(jurisdiction);
                                                                         const candidateKeys = [key];
