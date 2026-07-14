@@ -3018,7 +3018,7 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
                                                                         if (!key) return '';
                                                                         const looseKey = municipalityLooseKey(jurisdiction);
                                                                         const matchKey = municipalityMatchKey(jurisdiction);
-                                                                        if (matchKey === 'CITY OF ST LOUIS') return 'City of St. Louis Circuit - (314) 622-4500';
+                                                                        if (matchKey === 'CITY OF ST LOUIS') return 'CITY OF ST. LOUIS CIRCUIT - (314) 622-4500';
                                                                         const candidateKeys = [key];
                                                                         if (!/ MUNICIPAL$/.test(key)) candidateKeys.push(`${key} MUNICIPAL`);
                                                                         if (/ MUNICIPAL$/.test(key)) candidateKeys.push(key.replace(/ MUNICIPAL$/,''));
@@ -3202,6 +3202,7 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
                                                         if (key.includes('MANCHESTER')) return true;
                                                         if (key.includes('WEBSTER GROVES')) return true;
                                                         if (key.includes('CITY OF ST LOUIS MUNICIPAL')) return true;
+                                                        if (key.includes('CITY OF ST LOUIS')) return true;
                                                         if (key.includes('ST LOUIS COUNTY')) return true;
                                                         return false;}
 
