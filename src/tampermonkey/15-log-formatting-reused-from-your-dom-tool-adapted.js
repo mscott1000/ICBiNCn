@@ -710,8 +710,11 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
 
   function buildOrderedJurisdictionGroups(entries) {const eligibleByJurisdiction = new Map();
                                                    const ineligibleByJurisdiction = new Map();
-                                                   const addEntry = (map,jurisdiction,entry) => {if (!map.has(jurisdiction)) map.set(jurisdiction,[]);
-                                                                                                map.get(jurisdiction).push(entry);};
+                                                   const getSummaryGroupingJurisdiction = (jurisdiction,entry) => {if (shouldIncludeJudgeDetails(jurisdiction)) return jurisdiction;
+                                                                                                                            return getMunicipalityHeaderForSummary(jurisdiction,'') || jurisdiction;};
+                                                   const addEntry = (map,jurisdiction,entry) => {const groupingJurisdiction = getSummaryGroupingJurisdiction(jurisdiction,entry);
+                                                                                                if (!map.has(groupingJurisdiction)) map.set(groupingJurisdiction,[]);
+                                                                                                map.get(groupingJurisdiction).push(entry);};
                                                    for (const e of entries) {const jurisdiction = norm(e?.location || '') || '- - -';
                                                                              const isEligibleForOrdering = isEligibleSummaryJurisdiction(jurisdiction) && !hasUpcomingCourtDate(e) && !isFlorissantSeatBeltSummaryEntry(e,jurisdiction);
                                                                              addEntry(isEligibleForOrdering ? eligibleByJurisdiction : ineligibleByJurisdiction,jurisdiction,e);}
@@ -807,8 +810,7 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
                                                                                                                                                                                                              for (const e of municourtEntries) {const caseNo = getCaseNumberForSummary(e);
                                                                                                                                                                                                                                             const charge = norm(e?.chargeDescription || '') || 'No Charges Found';
                                                                                                                                                                                                                                             const lineStatus = getMunicourtSummaryLineStatus(e);
-                                                                                                                                                                                                                                            sections.push(formatSummaryCaseLine(caseNo,charge,lineStatus,' -'));}
-                                                                                                                                                                                                             if (nonMunicourtEntries.length) sections.push('- - -');}
+                                                                                                                                                                                                                                            sections.push(formatSummaryCaseLine(caseNo,charge,lineStatus,' -'));}}
                                                                                                                                                                                 for (const e of nonMunicourtEntries) {const caseNo = getCaseNumberForSummary(e);
                                                                                                                                                                                                              const charge = norm(e?.chargeDescription || '') || 'No Charges Found';
                                                                                                                                                                                                              const lineStatus = getSummaryLineStatus(e);
@@ -852,6 +854,6 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
                                   const summaryBlocks = [eligibleText,ineligibleBlock].filter(Boolean);
                                   for (const block of summaryBlocks) {if (sections.length) sections.push('', '');
                                                                       sections.push('- - -', '', block);}
-                                  if (sections.length) sections.push('', '', '- - -');
+                                  if (sections.length) sections.push('', '- - -');
 
                                   return sections.join('\n').trim();}
