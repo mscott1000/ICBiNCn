@@ -264,6 +264,15 @@ GM_addStyle(`:root{ --mo-bg: #f5f7fb;          /* page chrome */
                           font-weight:950;
                           text-align:center;}
             .moFeaturePlaceholder{min-height:180px;}
+            .moUpcomingColumns{display:grid;
+                               grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+                               gap:14px;
+                               align-items:start;}
+            .moUpcomingColumn{min-width:0;}
+
+            @media (max-width:560px){
+              .moUpcomingColumns{grid-template-columns:1fr;}
+            }
 
             #moJsonHelpBtn{background:#d4a017;
                            border:1.5px solid #ad7f00;
