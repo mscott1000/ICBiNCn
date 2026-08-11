@@ -1,7 +1,8 @@
 /************************************************************
  * UI
  ************************************************************/
-GM_addStyle(`:root{ --mo-bg: #f5f7fb;          /* page chrome */
+GM_addStyle(`:root{ --mo-ui-scale: 1.2;         /* uniformly enlarge the complete tool UI */
+                    --mo-bg: #f5f7fb;          /* page chrome */
                     --mo-surface: #ffffff;     /* cards/panels */
                     --mo-surface-2: #eef2f7;   /* header/footer/status */
                     --mo-border: #d7dee8;      /* lines/borders */
@@ -12,6 +13,11 @@ GM_addStyle(`:root{ --mo-bg: #f5f7fb;          /* page chrome */
                     --mo-danger: #b42318;      /* Stop button */
                     --mo-danger-dk: #912018;
                     --mo-shadow: 0 10px 28px rgba(15, 23, 42, .18);}
+
+            #moJsonDock,
+            #moJsonLauncher,
+            #moJsonHelpPanel,
+            #moJsonTextBuilderPanel{zoom:var(--mo-ui-scale);}
 
             #moJsonDock{position:fixed; left:50%; top:45%; transform:translate(-50%,-50%);
                         width:min(836px,calc(100vw - 24px)); height:min(499px,calc(100vh - 24px));
