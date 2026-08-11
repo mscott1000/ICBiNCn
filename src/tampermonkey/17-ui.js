@@ -669,6 +669,7 @@ Please fill out this link and someone from the Holland Law Firm team will reach 
 https://bit.ly/hlfatthehub-tapincenter`,
   'Law Library Association of St. Louis': `The Law Library Association of St. Louis has a great website with legal resources, including a guide to representing yourself. Within the guide, there are several free or reduced cost agencies listed.
 https://llastl.org/legal-websites`,
+  'Legal Resource Phone Line from the Missouri Bar': `The Missouri Bar has a Legal Resource phone line at (573) 636-3635, with information about some legal resources available to the public.`,
   'Legal Services of Eastern Missouri': `For civil cases, Legal Services of Eastern Missouri is an excellent, free resource based on financial need and occasionally other factors.
 https://lsem.org/get-help-now/`,
   'Missouri Public Defender Application': `The best next step is to hire an attorney or apply for a Public Defender to represent you in this case. The Public Defender application can be completed here:
@@ -679,7 +680,7 @@ https://newcovenantlegalservices.org/faqs/`,
 https://spongey.app/`
 };
 const TEXT_BUILDER_LEGAL_AID_OPTIONS = {
-  'General Resources': ['Holland Law Referral','Law Library Association of St. Louis','Legal Services of Eastern Missouri','Missouri Public Defender Application'],
+  'General Resources': ['Holland Law Referral','Law Library Association of St. Louis','Legal Resource Phone Line from the Missouri Bar','Legal Services of Eastern Missouri','Missouri Public Defender Application'],
   'Bankruptcy': ['Bar Association of Metropolitan St. Louis'],
   'Debt Collection': ['New Covenant Legal Services'],
   'Expungement': ['3 Daughters and 1,000 Sons','Clear My Record Missouri - expungement reqs','New Covenant Legal Services','Spongey - expungement tool'],
