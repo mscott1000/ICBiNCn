@@ -1,7 +1,7 @@
 // ==UserScript==
-// @name         ICBiNCn 8.11
+// @name         ICBiNCn 8.13
 // @namespace    http://tampermonkey.net/
-// @version      2026-08-11
+// @version      2026-08-13
 // @description  Background Case.net scraper using JSON/XHR endpoints. Navs to search results pages, pulls case data via POST requests, then writes to a persistent log for copying. Now with Track This Case.
 // @author       Mason Scott
 // @match        https://www.courts.mo.gov/casenet/*
@@ -5365,38 +5365,7 @@ function injectJotformSearchButtons() {const statusColumnId = findJotformColumnI
                                                                                                                         alert(`ICBiNCn Search: ${String(err?.message || err)}`);}});
                                                                       wrapper.appendChild(btn);}}
 
-let jotformRefreshSuppressedUntil = 0;
-
-function updateJotformCaseyColumns() {jotformRefreshSuppressedUntil = Date.now() + 150;
-                                     const results = jotformResultsMap();
-                                     const rowGroups = new Map();
-                                     for (const wrapper of Array.from(document.querySelectorAll('.jSheetRow-cellWrapper[data-row-index][data-submission-id]'))) {if (wrapper.classList.contains('isAddRow')) continue;
-                                                                                                                                    const key = jotformRowKey(wrapper.dataset);
-                                                                                                                                    if (!rowGroups.has(key)) rowGroups.set(key,[]);
-                                                                                                                                    rowGroups.get(key).push(wrapper);}
-                                     for (const old of Array.from(document.querySelectorAll('.icbincnJotformSynthetic'))) old.remove();
-                                     const maxRight = Math.max(0,...Array.from(document.querySelectorAll('.jSheetRow-cellWrapper[data-left]')).map((w) => Number(w.dataset.left || 0) + (parseFloat(w.style.width) || w.offsetWidth || 200)));
-                                     const headerTop = document.querySelector('.jSheetColumn-headerContainer.hasScroll');
-                                     if (headerTop && !document.querySelector('.icbincnJotformHeaderSummary')) {for (const [label,cls] of [['Casey Summary','icbincnJotformHeaderSummary'],['Casey Copy','icbincnJotformHeaderCopy']]) {const h = document.createElement('div');
-                                                                                                                                                                                                            h.className = `icbincnJotformSynthetic icbincnJotformHeader ${cls}`;
-                                                                                                                                                                                                            h.textContent = label;
-                                                                                                                                                                                                            h.style.left = `${maxRight + (label === 'Casey Copy' ? 260 : 0)}px`;
-                                                                                                                                                                                                            headerTop.appendChild(h);}}
-                                     for (const [key,wrappers] of rowGroups) {const anchor = wrappers[0];
-                                                                             const top = parseFloat(anchor.style.top) || 0;
-                                                                             const height = parseFloat(anchor.style.height) || 41;
-                                                                             const parent = anchor.parentElement;
-                                                                             const result = results[key] || {};
-                                                                             for (const [field,label,offset] of [['summary','Casey Summary',0],['copy','Casey Copy',260]]) {const cell = document.createElement('div');
-                                                                                                                                                                           cell.className = 'icbincnJotformSynthetic icbincnJotformResultCell';
-                                                                                                                                                                           cell.dataset.caseyColumn = label;
-                                                                                                                                                                           cell.textContent = result[field] || '';
-                                                                                                                                                                           cell.title = result[field] || '';
-                                                                                                                                                                           cell.style.left = `${maxRight + offset}px`;
-                                                                                                                                                                           cell.style.top = `${top}px`;
-                                                                                                                                                                           cell.style.height = `${height}px`;
-                                                                                                                                                                           parent?.appendChild(cell);}}
-}
+function removeJotformCaseyColumns() {for (const old of Array.from(document.querySelectorAll('.icbincnJotformSynthetic'))) old.remove();}
 
 
 const JOTFORM_TARGET_GROUP_NAME = 'Status';
@@ -5523,20 +5492,16 @@ function initializeJotformIntegration() {hideIcbincnDockOnJotform();
                                                      .icbincnJotformSearchBtn:hover{border-color:#f97316;transform:translateY(-1px);}
                                                      .icbincnJotformSearchBtn.isOpening{outline:3px solid #22c55e;}
                                                      .icbincnJotformSearchBtn.isError{outline:3px solid #ef4444;}
-                                                     .jSheetRow-cellWrapper{min-width:0;}
-                                                     .icbincnJotformSynthetic{box-sizing:border-box;position:absolute;z-index:20;width:260px;border-left:1px solid #d8dee9;border-bottom:1px solid #d8dee9;background:#fff;color:#0f172a;font:12px/1.25 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;}
-                                                     .icbincnJotformHeader{top:0;height:41px;display:flex;align-items:center;padding:0 10px;font-weight:700;background:#f8fafc;z-index:30;}
-                                                     .icbincnJotformResultCell{padding:5px 8px;white-space:pre-wrap;overflow:auto;}`);
+                                                     .jSheetRow-cellWrapper{min-width:0;}`);
                                         injectJotformSearchButtons();
-                                        updateJotformCaseyColumns();
+                                        removeJotformCaseyColumns();
                                         updateJotformStatusDisplayLabels();
-                                        const obs = new MutationObserver(() => {if (Date.now() < jotformRefreshSuppressedUntil) return;
+                                        const obs = new MutationObserver(() => {removeJotformCaseyColumns();
                                                                                  injectJotformSearchButtons();
-                                                                                 updateJotformCaseyColumns();
                                                                                  updateJotformStatusDisplayLabels();
                                                                                  consolidateJotformFilterTabs();});
                                         obs.observe(document.body || document.documentElement,{childList:true,subtree:true});
-                                        setInterval(() => {injectJotformSearchButtons(); updateJotformCaseyColumns(); updateJotformStatusDisplayLabels(); consolidateJotformFilterTabs();},2000);}
+                                        setInterval(() => {removeJotformCaseyColumns(); injectJotformSearchButtons(); updateJotformStatusDisplayLabels(); consolidateJotformFilterTabs();},2000);}
 /************************************************************
    * Buttons
    ************************************************************/
