@@ -337,7 +337,7 @@
   async function searchMuniViaRemoteWorker(params) {const taskId = `muni-${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
                                                     await gmSetValueSafe(MUNI_REMOTE_RESULT_KEY,null);
                                                     await gmSetValueSafe(MUNI_REMOTE_TASK_KEY,{id: taskId,createdAt: Date.now(),params: {...params}});
-                                                    try {window.open(getMuniRemoteOpenUrl(taskId),'_blank','noopener,noreferrer');}
+                                                    try {openBackgroundTab(getMuniRemoteOpenUrl(taskId));}
                                                     catch {}
                                                     const waitMs = 45000;
                                                     const start = Date.now();
