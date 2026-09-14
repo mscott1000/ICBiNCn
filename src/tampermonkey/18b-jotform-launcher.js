@@ -100,7 +100,7 @@ function startIcbincnSearchFromJotform(params) {const cleaned = {first:norm(para
                                                            launchedFrom:'jotform',
                                                            jotformPending:pending,
                                                            launchedAt:new Date().toISOString(),});
-                                            window.open('https://www.courts.mo.gov/casenet/nameSearch.do?newSearch=Y','_blank','noopener,noreferrer');}
+                                            openBackgroundTab('https://www.courts.mo.gov/casenet/nameSearch.do?newSearch=Y');}
 
 function jotformPersistSearchResult(st) {const pending = st?.jotformPending || loadJson(KEY_JOTFORM_PENDING,null);
                                         if (!pending?.rowKey) return;

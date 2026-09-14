@@ -85,6 +85,12 @@
                                   const url = URL.createObjectURL(blob);
                                   window.open(url, '_blank', 'noopener,noreferrer');}
 
+  function openBackgroundTab(url) {try {if (typeof GM_openInTab === 'function') {const tab = GM_openInTab(url,{active:false,insert:true,setParent:false});
+                                                                                 return tab || null;}}
+                                   catch {}
+                                   try {return window.open(url,'_blank','noopener,noreferrer');}
+                                   catch {return null;}}
+
   function loadDraft() {return loadJson(KEY_UI_DRAFT, { first: '', middle: '', last: '', yob: '' });}
 
   function saveDraft(d) {saveJson(KEY_UI_DRAFT, d || { first: '', middle: '', last: '', yob: '' });}
