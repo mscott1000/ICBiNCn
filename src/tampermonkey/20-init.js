@@ -2,7 +2,8 @@
  * INIT
  ************************************************************/
 if (isJotformTablesPage()) {initializeJotformIntegration();}
-else {uiStatus(getStatus() || 'Ready');
+else {startIcbincnTabBrandingObserver();
+      uiStatus(getStatus() || 'Ready');
       restoreActiveNameSearchUiOnLoad();
       render();
 

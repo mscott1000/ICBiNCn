@@ -5,6 +5,41 @@
 
   function saveNameState(s) {saveJson(KEY_NAMESEARCH,s || null);}
 
+  function setIcbincnTabTitleText(text) {const cleaned = norm(text || '');
+                                        GM_setValue(KEY_TAB_TITLE,cleaned);
+                                        applyIcbincnTabBranding();}
+
+  function getIcbincnTabTitleText() {return norm(GM_getValue(KEY_TAB_TITLE,''));}
+
+  function currentNameSearchTabTitleText() {const st = loadNameState();
+                                            if (!st?.active) return getIcbincnTabTitleText();
+                                            const idx = Math.min(2,Math.max(0,Number(st.passIndex || 0)));
+                                            return `Searching (${idx + 1}/3)`;}
+
+  function ensureIcbincnFavicon() {const head = document.head || document.documentElement;
+                                   if (!head) return;
+                                   const desired = typeof LOGO_CASEY_IMAGE !== 'undefined' ? LOGO_CASEY_IMAGE : '';
+                                   if (!desired) return;
+                                   const selectors = 'link[rel~="icon"],link[rel="shortcut icon"],link[rel="apple-touch-icon"]';
+                                   for (const link of Array.from(document.querySelectorAll(selectors))) {if (link.dataset?.icbincnFavicon === '1') continue;
+                                                                                                         link.remove();}
+                                   let link = document.querySelector('link[data-icbincn-favicon="1"]');
+                                   if (!link) {link = document.createElement('link');
+                                               link.rel = 'icon';
+                                               link.type = 'image/jpeg';
+                                               link.dataset.icbincnFavicon = '1';
+                                               head.appendChild(link);}
+                                   if (link.href !== desired) link.href = desired;}
+
+  function applyIcbincnTabBranding() {ensureIcbincnFavicon();
+                                      const title = currentNameSearchTabTitleText();
+                                      if (title && document.title !== title) document.title = title;}
+
+  function startIcbincnTabBrandingObserver() {applyIcbincnTabBranding();
+                                             const obs = new MutationObserver(() => setTimeout(applyIcbincnTabBranding,0));
+                                             obs.observe(document.documentElement,{childList:true,subtree:true,characterData:true,attributes:true,attributeFilter:['href','rel']});
+                                             setInterval(applyIcbincnTabBranding,1000);}
+
   function loadTrackState() {return loadJson(KEY_TRACK_STATE,null);}
 
   function saveTrackState(s) {saveJson(KEY_TRACK_STATE,s || null);}

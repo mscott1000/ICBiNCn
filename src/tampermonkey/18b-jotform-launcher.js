@@ -90,6 +90,7 @@ function startIcbincnSearchFromJotform(params) {const cleaned = {first:norm(para
                                             clearLastHtml();
                                             saveJson(KEY_NET_STATS,{byPath:{}});
                                             const passes = buildNameSearchPasses(cleaned);
+                                            setIcbincnTabTitleText('Searching (1/3)');
                                             saveNameState({active:true,
                                                            passIndex:0,
                                                            passes,

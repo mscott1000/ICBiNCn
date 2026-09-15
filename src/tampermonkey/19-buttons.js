@@ -21,6 +21,7 @@
                                                                             setRun(false);
                                                                             saveDraft({...params});
                                                                             const passes = buildNameSearchPasses(params);
+                                                                            setIcbincnTabTitleText('Searching (1/3)');
                                                                             saveNameState({active:true,passIndex:0,passes,step:'go_search',params,casenetAddedTotal:0,autoMinimized:false,});
                                                                             appView = 'name';
                                                                             expandDock();
@@ -180,7 +181,8 @@
                                  const passKey = typeof pass === 'string' ? pass : pass?.caseType;
                                  const passMiddle = typeof pass === 'string' ? (st.params?.middle || '') : (pass?.middle || '');
                                  const passLabel = typeof pass === 'string' ? passKey : (pass?.label || passKey);
-                                 if (!passKey) {uiStatus('Preparing pass 3/3 (Municourt)');
+                                 if (!passKey) {setIcbincnTabTitleText('Searching (3/3)');
+                                                uiStatus('Preparing pass 3/3 (Municourt)');
                                                 render();
                                                 if (Number(st.prepareStartedAt || 0) === 0) {st.prepareStartedAt = Date.now();
                                                                                              saveNameState(st);
@@ -214,6 +216,7 @@
                                                 dbg('namesearch_done',{casenetAdded,muniAdded});
                                                 if (st.launchedFrom === 'jotform') {try {jotformPersistSearchResult(st);}
                                                                                     catch (e) {dbg('jotform_result_persist_error',{msg:String(e?.message || e)});}}
+                                                setIcbincnTabTitleText('Complete');
                                                 clearNameState();
                                                 expandDock();
                                                 uiStatus(`Done. Case.net: ${casenetAdded}  Municourt.net: ${muniAdded}`);
@@ -226,6 +229,7 @@
                                                                                                         saveNameState(st);}
                                                           const prepMessages = ['Preparing pass 1/3 (criminal)','Preparing pass 2/3 (traffic/municipal)','Preparing pass 3/3 (Municourt)'];
                                                           const prepLabel = prepMessages[st.passIndex || 0] || `Preparing pass (${(st.passIndex || 0) + 1}/3)`;
+                                                          setIcbincnTabTitleText(`Searching (${Math.min(3,(Number(st.passIndex || 0) + 1))}/3)`);
                                                           uiStatus(prepLabel);
                                                           render();
                                                           if (Number(st.prepareStartedAt || 0) === 0) {st.prepareStartedAt = Date.now();
@@ -275,6 +279,7 @@
                                                                                                                                  render();
                                                                                                                                  return;}
                                                                 st.passIndex = (st.passIndex || 0) + 1;
+                                                                setIcbincnTabTitleText(`Searching (${Math.min(3,(Number(st.passIndex || 0) + 1))}/3)`);
                                                                 st.step = 'go_search';
                                                                 st.pullStartedAt = 0;
                                                                 st.prepareStartedAt = Date.now();
