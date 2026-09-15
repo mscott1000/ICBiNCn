@@ -15,6 +15,7 @@
   const KEY_CASE_BATCH_DRAFT = 'mo_casenet_case_batch_draft_v1';
   const KEY_JOTFORM_PENDING = 'mo_casenet_jotform_pending_v1';
   const KEY_JOTFORM_RESULTS = 'mo_casenet_jotform_results_v1';
+  const KEY_TAB_TITLE = 'mo_casenet_tab_title_v1';
 
   const DEFAULT_CONCURRENCY = 7;
 
