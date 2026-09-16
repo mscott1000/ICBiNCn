@@ -1,7 +1,7 @@
 // ==UserScript==
-// @name         ICBiNCn 9.14
+// @name         ICBiNCn 9.15
 // @namespace    http://tampermonkey.net/
-// @version      2026-09-14
+// @version      2026-09-15
 // @description  Background Case.net scraper using JSON/XHR endpoints. Navs to search results pages, pulls case data via POST requests, then writes to a persistent log for copying. Now with Track This Case.
 // @author       Mason Scott
 // @match        https://www.courts.mo.gov/casenet/*
@@ -14,6 +14,8 @@
 // @grant        GM_setClipboard
 // @grant        GM_getValue
 // @grant        GM_setValue
+// @grant        GM_addValueChangeListener
+// @grant        GM_removeValueChangeListener
 // @grant        GM_xmlhttpRequest
 // @grant        GM_openInTab
 // @grant        unsafeWindow
@@ -5010,9 +5012,20 @@ function render() {const log = loadLog();
                                                     catch {}
                                                     const waitMs = 45000;
                                                     const start = Date.now();
+                                                    let listenerId = null;
+                                                    let listenerResult = null;
+                                                    if (typeof GM_addValueChangeListener === 'function') {try {listenerResult = new Promise((resolve) => {
+                                                                                                                        listenerId = GM_addValueChangeListener(MUNI_REMOTE_RESULT_KEY,(_key,_oldValue,newValue) => {
+                                                                                                                          if (newValue?.id === taskId) resolve(newValue);});});}
+                                                                                                         catch {listenerResult = null;}}
                                                     while (Date.now() - start < waitMs) {const res = await gmGetValueSafe(MUNI_REMOTE_RESULT_KEY,null);
-                                                                                         if (res?.id === taskId) return Array.isArray(res?.candidates) ? res.candidates : [];
-                                                                                         await sleep(500);}
+                                                                                         if (res?.id === taskId) {if (listenerId !== null && typeof GM_removeValueChangeListener === 'function') GM_removeValueChangeListener(listenerId);
+                                                                                                                 return Array.isArray(res?.candidates) ? res.candidates : [];}
+                                                                                         const wake = listenerResult ? Promise.race([listenerResult,sleep(500)]) : sleep(500);
+                                                                                         const changed = await wake;
+                                                                                         if (changed?.id === taskId) {if (listenerId !== null && typeof GM_removeValueChangeListener === 'function') GM_removeValueChangeListener(listenerId);
+                                                                                                                       return Array.isArray(changed?.candidates) ? changed.candidates : [];}}
+                                                    if (listenerId !== null && typeof GM_removeValueChangeListener === 'function') GM_removeValueChangeListener(listenerId);
                                                     dbg('municourt_remote_timeout',{waitMs});
                                                     return [];}
 
@@ -5176,7 +5189,7 @@ function render() {const log = loadLog();
                                                                    duplicateCaseKeySample: duplicateCaseKeys.slice(0,5)});
                                                       return entries;}
 
-  if (/municourt\.net$/i.test(location.hostname || '')) setTimeout(() => {runMunicourtRemoteWorkerIfNeeded().catch(() => {});},300);
+  if (/municourt\.net$/i.test(location.hostname || '')) runMunicourtRemoteWorkerIfNeeded().catch(() => {});
 
   async function searchMunicourtEntriesByCaseNumbers(batch) {const entries = [];
                                                             const seen = new Set();
@@ -5738,11 +5751,6 @@ function initializeJotformIntegration() {hideIcbincnDockOnJotform();
                                  if (!passKey) {setIcbincnTabTitleText('Searching (3/3)');
                                                 uiStatus('Preparing pass 3/3 (Municourt)');
                                                 render();
-                                                if (Number(st.prepareStartedAt || 0) === 0) {st.prepareStartedAt = Date.now();
-                                                                                             saveNameState(st);
-                                                                                             return;}
-                                                const muniPrepAge = Date.now() - Number(st.prepareStartedAt || 0);
-                                                if (muniPrepAge < 3000) return;
                                                 st.prepareStartedAt = 0;
                                                 saveNameState(st);
                                                 if (st.step === 'municourt_finalizing') {const age = Date.now() - Number(st.finalizingStartedAt || 0);
@@ -5786,11 +5794,6 @@ function initializeJotformIntegration() {hideIcbincnDockOnJotform();
                                                           setIcbincnTabTitleText(`Searching (${Math.min(3,(Number(st.passIndex || 0) + 1))}/3)`);
                                                           uiStatus(prepLabel);
                                                           render();
-                                                          if (Number(st.prepareStartedAt || 0) === 0) {st.prepareStartedAt = Date.now();
-                                                                                                       saveNameState(st);
-                                                                                                       return;}
-                                                          const prepAge = Date.now() - Number(st.prepareStartedAt || 0);
-                                                          if (prepAge < 3000) return;
                                                           st.prepareStartedAt = 0;
                                                           saveNameState(st);
                                                           dbg('namesearch_submit',{passKey,passMiddle});
@@ -5852,7 +5855,15 @@ else {startIcbincnTabBrandingObserver();
       restoreActiveNameSearchUiOnLoad();
       render();
 
-      setInterval(() => {try {nameSearchTick();}
-                         catch (e) {/* ignore */}
+      let nameSearchTickInFlight = false;
+      const kickNameSearchTick = () => {if (nameSearchTickInFlight) return;
+                                       nameSearchTickInFlight = true;
+                                       Promise.resolve(nameSearchTick()).catch(() => {}).finally(() => {nameSearchTickInFlight = false;});};
+      // Run once at page initialization so background-tab timer throttling cannot
+      // stall the next pass. The interval remains only as a recovery watchdog.
+      kickNameSearchTick();
+      window.addEventListener('pageshow',kickNameSearchTick);
+      document.addEventListener('visibilitychange',() => {if (!document.hidden) kickNameSearchTick();});
+      setInterval(() => {kickNameSearchTick();
                          try {trackTick();}
                          catch (e) {}},900);}})();

@@ -341,9 +341,20 @@
                                                     catch {}
                                                     const waitMs = 45000;
                                                     const start = Date.now();
+                                                    let listenerId = null;
+                                                    let listenerResult = null;
+                                                    if (typeof GM_addValueChangeListener === 'function') {try {listenerResult = new Promise((resolve) => {
+                                                                                                                        listenerId = GM_addValueChangeListener(MUNI_REMOTE_RESULT_KEY,(_key,_oldValue,newValue) => {
+                                                                                                                          if (newValue?.id === taskId) resolve(newValue);});});}
+                                                                                                         catch {listenerResult = null;}}
                                                     while (Date.now() - start < waitMs) {const res = await gmGetValueSafe(MUNI_REMOTE_RESULT_KEY,null);
-                                                                                         if (res?.id === taskId) return Array.isArray(res?.candidates) ? res.candidates : [];
-                                                                                         await sleep(500);}
+                                                                                         if (res?.id === taskId) {if (listenerId !== null && typeof GM_removeValueChangeListener === 'function') GM_removeValueChangeListener(listenerId);
+                                                                                                                 return Array.isArray(res?.candidates) ? res.candidates : [];}
+                                                                                         const wake = listenerResult ? Promise.race([listenerResult,sleep(500)]) : sleep(500);
+                                                                                         const changed = await wake;
+                                                                                         if (changed?.id === taskId) {if (listenerId !== null && typeof GM_removeValueChangeListener === 'function') GM_removeValueChangeListener(listenerId);
+                                                                                                                       return Array.isArray(changed?.candidates) ? changed.candidates : [];}}
+                                                    if (listenerId !== null && typeof GM_removeValueChangeListener === 'function') GM_removeValueChangeListener(listenerId);
                                                     dbg('municourt_remote_timeout',{waitMs});
                                                     return [];}
 
@@ -507,7 +518,7 @@
                                                                    duplicateCaseKeySample: duplicateCaseKeys.slice(0,5)});
                                                       return entries;}
 
-  if (/municourt\.net$/i.test(location.hostname || '')) setTimeout(() => {runMunicourtRemoteWorkerIfNeeded().catch(() => {});},300);
+  if (/municourt\.net$/i.test(location.hostname || '')) runMunicourtRemoteWorkerIfNeeded().catch(() => {});
 
   async function searchMunicourtEntriesByCaseNumbers(batch) {const entries = [];
                                                             const seen = new Set();
