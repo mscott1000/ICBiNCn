@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Case.net Upcoming Court Date Batch Lookup (Standalone)
 // @namespace    icbincn-standalone
-// @version      1.1.0
+// @version      1.1.1
 // @description  Standalone Case.net batch case-number lookup for upcoming court dates. Does not modify ICBiNCn UI.
 // @match        https://www.courts.mo.gov/*
 // @grant        GM_addStyle
@@ -281,6 +281,20 @@
     throw err;
   }
 
+  function noUpcomingDateMessage(now = new Date()) {
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'America/Chicago',
+      month: 'numeric',
+      day: 'numeric',
+      year: '2-digit',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    }).formatToParts(now);
+    const get = (type) => parts.find((part) => part.type === type)?.value || '';
+    return `No Upcoming Court Date Found - ${get('month')}/${get('day')}/${get('year')} @ ${get('hour')}:${get('minute')}${get('dayPeriod').toLowerCase()}`;
+  }
+
   function getUpcomingCourtDate(docketList) {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -305,7 +319,7 @@
 
     all.sort((a, b) => a.dt - b.dt);
     const next = all.find((x) => x.dt.getTime() >= today.getTime());
-    if (!next) return 'No Upcoming Court Date Found';
+    if (!next) return noUpcomingDateMessage();
     return [next.d, next.time || '- - -', next.judge || '- - -', next.locationText || '- - -'].join(' ; ');
   }
 
@@ -442,7 +456,7 @@
         try {
           const seed = { caseNumber: item.caseNumber, courtId: normalizeCourtId(item.courtId || DEFAULT_COURT_ID) };
           const scraped = await scrapeUpcomingDate(seed, activeRun?.controller?.signal);
-          const upcoming = scraped?.upcoming || 'No Upcoming Court Date Found';
+          const upcoming = scraped?.upcoming || noUpcomingDateMessage();
           appendDebug('batch_case_complete', {
             requestedCaseNumber: item.caseNumber,
             resolvedCaseNumber: item.caseNumber,
