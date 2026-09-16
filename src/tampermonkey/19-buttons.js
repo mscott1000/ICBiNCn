@@ -184,11 +184,6 @@
                                  if (!passKey) {setIcbincnTabTitleText('Searching (3/3)');
                                                 uiStatus('Preparing pass 3/3 (Municourt)');
                                                 render();
-                                                if (Number(st.prepareStartedAt || 0) === 0) {st.prepareStartedAt = Date.now();
-                                                                                             saveNameState(st);
-                                                                                             return;}
-                                                const muniPrepAge = Date.now() - Number(st.prepareStartedAt || 0);
-                                                if (muniPrepAge < 3000) return;
                                                 st.prepareStartedAt = 0;
                                                 saveNameState(st);
                                                 if (st.step === 'municourt_finalizing') {const age = Date.now() - Number(st.finalizingStartedAt || 0);
@@ -232,11 +227,6 @@
                                                           setIcbincnTabTitleText(`Searching (${Math.min(3,(Number(st.passIndex || 0) + 1))}/3)`);
                                                           uiStatus(prepLabel);
                                                           render();
-                                                          if (Number(st.prepareStartedAt || 0) === 0) {st.prepareStartedAt = Date.now();
-                                                                                                       saveNameState(st);
-                                                                                                       return;}
-                                                          const prepAge = Date.now() - Number(st.prepareStartedAt || 0);
-                                                          if (prepAge < 3000) return;
                                                           st.prepareStartedAt = 0;
                                                           saveNameState(st);
                                                           dbg('namesearch_submit',{passKey,passMiddle});
