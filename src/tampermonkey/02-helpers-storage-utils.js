@@ -19,11 +19,20 @@
                                                   timer = setTimeout(done,ms);
                                                   signal.addEventListener('abort',done,{once:true});});
 
-  function stopAwareFetch(input,init = {}) {if (isStop()) return Promise.reject(new DOMException('Stopped by user','AbortError'));
-                                            const requestedSignal = init.signal;
-                                            const stopSignal = stopAbortController.signal;
-                                            const signal = requestedSignal && typeof AbortSignal.any === 'function' ? AbortSignal.any([requestedSignal,stopSignal]) : stopSignal;
-                                            return fetch(input,{...init,signal});}
+  async function stopAwareFetch(input,init = {}) {if (isStop()) throw new DOMException('Stopped by user','AbortError');
+                                                  const requestedSignal = init.signal;
+                                                  const stopSignal = stopAbortController.signal;
+                                                  if (!requestedSignal || requestedSignal === stopSignal) return fetch(input,{...init,signal:stopSignal});
+                                                  if (typeof AbortSignal.any === 'function') return fetch(input,{...init,signal:AbortSignal.any([requestedSignal,stopSignal])});
+                                                  const controller = new AbortController();
+                                                  const abort = (event) => controller.abort(event?.target?.reason);
+                                                  requestedSignal.addEventListener('abort',abort,{once:true});
+                                                  stopSignal.addEventListener('abort',abort,{once:true});
+                                                  try {if (requestedSignal.aborted) controller.abort(requestedSignal.reason);
+                                                       else if (stopSignal.aborted) controller.abort(stopSignal.reason);
+                                                       return await fetch(input,{...init,signal:controller.signal});}
+                                                  finally {requestedSignal.removeEventListener('abort',abort);
+                                                           stopSignal.removeEventListener('abort',abort);}}
   const norm = (s) => String(s || '').replace(/\s+/g, ' ').trim();
 
   function loadJson(key, fallback) {try {const raw = GM_getValue(key, JSON.stringify(fallback));
