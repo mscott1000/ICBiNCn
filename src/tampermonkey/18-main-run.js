@@ -102,7 +102,7 @@
                                                             body.set('caseNumber',caseNumber);
                                                             body.set('inputVO.caseNumber',caseNumber);
                                                             body.set('newSearch','Y');
-                                                            const resp = await fetch(url.toString(),{method:'POST',
+                                                            const resp = await stopAwareFetch(url.toString(),{method:'POST',
                                                                                                      credentials:'include',
                                                                                                      headers:{'Content-Type':'application/x-www-form-urlencoded; charset=UTF-8'},
                                                                                                      body: body.toString()});
@@ -161,15 +161,18 @@
                                                                                                                                                  const out = await scrapeCaseViaApi(item,'');
                                                                                                                                                  if (out && (out._skipReason === 'blank_title' || out._skipReason === 'paid_in_full' || out._skipReason === 'guilty_zero_balance_nonwarrant' || out._skipReason === 'transferred_case')) return null;
                                                                                                                                                  return out;});
+                                                             if (isStop()) {uiStatus('Stopped.'); return;}
                                                              const nextLog = loadLog();
                                                              for (const r of results) {if (!r || !r.caseKey) continue;
                                                                                       if (nextLog.some((x) => x.caseKey === r.caseKey)) continue;
                                                                                       nextLog.push(withPleadAndPayTotal(r));}
                                                              saveLog(nextLog);
                                                              let muniAdded = 0;
+                                                             if (isStop()) {uiStatus('Stopped.'); return;}
                                                              try {uiStatus(`Resolved ${resolved.length}. Reading Municourt supplement...`);
                                                                   render();
                                                                   const muniEntries = await searchMunicourtEntriesByCaseNumbers(requested);
+                                                                  if (isStop()) {uiStatus('Stopped.'); return;}
                                                                   for (const m of muniEntries) {if (!m?.caseKey) continue;
                                                                                               if (nextLog.some((x) => x.caseKey === m.caseKey)) continue;
                                                                                               nextLog.push(withPleadAndPayTotal(m));
@@ -184,8 +187,9 @@
                                                              else uiStatus(`${okCount} Case.net cases + ${muniAdded} Municourt cases added from case-number batch.${unresolvedMsg} Errors: ${errCount}.`);
                                                              if (unresolved.length) dbg('case_batch_unresolved',{count:unresolved.length,items:unresolved.slice(0,40)});
                                                              if (errCount) dbg('case_batch_run_errors',{errors: errors.slice(0,12)});}
-                                                        catch (e) {dbg('case_batch_fatal',{msg:String(e?.message || e),stack:String(e?.stack || '')});
-                                                                   uiStatus('*error*: ' + String(e?.message || e));}
+                                                        catch (e) {if (isStop()) uiStatus('Stopped.');
+                                                                   else {dbg('case_batch_fatal',{msg:String(e?.message || e),stack:String(e?.stack || '')});
+                                                                         uiStatus('*error*: ' + String(e?.message || e));}}
                                                         finally {setRun(false);
                                                                  render();}}
 
@@ -247,6 +251,7 @@
                                                                                                                  if (out && out._skipReason === 'paid_in_full') return out;
                                                                                                                  if (out && (out._skipReason === 'blank_title' || out._skipReason === 'transferred_case')) return null;
                                                                                                                  return out;});
+                                                if (isStop()) {uiStatus('Stopped.'); return {status:'stopped',appendedCount:0};}
                                                 const nextLog = loadLog();
                                                 let appendedCount = 0;
                                                 for (const r of results) {if (!r || !r.caseKey) continue;
@@ -269,8 +274,9 @@
                                                       else uiStatus(`${okCount} Case.net cases added. YOB mismatches: ${yobMismatchCount}. Errors: ${errors.length}.`);}
                                                 if (errCount) dbg('run_errors',{errors: errors.slice(0,12)});
                                                 return {status:'complete',appendedCount};}
-                                           catch (err) {dbg('fatal_pull',{msg: String(err?.message || err),stack: String(err?.stack || ''),});
-                                                       uiStatus('*error*: ' + String(err?.message || err));}
+                                           catch (err) {if (isStop()) uiStatus('Stopped.');
+                                                       else {dbg('fatal_pull',{msg: String(err?.message || err),stack: String(err?.stack || ''),});
+                                                             uiStatus('*error*: ' + String(err?.message || err));}}
                                            finally {setRun(false);
                                                     render();}
                                            return {status:'error',appendedCount: 0};}

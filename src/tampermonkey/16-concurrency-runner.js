@@ -10,9 +10,11 @@
                                                                                                     const item = items[my];
                                                                                                     try {dbg('case_start',{workerId,caseKey: item.caseKey});
                                                                                                          const out = await workerFn(item,my);
+                                                                                                         if (isStop()) return;
                                                                                                          results.push(out);
                                                                                                          dbg('case_done',{workerId,caseKey: item.caseKey});}
-                                                                                                    catch (e) {errors.push({caseKey: item?.caseKey,msg: String(e?.message || e)});
+                                                                                                    catch (e) {if (isStop()) return;
+                                                                                                               errors.push({caseKey: item?.caseKey,msg: String(e?.message || e)});
                                                                                                                dbg('case_error',{workerId,
                                                                                                                                 caseKey: item?.caseKey,
                                                                                                                                 msg: String(e?.message || e),

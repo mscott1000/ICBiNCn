@@ -1,7 +1,29 @@
 /************************************************************
    * Helpers (storage / utils)
    ************************************************************/
-  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  let stopAbortController = new AbortController();
+  const activeGmRequests = new Set();
+
+  function renewStopController() {if (stopAbortController.signal.aborted) stopAbortController = new AbortController();}
+
+  function abortInFlightOperations() {if (!stopAbortController.signal.aborted) stopAbortController.abort();
+                                      for (const request of [...activeGmRequests]) {try {request.abort();} catch {}}
+                                      activeGmRequests.clear();}
+
+  const sleep = (ms) => new Promise((resolve) => {if (isStop()) {resolve(); return;}
+                                                  const signal = stopAbortController.signal;
+                                                  let timer = null;
+                                                  function done() {if (timer !== null) clearTimeout(timer);
+                                                                   signal.removeEventListener('abort',done);
+                                                                   resolve();}
+                                                  timer = setTimeout(done,ms);
+                                                  signal.addEventListener('abort',done,{once:true});});
+
+  function stopAwareFetch(input,init = {}) {if (isStop()) return Promise.reject(new DOMException('Stopped by user','AbortError'));
+                                            const requestedSignal = init.signal;
+                                            const stopSignal = stopAbortController.signal;
+                                            const signal = requestedSignal && typeof AbortSignal.any === 'function' ? AbortSignal.any([requestedSignal,stopSignal]) : stopSignal;
+                                            return fetch(input,{...init,signal});}
   const norm = (s) => String(s || '').replace(/\s+/g, ' ').trim();
 
   function loadJson(key, fallback) {try {const raw = GM_getValue(key, JSON.stringify(fallback));
@@ -17,8 +39,21 @@
   const setRun = (v) => GM_setValue(KEY_RUN, v === true);
   const isRun = () => GM_getValue(KEY_RUN, false) === true;
 
-  const setStop = (v) => GM_setValue(KEY_STOP, v === true);
+  const setStop = (v) => {const stopped = v === true;
+                          GM_setValue(KEY_STOP,stopped);
+                          if (stopped) abortInFlightOperations();
+                          else renewStopController();};
   const isStop = () => GM_getValue(KEY_STOP, false) === true;
+
+  function stopAllOperations() {setStop(true);
+                                setRun(false);
+                                clearNameState();
+                                clearTrackState();
+                                upcomingStopRequested = true;
+                                if (upcomingActiveRun?.controller) upcomingActiveRun.controller.abort();
+                                try {window.stop();} catch {}}
+
+  if (typeof GM_addValueChangeListener === 'function') GM_addValueChangeListener(KEY_STOP,(_key,_oldValue,newValue) => {if (newValue === true) abortInFlightOperations();});
 
   const setStatus = (s) => GM_setValue(KEY_STATUS, String(s || ''));
   const getStatus = () => String(GM_getValue(KEY_STATUS, ''));
