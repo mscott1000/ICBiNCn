@@ -49,17 +49,22 @@
 
   function gmHttpRequestText(details) {return new Promise((resolve,reject) => {if (typeof GM_xmlhttpRequest !== 'function') {reject(new Error('GM_xmlhttpRequest is unavailable'));
                                                                                 return;}
-                                                                                GM_xmlhttpRequest({method: details.method || 'GET',
+                                                                                if (isStop()) {reject(new DOMException('Stopped by user','AbortError')); return;}
+                                                                                let request;
+                                                                                const finish = (callback) => (value) => {activeGmRequests.delete(request); callback(value);};
+                                                                                request = GM_xmlhttpRequest({method: details.method || 'GET',
                                                                                                    url: details.url,
                                                                                                    headers: details.headers || {},
                                                                                                    data: details.data || undefined,
                                                                                                    timeout: Number(details.timeout || 20000),
-                                                                                                   onload: (resp) => {resolve({status: Number(resp?.status || 0),
+                                                                                                   onload: finish((resp) => {resolve({status: Number(resp?.status || 0),
                                                                                                                                responseText: String(resp?.responseText || ''),
                                                                                                                                finalUrl: String(resp?.finalUrl || details.url),
-                                                                                                                               responseHeaders: String(resp?.responseHeaders || ''),});},
-                                                                                                   ontimeout: () => reject(new Error(`Timeout for ${details.url}`)),
-                                                                                                   onerror: (err) => reject(new Error(String(err?.error || err?.message || `Request failed for ${details.url}`))),});});}
+                                                                                                                               responseHeaders: String(resp?.responseHeaders || ''),});}),
+                                                                                                   ontimeout: finish(() => reject(new Error(`Timeout for ${details.url}`))),
+                                                                                                   onerror: finish((err) => reject(new Error(String(err?.error || err?.message || `Request failed for ${details.url}`)))),
+                                                                                                   onabort: finish(() => reject(new DOMException('Stopped by user','AbortError'))),});
+                                                                                activeGmRequests.add(request);});}
 
   function tryParseJsonText(txt) {try {return JSON.parse(String(txt || ''));}
                                   catch {return null;}}

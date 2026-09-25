@@ -39,8 +39,7 @@
                                                                               uiStatus('Entries Cleared');
                                                                               dbg('entries_cleared',{});
                                                                               return;}
-                                             if (id === 'moJsonStop') {setStop(true);
-                                                                      setRun(false);
+                                             if (id === 'moJsonStop') {stopAllOperations();
                                                                       uiStatus('Stopped.');
                                                                       dbg('stop_clicked',{});
                                                                       render();
@@ -121,7 +120,7 @@
                                                                           location.href = new URL('/casenet/caseNoSearch.do',location.origin).toString();
                                                                           render();
                                                                           return;}
-                                             if (id === 'moUpcomingRun') {runUpcomingBatchIntegrated().catch((err) => {upcomingActiveRun = null; upcomingSetStatus(`Error: ${String(err?.message || err)}`);}); return;}
+                                             if (id === 'moUpcomingRun') {runUpcomingBatchIntegrated().catch((err) => {upcomingActiveRun = null; upcomingSetStatus(upcomingStopRequested || isStop() ? 'Stopped.' : `Error: ${String(err?.message || err)}`);}); return;}
                                              if (id === 'moUpcomingStop') {upcomingStopRequested = true; if (upcomingActiveRun?.controller) upcomingActiveRun.controller.abort(); upcomingDebug('stop_requested',{}); upcomingSetStatus('Stopping...'); return;}
                                              if (id === 'moUpcomingClear') {upcomingStorageSet(UPCOMING_INPUT_KEY,''); upcomingStorageSet(UPCOMING_OUTPUT_KEY,''); render(); upcomingSetStatus('Upcoming Court Dates entries cleared.'); return;}
                                              if (id === 'moUpcomingCopy') {GM_setClipboard(document.getElementById('moUpcomingOutput')?.value || '','text'); upcomingSetStatus('Results copied to clipboard.'); return;}

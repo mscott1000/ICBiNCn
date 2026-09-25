@@ -9,7 +9,7 @@
                                                                      if (qs) url.search = qs.startsWith('?') ? qs : `?${qs}`;
                                                                      const body = new URLSearchParams();
                                                                      for (const [k,v] of Object.entries(formObj || {})) {body.set(k,v === undefined || v === null ? '' : String(v));}
-                                                                     const resp = await fetch(url.toString(),{method: 'POST',
+                                                                     const resp = await stopAwareFetch(url.toString(),{method: 'POST',
                                                                                                             credentials: 'include',
                                                                                                             headers: {Accept: 'application/json,text/javascript, */*; q=0.01',
                                                                                                                       'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
@@ -84,7 +84,8 @@
                                                                                    let lastErr = null;
                                                                                    for (let attempt = 0;attempt <= retries;attempt++) {try {if (attempt > 0) {const jitter = Math.floor(Math.random() * 120);
                                                                                                                                              const delay = Math.min(2500,baseDelay * Math.pow(2,attempt - 1) + jitter);
-                                                                                                                                             await sleep(delay);}
+                                                                                                                                             await sleep(delay);
+                                                                                                                                             if (isStop()) throw new DOMException('Stopped by user','AbortError');}
                                                                                                                                     return await postFormJson(pathOrUrl,formObj,opts);}
                                                                                                                                catch (e) {lastErr = e;
                                                                                                                                           dbg('post_retry_fail',{attempt,msg: String(e?.message || e),status: e?.status || ''});
