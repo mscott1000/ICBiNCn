@@ -154,6 +154,10 @@ GM_addStyle(`:root{ --mo-ui-scale: 1.2;         /* uniformly enlarge the complet
             #moJsonContent.moNameSearchContent .moSearchBtn,
             #moJsonContent.moNameSearchContent #moJsonClearEntries{height:44.8px;
                                                                     font-size:16.8px;}
+            #moJsonContent.moNameSearchContent #moJsonDebug{min-height:120px;
+                                                            max-height:220px;
+                                                            font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;
+                                                            font-size:11px;}
 
             .moBlock h3{margin:0 0 6px 0;
                         font-size:12px;
@@ -1007,4 +1011,5 @@ function render() {const log = loadLog();
         <div class="moField"><label style="color:var(--mo-text);">Birth Year</label><input id="moNsYob" type="text" placeholder="YYYY" maxlength="4" value="${escapeHtml(p?.yob || '')}"></div>
         <div style="display:flex; gap:8px; align-items:end; width:100%;"><button class="moBtn moSearchBtn" id="moJsonNameSearch" style="flex:1;">Search</button><button class="moBtn" id="moJsonClearEntries" style="flex:1;">Clear Entries</button></div>
       </div>`);
+                   addBlock('Debug Log',`<div class="moField"><textarea id="moJsonDebug" readonly placeholder="Debug events will appear here">${escapeHtml(formatDebugLog())}</textarea></div><div class="moNameRowBottom" style="grid-template-columns:1fr;"><button class="moBtn" id="moJsonClearDebug" type="button">Clear Debug</button></div>`);
 }

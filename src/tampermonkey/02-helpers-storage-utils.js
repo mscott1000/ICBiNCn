@@ -82,7 +82,12 @@
                                               ...data,};
                                   const cur = loadDebug();
                                   cur.push(row);
-                                  saveDebug(cur);}
+                                  saveDebug(cur);
+                                  const debugLog = document.getElementById('moJsonDebug');
+                                  if (debugLog) {debugLog.value = formatDebugLog(cur);
+                                                debugLog.scrollTop = debugLog.scrollHeight;}}
+
+  function formatDebugLog(rows = loadDebug()) {return rows.map((row) => JSON.stringify(row)).join('\n');}
 
   function saveLastHtml(obj) {saveJson(KEY_LAST_HTML, obj || null);}
 
