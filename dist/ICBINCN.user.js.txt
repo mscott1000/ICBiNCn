@@ -1,7 +1,7 @@
 // ==UserScript==
-// @name         ICBiNCn 9.30
+// @name         ICBiNCn 10.01
 // @namespace    http://tampermonkey.net/
-// @version      2026-09-30
+// @version      2026-10-01
 // @description  Background Case.net scraper using JSON/XHR endpoints. Navs to search results pages, pulls case data via POST requests, then writes to a persistent log for copying. Now with Track This Case.
 // @author       Mason Scott
 // @match        https://www.courts.mo.gov/casenet/*
@@ -135,7 +135,12 @@
                                               ...data,};
                                   const cur = loadDebug();
                                   cur.push(row);
-                                  saveDebug(cur);}
+                                  saveDebug(cur);
+                                  const debugLog = document.getElementById('moJsonDebug');
+                                  if (debugLog) {debugLog.value = formatDebugLog(cur);
+                                                debugLog.scrollTop = debugLog.scrollHeight;}}
+
+  function formatDebugLog(rows = loadDebug()) {return rows.map((row) => JSON.stringify(row)).join('\n');}
 
   function saveLastHtml(obj) {saveJson(KEY_LAST_HTML, obj || null);}
 
@@ -3595,6 +3600,10 @@ GM_addStyle(`:root{ --mo-ui-scale: 1.2;         /* uniformly enlarge the complet
             #moJsonContent.moNameSearchContent .moSearchBtn,
             #moJsonContent.moNameSearchContent #moJsonClearEntries{height:44.8px;
                                                                     font-size:16.8px;}
+            #moJsonContent.moNameSearchContent #moJsonDebug{min-height:120px;
+                                                            max-height:220px;
+                                                            font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;
+                                                            font-size:11px;}
 
             .moBlock h3{margin:0 0 6px 0;
                         font-size:12px;
@@ -4448,6 +4457,7 @@ function render() {const log = loadLog();
         <div class="moField"><label style="color:var(--mo-text);">Birth Year</label><input id="moNsYob" type="text" placeholder="YYYY" maxlength="4" value="${escapeHtml(p?.yob || '')}"></div>
         <div style="display:flex; gap:8px; align-items:end; width:100%;"><button class="moBtn moSearchBtn" id="moJsonNameSearch" style="flex:1;">Search</button><button class="moBtn" id="moJsonClearEntries" style="flex:1;">Clear Entries</button></div>
       </div>`);
+                   addBlock('Debug Log',`<div class="moField"><textarea id="moJsonDebug" readonly placeholder="Debug events will appear here">${escapeHtml(formatDebugLog())}</textarea></div><div class="moNameRowBottom" style="grid-template-columns:1fr;"><button class="moBtn" id="moJsonClearDebug" type="button">Clear Debug</button></div>`);
 }
 /************************************************************
    * Main run
