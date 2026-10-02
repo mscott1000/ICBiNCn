@@ -437,6 +437,8 @@ GM_addStyle(`:root{ --mo-ui-scale: 1.2;         /* uniformly enlarge the complet
             .moTextBuilderStaffBlock .moTextBuilderOption,
             .moTextBuilderResearchBlock .moTextBuilderOption,
             .moTextBuilderCourtsBlock .moTextBuilderOption{text-align:left;}
+            #moJsonContent.moTextBuilderContent .moTextBuilderResearchBlock .moTextBuilderOptions{display:grid;
+                                                                                                  grid-template-columns:repeat(2,minmax(0,1fr));}
             #moJsonContent.moTextBuilderContent .moTextBuilderCourtsBlock{overflow:hidden;}
             #moJsonContent.moTextBuilderContent .moTextBuilderCourtsBlock .moTextBuilderOptions{overflow:auto;
                                                                                                 flex:1 1 auto;
