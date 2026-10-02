@@ -3952,6 +3952,15 @@ GM_addStyle(`:root{ --mo-ui-scale: 1.2;         /* uniformly enlarge the complet
             .moTextBuilderPane h3{margin:0;
                                     text-align:center;}
             .moTextBuilderPane .moBtn{align-self:flex-start;}
+            .moCaseDataToggle{align-self:stretch !important;
+                              background:#16a34a;
+                              border-color:#15803d;
+                              color:#fff;}
+            .moCaseDataToggle:hover{background:#15803d;}
+            .moCaseDataToggle.moCaseDataOff{background:#9ca3af;
+                                            border-color:#6b7280;
+                                            color:#fff;}
+            .moCaseDataToggle.moCaseDataOff:hover{background:#6b7280;}
             .moTextBuilderMessage{white-space:pre-wrap;
                                   max-width:none;
                                   max-height:min(420px,55vh);
@@ -4174,6 +4183,12 @@ function textBuilderActions(confirmAction) {return `<div class="moTextBuilderAct
 function textBuilderTextarea(title,placeholder,confirmAction,valueKey) {return `<div class="moBlock moTextBuilderTextareaBlock"><textarea class="moTextBuilderTextArea" data-tb-input="${escapeHtml(valueKey)}" placeholder="${escapeHtml(placeholder)}">${escapeHtml(textBuilderState.data[valueKey] || '')}</textarea></div>${textBuilderActions(confirmAction)}`;}
 function textBuilderOptionalBlock(text,blockBuilder) {const value = String(text || '').trim();
                                                     return value ? blockBuilder(value) : '';}
+function textBuilderHasCaseData(keys) {return keys.some((key) => String(textBuilderState.data[key] || '').trim());}
+function textBuilderCaseDataVisible(key) {return textBuilderState.data[key] !== false;}
+function textBuilderFormatCaseData(message,key) {if (textBuilderCaseDataVisible(key)) return message;
+                                                return String(message || '').split('\n').map((line) => /^- \d/.test(line) && line.length > 24 ? `${line.slice(0,24)}…` : line).join('\n');}
+function textBuilderCaseDataToggle(key) {const on = textBuilderCaseDataVisible(key);
+                                        return `<button class="moBtn moCaseDataToggle${on ? '' : ' moCaseDataOff'}" data-tb-action="toggleCaseData" data-tb-value="${escapeHtml(key)}" type="button" title="Toggle Case Data" aria-pressed="${on ? 'true' : 'false'}">Toggle Case Data: ${on ? 'On' : 'Off'}</button>`;}
 function textBuilderNeedsSeatbeltViolations() {return textBuilderState.data.researchType === 'CanDo: Everything' && (textBuilderState.data.courts || []).includes('Florissant');}
 function textBuilderAddressLine(canDoPhrase) {if (textBuilderState.data.addressMode === 'Have Address') return canDoPhrase ? `To proceed${canDoPhrase}, can you confirm that ${textBuilderState.data.address || ''} is the best place for the Court to send physical mail?` : `To proceed, confirm that ${textBuilderState.data.address || ''} is the best place for the Court to send mail.`;
                                              return `To proceed${canDoPhrase}, what address is best for the Court to send physical mail?`;}
@@ -4257,14 +4272,16 @@ function renderTextBuilder() {const dockTitle = dock.querySelector('#moJsonTitle
                               else if (s === 'newCourtDateInput') html = textBuilderTextarea('New Court Date','Enter new court date information','confirmNewCourtDate','newCourtDate');
                               else if (s === 'message' || s === 'legalAidMessage') {if (textBuilderState.data.workflow === 'walkInDropIn') {const hasEligible = String(textBuilderState.data.eligibleCases || '').trim();
                                                                                            const hasIneligible = String(textBuilderState.data.ineligibleCases || '').trim();
-                                                                                           if (hasEligible && hasIneligible) {const ineligibleMsg = textBuilderLimitMessage(textBuilderDropInIneligibleMessage());
-                                                                                                                             const eligibleMsg = textBuilderLimitMessage(textBuilderDropInEligibleMessage(false));
-                                                                                                                             html = `<div class="moBlock"><div class="moTextBuilderDual"><div class="moTextBuilderPane"><h3>Ineligible Cases</h3><div class="moTextBuilderMessage" id="moTextBuilderConstructedIneligible">${escapeHtml(ineligibleMsg)}</div><button class="moBtn" data-tb-action="copyIneligibleMessage">Copy Message</button></div><div class="moTextBuilderPane"><h3>Eligible Cases</h3><div class="moTextBuilderMessage" id="moTextBuilderConstructedEligible">${escapeHtml(eligibleMsg)}</div><button class="moBtn" data-tb-action="copyEligibleMessage">Copy Message</button></div></div></div><div class="moTextBuilderActions"><button class="moBtn" data-tb-action="back">Back</button></div>`;}
-                                                                                           else {const msg = textBuilderLimitMessage(textBuilderBuildMessage());
+                                                                                           if (hasEligible && hasIneligible) {const ineligibleMsg = textBuilderLimitMessage(textBuilderFormatCaseData(textBuilderDropInIneligibleMessage(),'ineligibleCaseDataVisible'));
+                                                                                                                             const eligibleMsg = textBuilderLimitMessage(textBuilderFormatCaseData(textBuilderDropInEligibleMessage(false),'eligibleCaseDataVisible'));
+                                                                                                                             html = `<div class="moBlock"><div class="moTextBuilderDual"><div class="moTextBuilderPane"><h3>Ineligible Cases</h3><div class="moTextBuilderMessage" id="moTextBuilderConstructedIneligible">${escapeHtml(ineligibleMsg)}</div>${textBuilderCaseDataToggle('ineligibleCaseDataVisible')}<button class="moBtn" data-tb-action="copyIneligibleMessage">Copy Message</button></div><div class="moTextBuilderPane"><h3>Eligible Cases</h3><div class="moTextBuilderMessage" id="moTextBuilderConstructedEligible">${escapeHtml(eligibleMsg)}</div>${textBuilderCaseDataToggle('eligibleCaseDataVisible')}<button class="moBtn" data-tb-action="copyEligibleMessage">Copy Message</button></div></div></div><div class="moTextBuilderActions"><button class="moBtn" data-tb-action="back">Back</button></div>`;}
+                                                                                           else {const toggleKey = hasEligible ? 'eligibleCaseDataVisible' : 'ineligibleCaseDataVisible';
+                                                                                                 const msg = textBuilderLimitMessage(textBuilderFormatCaseData(textBuilderBuildMessage(),toggleKey));
                                                                                                  const title = hasEligible ? 'Eligible Cases' : 'Ineligible Cases';
-                                                                                                 html = `<div class="moBlock"><div class="moTextBuilderPane"><h3>${escapeHtml(title)}</h3><div class="moTextBuilderMessage" id="moTextBuilderConstructed">${escapeHtml(msg)}</div></div></div><div class="moTextBuilderActions"><button class="moBtn" data-tb-action="back">Back</button><button class="moBtn" data-tb-action="copyMessage">Copy Message</button></div>`;}}
-                                                         else {const msg = textBuilderLimitMessage(textBuilderBuildMessage());
-                                                               html = `<div class="moBlock"><div class="moTextBuilderMessage" id="moTextBuilderConstructed">${escapeHtml(msg)}</div></div><div class="moTextBuilderActions"><button class="moBtn" data-tb-action="back">Back</button><button class="moBtn" data-tb-action="copyMessage">Copy Message</button></div>`;}}
+                                                                                                 html = `<div class="moBlock"><div class="moTextBuilderPane"><h3>${escapeHtml(title)}</h3><div class="moTextBuilderMessage" id="moTextBuilderConstructed">${escapeHtml(msg)}</div>${textBuilderCaseDataToggle(toggleKey)}</div></div><div class="moTextBuilderActions"><button class="moBtn" data-tb-action="back">Back</button><button class="moBtn" data-tb-action="copyMessage">Copy Message</button></div>`;}}
+                                                         else {const hasCaseData = textBuilderHasCaseData(['eligibleCases','ineligibleCases','privateAttorneyCases','remainingIneligibleCases']);
+                                                               const msg = textBuilderLimitMessage(textBuilderFormatCaseData(textBuilderBuildMessage(),'caseDataVisible'));
+                                                               html = `<div class="moBlock"><div class="moTextBuilderPane"><div class="moTextBuilderMessage" id="moTextBuilderConstructed">${escapeHtml(msg)}</div>${hasCaseData ? textBuilderCaseDataToggle('caseDataVisible') : ''}</div></div><div class="moTextBuilderActions"><button class="moBtn" data-tb-action="back">Back</button><button class="moBtn" data-tb-action="copyMessage">Copy Message</button></div>`;}}
                               (appView === 'text' ? $content : textBuilderBody).innerHTML = html;}
 function positionTextBuilderPanel() {const rect = dock.getBoundingClientRect();
                                      const right = Math.max(8,window.innerWidth - rect.left + 10);
@@ -4281,6 +4298,7 @@ textBuilderPanel.addEventListener('click',(e) => {const action = e?.target?.data
                                                  const value = e?.target?.dataset?.tbValue;
                                                  if (action === 'moJsonTextBuilderClose') return closeTextBuilderPanel();
                                                  if (action === 'back') return textBuilderBack();
+                                                 if (action === 'toggleCaseData') {textBuilderState.data[value] = !textBuilderCaseDataVisible(value); return renderTextBuilder();}
                                                  if (action === 'chooseRoot') {if (value === 'Initial Text') return textBuilderSet('staff',{workflow:'initial'});
                                                                                if (value === 'Post-Research Reply') return textBuilderSet('staff',{workflow:'postResearch'});
                                                                                if (value === 'Walk-In Client') return textBuilderSet('staff',{workflow:'walkInDropIn',researchType:'Walk-In Client'});
@@ -4329,11 +4347,12 @@ textBuilderPanel.addEventListener('click',(e) => {const action = e?.target?.data
                                                  if (action === 'confirmNewCourtDate') return textBuilderSet('message');
                                                  if (action === 'confirmFtaDate') return textBuilderSet('message');
                                                  if (action === 'confirmAddress') return textBuilderSet('message');
-                                                 if (action === 'copyMessage') {GM_setClipboard(textBuilderBuildMessage(),'text');
+                                                 if (action === 'copyMessage') {const key = textBuilderState.data.workflow === 'walkInDropIn' ? (String(textBuilderState.data.eligibleCases || '').trim() ? 'eligibleCaseDataVisible' : 'ineligibleCaseDataVisible') : 'caseDataVisible';
+                                                                                GM_setClipboard(textBuilderFormatCaseData(textBuilderBuildMessage(),key),'text');
                                                                                 uiStatus('Text Builder message copied to clipboard');}
-                                                 if (action === 'copyIneligibleMessage') {GM_setClipboard(textBuilderDropInIneligibleMessage(),'text');
+                                                 if (action === 'copyIneligibleMessage') {GM_setClipboard(textBuilderFormatCaseData(textBuilderDropInIneligibleMessage(),'ineligibleCaseDataVisible'),'text');
                                                                                           uiStatus('Text Builder ineligible cases message copied to clipboard');}
-                                                 if (action === 'copyEligibleMessage') {GM_setClipboard(textBuilderDropInEligibleMessage(false),'text');
+                                                 if (action === 'copyEligibleMessage') {GM_setClipboard(textBuilderFormatCaseData(textBuilderDropInEligibleMessage(false),'eligibleCaseDataVisible'),'text');
                                                                                         uiStatus('Text Builder eligible cases message copied to clipboard');}});
 
 
@@ -5778,6 +5797,7 @@ function initializeJotformIntegration() {hideIcbincnDockOnJotform();
                                      if (!action || appView !== 'text') return;
                                      const value = e?.target?.dataset?.tbValue;
                                      if (action === 'back') return textBuilderBack();
+                                     if (action === 'toggleCaseData') {textBuilderState.data[value] = !textBuilderCaseDataVisible(value); return renderTextBuilder();}
                                      if (action === 'chooseRoot') {if (value === 'Initial Text') return textBuilderSet('staff',{workflow:'initial'}); if (value === 'Post-Research Reply') return textBuilderSet('staff',{workflow:'postResearch'}); if (value === 'Walk-In Client') return textBuilderSet('staff',{workflow:'walkInDropIn',researchType:'Walk-In Client'}); if (value === 'Legal Aid Resources') return textBuilderSet('legalAidResources',{workflow:'legalAidResources'}); return textBuilderSet('followUp',{workflow:'followUp'});}
                                      if (action === 'chooseStaff') {if (textBuilderState.data.workflow === 'initial') return textBuilderSet('message',{staff:value}); if (textBuilderState.data.workflow === 'followUpNewCourtDate') return textBuilderSet('courts',{staff:value,courts:[]}); if (textBuilderState.data.workflow === 'walkInDropIn') return textBuilderSet('eligibleDropin',{staff:value}); return textBuilderSet('researchType',{staff:value});}
                                      if (action === 'chooseResearchType') {if (value === 'Nothing Found') return textBuilderSet('message',{researchType:value}); if (value === 'CanDo: Everything' || value === 'CanDo + Can’tDo') return textBuilderSet('courts',{researchType:value,courts:[]}); if (value === 'Can’tDo: Private Attorney') return textBuilderSet('privateAttorneyDropin',{researchType:value}); if (value === 'Can’tDo: Out of Network' || value === 'Can’tDo: Repeat Attempt') return textBuilderSet('ineligibleDropin',{researchType:value,ineligiblePlaceholder:'Enter summary of ineligible cases'}); if (value === 'Can’tDo: Fresh Start Friday') return textBuilderSet('ineligibleDropin',{researchType:value,ineligiblePlaceholder:'Enter summary of Fresh Start Friday cases'}); if (value === 'Can’tDo: Initial Warrant') return textBuilderSet('ineligibleDropin',{researchType:value,ineligiblePlaceholder:"Enter summary of case(s) in 'initial warrant' status"}); if (value === 'Can’tDo: Recent FTA, Not a Warrant Yet') return textBuilderSet('ineligibleDropin',{researchType:value,ineligiblePlaceholder:'Enter summary of cases with a recent Failure to Appear'});}
@@ -5794,9 +5814,9 @@ function initializeJotformIntegration() {hideIcbincnDockOnJotform();
                                      if (action === 'chooseLegalAidResource') return textBuilderSet('legalAidMessage',{legalAidResource:value});
                                      if (action === 'chooseFollowUpReadyDay') return textBuilderSet('message',{followUpDay:value});
                                      if (action === 'confirmNewCourtDate' || action === 'confirmFtaDate' || action === 'confirmAddress') return textBuilderSet('message');
-                                     if (action === 'copyMessage') {GM_setClipboard(textBuilderBuildMessage(),'text'); return uiStatus('Text Builder message copied to clipboard');}
-                                     if (action === 'copyIneligibleMessage') {GM_setClipboard(textBuilderDropInIneligibleMessage(),'text'); return uiStatus('Text Builder ineligible cases message copied to clipboard');}
-                                     if (action === 'copyEligibleMessage') {GM_setClipboard(textBuilderDropInEligibleMessage(false),'text'); return uiStatus('Text Builder eligible cases message copied to clipboard');}});
+                                     if (action === 'copyMessage') {const key = textBuilderState.data.workflow === 'walkInDropIn' ? (String(textBuilderState.data.eligibleCases || '').trim() ? 'eligibleCaseDataVisible' : 'ineligibleCaseDataVisible') : 'caseDataVisible'; GM_setClipboard(textBuilderFormatCaseData(textBuilderBuildMessage(),key),'text'); return uiStatus('Text Builder message copied to clipboard');}
+                                     if (action === 'copyIneligibleMessage') {GM_setClipboard(textBuilderFormatCaseData(textBuilderDropInIneligibleMessage(),'ineligibleCaseDataVisible'),'text'); return uiStatus('Text Builder ineligible cases message copied to clipboard');}
+                                     if (action === 'copyEligibleMessage') {GM_setClipboard(textBuilderFormatCaseData(textBuilderDropInEligibleMessage(false),'eligibleCaseDataVisible'),'text'); return uiStatus('Text Builder eligible cases message copied to clipboard');}});
 
   dock.addEventListener('input',(e) => {const id = e?.target?.id || '';
                                      const tbKey = e?.target?.dataset?.tbInput;
