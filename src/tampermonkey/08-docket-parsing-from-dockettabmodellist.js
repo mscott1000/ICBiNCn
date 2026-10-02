@@ -75,23 +75,41 @@
   function findFirstWarrantOrSummons(docketList) {const hasRecallOrServedLanguage = (t) => /\brecall\w*\b|\bserv\w*\b/i.test(t);
                                                  const isWarrant = (t) => /\bwarrant\b/i.test(t);
                                                  const isSummons = (t) => /\bsummons?\b|\bsummon\b|\bsummoned\b/i.test(t);
-                                                 for (const e of docketList || []) {const desc = norm(e?.docketDesc || '');
-                                                                                   const txt = norm(e?.docketText || '');
-                                                                                   const hay = norm([desc,txt].filter(Boolean).join(' '));
-                                                                                   if (!hay) continue;
-                                                                                   if (isWarrant(hay) || isSummons(hay)) {const filingDate = norm(e?.filingDate || '');
-                                                                                                                         const event = desc || (isWarrant(hay) ? 'Warrant' : 'Summons');
-                                                                                                                         const bond = parseBondSummary(e?.docketText || '');
-                                                                                                                         let sched = '';
-                                                                                                                         const isRecalled = isWarrant(hay) && /(recalled|withdrawn)/i.test(hay);
-                                                                                                                         if (isRecalled) {const s = (e?.associatedDocketScheduledInfo || [])[0];
-                                                                                                                                          if (s?.associatedDate) {const t2 = norm(s?.associatedTime || '');
-                                                                                                                                                                  const nm = norm(s?.associatedName || '');
-                                                                                                                                                                  sched = [s.associatedDate,t2].filter(Boolean).join(' ') + (nm ? ` — ${nm}` : '');}
-                                                                                                                                          else {const d2 = (e?.associatedDocketInfoDetails || [])[0]?.associatedDate || '';
-                                                                                                                                                if (d2) sched = d2;}}
-                                                                                                                         return {kind:isWarrant(hay) ? 'warrant' : 'summons',filingDate,event,bond,scheduledFor:sched,hasRecallOrServedLanguage:hasRecallOrServedLanguage(hay)};}}
-                                                 return null;}
+                                                 const warrantEvents = [];
+                                                 const summonsEvents = [];
+                                                 const toHit = (e,kind,index,hay) => {const filingDate = norm(e?.filingDate || '');
+                                                                                   const event = norm(e?.docketDesc || '') || (kind === 'warrant' ? 'Warrant' : 'Summons');
+                                                                                   const bond = parseBondSummary(e?.docketText || '');
+                                                                                   const cancelled = kind === 'warrant' && hasRecallOrServedLanguage(hay);
+                                                                                   let sched = '';
+                                                                                   const isRecalled = kind === 'warrant' && /(recalled|withdrawn)/i.test(hay);
+                                                                                   if (isRecalled) {const s = (e?.associatedDocketScheduledInfo || [])[0];
+                                                                                                    if (s?.associatedDate) {const t2 = norm(s?.associatedTime || '');
+                                                                                                                            const nm = norm(s?.associatedName || '');
+                                                                                                                            sched = [s.associatedDate,t2].filter(Boolean).join(' ') + (nm ? ` — ${nm}` : '');}
+                                                                                                    else {const d2 = (e?.associatedDocketInfoDetails || [])[0]?.associatedDate || '';
+                                                                                                          if (d2) sched = d2;}}
+                                                                                   return {kind,filingDate,event,bond,scheduledFor:sched,hasRecallOrServedLanguage:cancelled,_timestamp:getDocketEntryTimestamp(e),_index:index};};
+                                                 const isLater = (a,b) => {if (!b) return true;
+                                                                          const aHasTime = Number.isFinite(a._timestamp);
+                                                                          const bHasTime = Number.isFinite(b._timestamp);
+                                                                          if (aHasTime && bHasTime && a._timestamp !== b._timestamp) return a._timestamp > b._timestamp;
+                                                                          if (aHasTime !== bHasTime) return aHasTime;
+                                                                          return a._index < b._index;};
+                                                 for (const [index,e] of (docketList || []).entries()) {const desc = norm(e?.docketDesc || '');
+                                                                                                      const txt = norm(e?.docketText || '');
+                                                                                                      const hay = norm([desc,txt].filter(Boolean).join(' '));
+                                                                                                      if (!hay) continue;
+                                                                                                      if (isWarrant(hay)) warrantEvents.push(toHit(e,'warrant',index,hay));
+                                                                                                      else if (isSummons(hay)) summonsEvents.push(toHit(e,'summons',index,hay));}
+                                                 if (warrantEvents.length) {const issuances = warrantEvents.filter((hit) => !hit.hasRecallOrServedLanguage);
+                                                                           const cancellations = warrantEvents.filter((hit) => hit.hasRecallOrServedLanguage);
+                                                                           const latestIssuance = issuances.reduce((latest,hit) => isLater(hit,latest) ? hit : latest,null);
+                                                                           const latestCancellation = cancellations.reduce((latest,hit) => isLater(hit,latest) ? hit : latest,null);
+                                                                           if (latestIssuance) {const cancellationIsStrictlyLater = latestCancellation && Number.isFinite(latestCancellation._timestamp) && Number.isFinite(latestIssuance._timestamp) && latestCancellation._timestamp > latestIssuance._timestamp;
+                                                                                               if (!cancellationIsStrictlyLater) return latestIssuance;}
+                                                                           return latestCancellation || latestIssuance;}
+                                                 return summonsEvents.reduce((latest,hit) => isLater(hit,latest) ? hit : latest,null);}
 
   function countFtas(docketList) {let count = 0;
                                  const dates = new Set();
