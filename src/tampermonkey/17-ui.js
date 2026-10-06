@@ -440,7 +440,9 @@ GM_addStyle(`:root{ --mo-ui-scale: 1.2;         /* uniformly enlarge the complet
             #moJsonContent.moTextBuilderContent .moTextBuilderResearchBlock .moTextBuilderOptions{display:grid;
                                                                                                   grid-template-columns:repeat(2,minmax(0,1fr));}
             #moJsonContent.moTextBuilderContent .moTextBuilderCourtsBlock{overflow:hidden;}
-            #moJsonContent.moTextBuilderContent .moTextBuilderCourtsBlock .moTextBuilderOptions{overflow:auto;
+            #moJsonContent.moTextBuilderContent .moTextBuilderCourtsBlock .moTextBuilderOptions{display:grid;
+                                                                                                grid-template-columns:repeat(2,minmax(0,1fr));
+                                                                                                overflow:auto;
                                                                                                 flex:1 1 auto;
                                                                                                 min-height:0;
                                                                                                 margin-top:0;
@@ -661,7 +663,7 @@ textBuilderPanel.innerHTML = `
 (document.body || document.documentElement).appendChild(textBuilderPanel);
 const textBuilderBody = textBuilderPanel.querySelector('#moJsonTextBuilderBody');
 const TEXT_BUILDER_STAFF = ['Anna','Dylan','Kyle','Mason','Miranda','Tanya'];
-const TEXT_BUILDER_COURTS = ['City of St. Louis Circuit','St. Louis County Circuit','Florissant','City of St. Louis Municipal','Kirkwood','Manchester','University City','Webster Groves'];
+const TEXT_BUILDER_COURTS = ['City of St. Louis Circuit','City of St. Louis Municipal','Florissant','Kirkwood','Manchester','Richmond Heights','St. Louis County Circuit','University City','Webster Groves'];
 const TEXT_BUILDER_LIMIT_NOTICE = '**GOOGLE VOICE LIMIT - SEPARATE INTO MULTIPLE TEXTS HERE OR EARLIER**';
 let textBuilderState = {screen:'root',history:[],data:{courts:[]}};
 const TEXT_BUILDER_LEGAL_AID_MESSAGES = {
