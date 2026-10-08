@@ -1,0 +1,81 @@
+
+name: Automatically Merge Codex PRs
+
+on:
+  pull_request_target:
+    types:
+      - opened
+      - reopened
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  auto-merge-codex:
+    name: Prepare and Auto-Merge PR
+    runs-on: ubuntu-latest
+
+    # Restrict automation to PRs originating in
+    # this repository and targeting its default branch.
+    #
+    # Suitable for a private repository where all
+    # internally created PRs are authorized to merge.
+    if: |
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.base.ref == github.event.repository.default_branch
+
+    steps:
+      - name: Identify pull request
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          echo "Processing PR #$PR_NUMBER"
+          echo "Repository: $GH_REPO"
+
+      - name: Convert draft PR to ready for review
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          IS_DRAFT=$(gh pr view "$PR_NUMBER" \
+            --repo "$GH_REPO" \
+            --json isDraft \
+            --jq '.isDraft')
+
+          if [ "$IS_DRAFT" = "true" ]; then
+            echo "Draft PR detected."
+            echo "Marking ready for review..."
+
+            gh pr ready "$PR_NUMBER" \
+              --repo "$GH_REPO"
+          else
+            echo "PR is already ready for review."
+          fi
+
+      - name: Enable automatic merge
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          echo "Enabling automatic merge..."
+
+          gh pr merge "$PR_NUMBER" \
+            --repo "$GH_REPO" \
+            --auto \
+            --squash
+
+          echo "Automatic merge requested successfully."
+
+      - name: Report completion
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          echo "===================================="
+          echo "PR #$PR_NUMBER processed."
+          echo "Draft status cleared if necessary."
+          echo "Automatic merge requested."
+          echo "===================================="
