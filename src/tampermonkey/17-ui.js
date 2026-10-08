@@ -2,6 +2,7 @@
  * UI
  ************************************************************/
 GM_addStyle(`:root{ --mo-ui-scale: 1.2;         /* uniformly enlarge the complete tool UI */
+                    --mo-ui-offset-y: 2px;      /* shift the complete tool down the page */
                     --mo-bg: #f5f7fb;          /* page chrome */
                     --mo-surface: #ffffff;     /* cards/panels */
                     --mo-surface-2: #eef2f7;   /* header/footer/status */
@@ -19,7 +20,7 @@ GM_addStyle(`:root{ --mo-ui-scale: 1.2;         /* uniformly enlarge the complet
             #moJsonHelpPanel,
             #moJsonTextBuilderPanel{zoom:var(--mo-ui-scale);}
 
-            #moJsonDock{position:fixed; left:50%; top:45%; transform:translate(-50%,-50%);
+            #moJsonDock{position:fixed; left:50%; top:calc(45% + var(--mo-ui-offset-y)); transform:translate(-50%,-50%);
                         width:min(836px,calc(100vw - 24px)); height:min(499px,calc(100vh - 24px));
                         z-index:999999;
                         font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
@@ -31,7 +32,7 @@ GM_addStyle(`:root{ --mo-ui-scale: 1.2;         /* uniformly enlarge the complet
                         box-sizing:border-box;
                         display:flex;
                         flex-direction:column;}
-            #moJsonDock.moTextBuilderDock{top:50%;
+            #moJsonDock.moTextBuilderDock{top:calc(50% + var(--mo-ui-offset-y));
                                          width:min(836px,calc((100dvw - 24px) / var(--mo-ui-scale)));
                                          height:min(576px,calc((100dvh - 24px) / var(--mo-ui-scale)));}
             #moJsonDock.moHelpOpen{transform:translate(-20%,-50%);}
@@ -39,7 +40,7 @@ GM_addStyle(`:root{ --mo-ui-scale: 1.2;         /* uniformly enlarge the complet
 
             #moJsonLauncher{position:fixed;
                             right:12px;
-                            bottom:12px;
+                            bottom:calc(12px - var(--mo-ui-offset-y));
                             z-index:999999;
                             font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
                             background:var(--mo-primary);
@@ -306,7 +307,7 @@ GM_addStyle(`:root{ --mo-ui-scale: 1.2;         /* uniformly enlarge the complet
 
             #moJsonHelpPanel{position:fixed;
                              right:542px;
-                             bottom:12px;
+                             bottom:calc(12px - var(--mo-ui-offset-y));
                              width:460px;
                              max-width:min(460px,calc(100vw - 24px));
                              height:min(499px,calc(100vh - 24px));
@@ -389,7 +390,7 @@ GM_addStyle(`:root{ --mo-ui-scale: 1.2;         /* uniformly enlarge the complet
 
             #moJsonTextBuilderPanel{position:fixed;
                                     right:542px;
-                                    bottom:12px;
+                                    bottom:calc(12px - var(--mo-ui-offset-y));
                                     width:75ch;
                                     max-width:min(75ch,calc(100vw - 24px));
                                     max-height:calc(100vh - 24px);
