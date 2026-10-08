@@ -31,7 +31,9 @@ GM_addStyle(`:root{ --mo-ui-scale: 1.2;         /* uniformly enlarge the complet
                         box-sizing:border-box;
                         display:flex;
                         flex-direction:column;}
-            #moJsonDock.moTextBuilderDock{height:min(576px,calc(100vh - 24px));}
+            #moJsonDock.moTextBuilderDock{top:50%;
+                                         width:min(836px,calc((100dvw - 24px) / var(--mo-ui-scale)));
+                                         height:min(576px,calc((100dvh - 24px) / var(--mo-ui-scale)));}
             #moJsonDock.moHelpOpen{transform:translate(-20%,-50%);}
             #moJsonDock.moHidden{display:none;}
 
@@ -279,6 +281,12 @@ GM_addStyle(`:root{ --mo-ui-scale: 1.2;         /* uniformly enlarge the complet
                                gap:14px;
                                align-items:start;}
             .moUpcomingColumn{min-width:0;}
+            .moUpcomingRunActions{grid-template-columns:minmax(0,1fr) auto auto;}
+            .moUpcomingRunActions .moBtn{min-width:0;
+                                         height:auto;
+                                         min-height:32px;
+                                         white-space:normal;}
+            #moUpcomingClear,#moUpcomingStop{white-space:nowrap;}
 
             @media (max-width:560px){
               .moUpcomingColumns{grid-template-columns:1fr;}
@@ -501,7 +509,7 @@ GM_addStyle(`:root{ --mo-ui-scale: 1.2;         /* uniformly enlarge the complet
                                    color:#0f172a;
                                    background:#fff;}
             .moTextBuilderDual{display:grid;
-                               grid-template-columns:1fr 1fr;
+                               grid-template-columns:minmax(0,1fr) minmax(0,1fr);
                                gap:10px;}
             .moTextBuilderPane{display:flex;
                                flex-direction:column;
@@ -534,6 +542,40 @@ GM_addStyle(`:root{ --mo-ui-scale: 1.2;         /* uniformly enlarge the complet
                                   min-height:180px;
                                   font-size:13px;
                                   line-height:1.35;}
+            /* Reserve space for controls; only message text may scroll. */
+            #moJsonContent.moTextBuilderMessageContent{overflow:hidden;}
+            #moJsonContent.moTextBuilderMessageContent > .moBlock,
+            #moJsonTextBuilderBody.moTextBuilderMessageContent > .moBlock{flex:1 1 0;
+                                                    min-height:0;
+                                                    overflow:hidden;}
+            .moTextBuilderMessageContent .moTextBuilderDual,
+            .moTextBuilderMessageContent .moTextBuilderPane{flex:1 1 0;
+                                                            min-width:0;
+                                                            min-height:0;}
+            .moTextBuilderMessageContent .moTextBuilderMessage{flex:1 1 0;
+                                                               width:100%;
+                                                               min-width:0;
+                                                               min-height:0;
+                                                               max-height:none;
+                                                               margin:0;
+                                                               overflow-x:hidden;
+                                                               overflow-y:auto;
+                                                               overflow-wrap:anywhere;}
+            .moTextBuilderMessageContent .moTextBuilderPane > h3,
+            .moTextBuilderMessageContent .moTextBuilderPane > .moBtn{flex:0 0 auto;}
+            #moJsonTextBuilderPanel.moTextBuilderMessagePanel{display:flex;
+                                                              flex-direction:column;
+                                                              height:min(576px,calc((100dvh - 24px) / var(--mo-ui-scale)));
+                                                              overflow:hidden;
+                                                              box-sizing:border-box;}
+            #moJsonTextBuilderPanel.moTextBuilderMessagePanel *{box-sizing:border-box;}
+            #moJsonTextBuilderPanel.moTextBuilderMessagePanel > button{flex:0 0 auto;}
+            #moJsonTextBuilderBody.moTextBuilderMessageContent{flex:1 1 0;
+                                                                min-height:0;
+                                                                overflow:hidden;}
+            #moJsonTextBuilderBody.moTextBuilderMessageContent > .moBlock{display:flex;
+                                                                          flex-direction:column;
+                                                                          margin-bottom:0;}
             .moTextBuilderActions{display:flex;
                                   gap:8px;
                                   flex-wrap:wrap;
@@ -840,7 +882,12 @@ function renderTextBuilder() {const dockTitle = dock.querySelector('#moJsonTitle
                                                          else {const hasCaseData = textBuilderHasCaseData(['eligibleCases','ineligibleCases','privateAttorneyCases','remainingIneligibleCases']);
                                                                const msg = textBuilderLimitMessage(textBuilderFormatCaseData(textBuilderBuildMessage(),'caseDataVisible'));
                                                                html = `<div class="moBlock"><div class="moTextBuilderPane"><div class="moTextBuilderMessage" id="moTextBuilderConstructed">${escapeHtml(msg)}</div>${hasCaseData ? textBuilderCaseDataToggle('caseDataVisible') : ''}</div></div><div class="moTextBuilderActions"><button class="moBtn" data-tb-action="back">Back</button><button class="moBtn" data-tb-action="copyMessage">Copy Message</button></div>`;}}
-                              (appView === 'text' ? $content : textBuilderBody).innerHTML = html;}
+                              const target = appView === 'text' ? $content : textBuilderBody;
+                              const isMessage = s === 'message' || s === 'legalAidMessage';
+                              $content.classList.toggle('moTextBuilderMessageContent',appView === 'text' && isMessage);
+                              textBuilderBody.classList.toggle('moTextBuilderMessageContent',appView !== 'text' && isMessage);
+                              textBuilderPanel.classList.toggle('moTextBuilderMessagePanel',appView !== 'text' && isMessage);
+                              target.innerHTML = html;}
 function positionTextBuilderPanel() {const rect = dock.getBoundingClientRect();
                                      const right = Math.max(8,window.innerWidth - rect.left + 10);
                                      const bottom = Math.max(8,window.innerHeight - rect.bottom);
@@ -996,6 +1043,7 @@ function render() {const log = loadLog();
                    $content.innerHTML = '';
                    $content.classList.toggle('moContentStretch',['home','text','track'].includes(appView));
                    $content.classList.toggle('moTextBuilderContent',appView === 'text');
+                   $content.classList.remove('moTextBuilderMessageContent');
                    $content.classList.toggle('moNameSearchContent',appView === 'name');
                    dock.classList.toggle('moTextBuilderDock',appView === 'text');
                    const copyBtn = dock.querySelector('#moJsonCopy');
