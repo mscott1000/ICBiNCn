@@ -103,12 +103,15 @@ On the branch, make these commits in order:
 
 **Note:** You cannot execute the Python script directly, so you must concatenate the source files in code. Verify the order against the build script's alphabetical sort logic.
 
-### 6. Open Draft PR
+### 6. Open Ready-for-Review PR
 - Push the branch to the remote
-- Open a draft PR against the default branch
-- Title: "[WIP] {description of changes}"
+- Open a ready-for-review PR against the default branch (`draft: false`; omit `--draft` with `gh pr create`)
+- Title: "{description of changes}" (no `[WIP]` prefix)
 - Include a summary of what changed and why
-- Wait for user review
+- Verify the pushed commit and confirm the PR is open with `draft: false` before reporting completion
+- If a completed PR already exists as a draft, mark it ready for review automatically
+- Use drafts only when the user requests a draft or the work is unfinished
+- Merge only when authorized by the user
 
 ### 7. Delivery
 - User approves or requests changes
@@ -209,7 +212,7 @@ Use this checklist at the start of each session:
 - [ ] Use correct branch naming (`{type}/{description}`)
 - [ ] Make commits in order: source → metadata → AGENTS.md → dist
 - [ ] Verify file order before regenerating dist
-- [ ] Open draft PR with clear summary
+- [ ] Push the branch and open a ready-for-review PR with a clear summary; verify remote commit and `draft: false`
 - [ ] Ensure dist file is ready for copy-paste into Tampermonkey
 
 ---
@@ -224,5 +227,5 @@ If you encounter a situation not covered here:
 
 ---
 
-**Last Updated:** 2026-10-07  
+**Last Updated:** 2026-10-08
 **Session Reference:** Established as persistent instruction for all future ICBiNCn edit requests

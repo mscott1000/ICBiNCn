@@ -15,3 +15,9 @@ Before making changes that visually alter Jotform table rows or columns, follow 
 
 - Version/date: `2026-10-08`
 - Userscript title: `ICBiNCn 10.08`
+
+## GitHub delivery workflow
+
+For completed, verified changes, commit and push a feature branch, then open a pull request against the default branch ready for review (`draft: false`; omit `--draft` with `gh pr create`). Use a final descriptive title without a `[WIP]` prefix. Drafts are only for work explicitly requested as draft or unfinished. If an existing PR is a draft and the work is complete, mark it ready for review automatically.
+
+Verify the remote branch matches the local commit and that the PR is open with `draft: false` before reporting completion. Report any blocker instead of stopping at local edits. Keep merging separate: merge only when the user authorizes it. This rule supersedes the draft-PR defaults in older workflow instructions.
