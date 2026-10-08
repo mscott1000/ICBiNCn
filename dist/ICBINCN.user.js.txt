@@ -4469,10 +4469,12 @@ function restoreActiveNameSearchUiOnLoad() {const ns = loadNameState();
                                             expandDock();}
 
 function positionHelpPanel() {const rect = dock.getBoundingClientRect();
-                              const right = Math.max(8,window.innerWidth - rect.left + 10);
+                              // Rect coordinates are screen pixels; fixed offsets are scaled by CSS zoom.
+                              const scale = parseFloat(getComputedStyle(helpPanel).zoom) || 1;
+                              const right = Math.max(8,window.innerWidth - rect.left + 15);
                               const bottom = Math.max(8,window.innerHeight - rect.bottom);
-                              helpPanel.style.right = `${right}px`;
-                              helpPanel.style.bottom = `${bottom}px`;}
+                              helpPanel.style.right = `${right / scale}px`;
+                              helpPanel.style.bottom = `${bottom / scale}px`;}
 
 function openHelpPanel() {dock.classList.add('moHelpOpen');
                           positionHelpPanel();
