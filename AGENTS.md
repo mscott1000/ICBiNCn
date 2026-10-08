@@ -10,3 +10,8 @@ Do **not** update the date/version or title when the requested change explicitly
 
 ## Jotform table visual-change data requirement
 Before making changes that visually alter Jotform table rows or columns, follow `docs/jotform-table-visual-change-instructions.md`: analyze the existing captured Jotform row HTML/data in the repo first, and ask the Codex user for more representative data if the existing data is not sufficient to safely and accurately implement the requested change.
+
+## Current userscript release
+
+- Version/date: `2026-10-08`
+- Userscript title: `ICBiNCn 10.08`
