@@ -70,26 +70,8 @@ function launchCaseyButton_(callback) {
   const anchor = buttons[0].getAnchorCell();
   if (anchor.getColumn() !== 53) throw new Error('Move this Casey button back to column BA or refresh the buttons.');
   const launch = caseyLaunchForRow_(sheet,anchor.getRow());
-  connectCasey();
-  const payload = JSON.stringify(launch).replace(/</g,'\\u003c');
-  const html = HtmlService.createHtmlOutput(`<!doctype html><html><head><base target="_top"></head><body>
-    <p id="status" role="status">Starting Casey for row ${launch.row}…</p>
-    <button id="retry" type="button">Retry connection</button>
-    <script>
-    const launch=${payload},channel='icbincn-weekly-call-log-v1';
-    const nonce=Array.from(crypto.getRandomValues(new Uint32Array(4)),v=>v.toString(16).padStart(8,'0')).join('');
-    let timer,attempts=0;
-    function send(){window.top.postMessage({channel,nonce,type:'launch',spreadsheetId:launch.spreadsheetId,sheetId:launch.sheetId,launch},'https://docs.google.com');}
-    function retry(){clearInterval(timer);attempts=0;send();timer=setInterval(()=>{if(++attempts>=10){clearInterval(timer);document.getElementById('status').textContent='Casey userscript did not respond. Update Tampermonkey, reload this spreadsheet, and try again.';}else send();},1000);}
-    window.addEventListener('message',event=>{
-      const msg=event.data;
-      if(event.origin!=='https://docs.google.com'||event.source!==window.top||!msg||msg.channel!==channel||msg.nonce!==nonce)return;
-      if(msg.type==='launched'){clearInterval(timer);google.script.host.close();}
-      else if(msg.type==='launch-error'){clearInterval(timer);document.getElementById('status').textContent=msg.error;}
-    });
-    document.getElementById('retry').onclick=retry;retry();
-    </script></body></html>`).setWidth(420).setHeight(160);
-  SpreadsheetApp.getUi().showModalDialog(html,'Casey name search');
+  // Launch from the non-modal sidebar so the spreadsheet stays usable.
+  connectCasey(launch);
 }
 
 function caseyNorm_(value) { return String(value || '').replace(/\s+/g,' ').trim().toLowerCase(); }
@@ -143,8 +125,9 @@ function writeCaseyResult(result) {
   } finally { lock.releaseLock(); }
 }
 
-function connectCasey() {
+function connectCasey(launch) {
   caseySheet_();
+  const launchJson = JSON.stringify(launch || null).replace(/</g,'\\u003c');
   const html = HtmlService.createHtmlOutput(`<!doctype html><html><head><base target="_top"></head><body>
     <p>Click the Casey logo in column BA to search using that row’s N, O, and Q. Keep this sidebar open to receive results.</p>
     <p id="status" role="status">Waiting for the updated Casey userscript…</p>
@@ -152,14 +135,19 @@ function connectCasey() {
     <script>
     const channel='icbincn-weekly-call-log-v1', spreadsheetId='${CASEY_SPREADSHEET_ID}', sheetId=${CASEY_SHEET_ID};
     const nonce=Array.from(crypto.getRandomValues(new Uint32Array(4)),v=>v.toString(16).padStart(8,'0')).join('');
-    const seen=new Set(), failed=new Set(); let busy=false, connected=false;
+    const pendingLaunch=${launchJson};
+    const seen=new Set(), failed=new Set(); let busy=false, connected=false, launchDone=!pendingLaunch, launchFailed=false;
     const status=document.getElementById('status');
-    function send(type,requestId) { window.top.postMessage({channel,spreadsheetId,sheetId,nonce,type,requestId},'https://docs.google.com'); }
-    document.getElementById('retry').onclick=()=>{failed.clear();send('poll');};
+    function send(type,requestId) { window.top.postMessage({channel,spreadsheetId,sheetId,nonce,type,requestId,launch:pendingLaunch},'https://docs.google.com'); }
+    document.getElementById('retry').onclick=()=>{failed.clear();launchFailed=false;send('poll');};
     window.addEventListener('message',event=>{
       const msg=event.data;
-      if(event.origin!=='https://docs.google.com'||event.source!==window.top||!msg||msg.channel!==channel||msg.nonce!==nonce||msg.type!=='results'||!Array.isArray(msg.results))return;
+      if(event.origin!=='https://docs.google.com'||event.source!==window.top||!msg||msg.channel!==channel||msg.nonce!==nonce)return;
+      if(msg.type==='launched'){launchDone=true;status.textContent='Searching in the background for row '+pendingLaunch.row+'…';google.script.host.editor.focus();return;}
+      if(msg.type==='launch-error'){launchFailed=true;status.textContent=msg.error+' Use Retry after resolving the issue.';return;}
+      if(msg.type!=='results'||!Array.isArray(msg.results))return;
       if(!connected){connected=true;status.textContent='Connected. Click the Casey logo in BA to start a search.';}
+      if(!launchDone&&!launchFailed)send('launch');
       if(busy)return;
       const result=msg.results.find(r=>r&&r.spreadsheetId===spreadsheetId&&r.sheetId===sheetId&&!seen.has(r.requestId)&&!failed.has(r.requestId));
       if(!result)return;
@@ -170,6 +158,7 @@ function connectCasey() {
       }).withFailureHandler(error=>{busy=false;failed.add(result.requestId);status.textContent=error.message+' Use Retry after resolving the issue.';}).writeCaseyResult(result);
     });
     send('poll');setInterval(()=>send('poll'),2000);
+    setTimeout(()=>{if(!connected)status.textContent='Casey userscript did not respond. Update Tampermonkey and reload this spreadsheet.';},10000);
     </script></body></html>`).setTitle('Casey search results');
   SpreadsheetApp.getUi().showSidebar(html);
 }

@@ -81,24 +81,22 @@ test('failed writes/readbacks are not acknowledged and always release the lock',
 });
 
 test('clicking the image anchored at BA7 reads N7/O7/Q7, regardless of active selection or original callback row',()=>{
-  const reads=[];let dialog;
+  const reads=[];let payload;
   const image={getScript:()=> 'caseyRow4',getAltTextTitle:()=> 'ICBiNCn Casey row 4',getAnchorCell:()=>({getColumn:()=>53,getRow:()=>7})};
   const sheet={getSheetId:()=>gid,getName:()=> 'Weekly Call Log',getMaxRows:()=>155,getImages:()=>[image],
     getRange:(row,col,height,width)=>{reads.push([row,col,height,width]);return {getValues:()=>[['Heather','Walker','Ignored middle',new Date(1987,3,2)]]};},
     getActiveRange:()=>{throw new Error('Must not read active selection');}};
   const html={setWidth(){return this;},setHeight(){return this;}};
   const c=vm.createContext({Date,SpreadsheetApp:{getActiveSpreadsheet:()=>({getId:()=>id,getSheets:()=>[sheet],getSpreadsheetTimeZone:()=> 'America/Mexico_City'}),getUi:()=>({showModalDialog:()=>{}})},
-    Utilities:{formatDate:date=>String(date.getFullYear())},HtmlService:{createHtmlOutput:text=>{dialog=text;return html;}}});
-  vm.runInContext(appsSource,c);c.connectCasey=()=>{};
+    Utilities:{formatDate:date=>String(date.getFullYear())},HtmlService:{createHtmlOutput:text=>html}});
+  vm.runInContext(appsSource,c);c.connectCasey=launch=>{payload=launch;};
   c.caseyRow4();
   assert.deepEqual(reads,[[7,14,1,4]]);
-  const payload=JSON.parse(dialog.match(/const launch=(.*?),channel=/)[1]);
-  assert.equal(payload.row,7);assert.deepEqual(payload.params,{first:'Heather',last:'Walker',middle:'',yob:'1987'});
-  const js=dialog.match(/<script>([\s\S]*?)<\/script>/)[1];new vm.Script(js);
+  assert.equal(payload.row,7);assert.deepEqual(JSON.parse(JSON.stringify(payload.params)),{first:'Heather',last:'Walker',middle:'',yob:'1987'});
   const oldSheet=sheet.getRange;
   sheet.getRange=()=>({getValues:()=>[['Changed first','Changed last','','2001']]});
   c.caseyRow4();
-  assert.equal(JSON.parse(dialog.match(/const launch=(.*?),channel=/)[1]).params.first,'Changed first');
+  assert.equal(payload.params.first,'Changed first');
   sheet.getRange=()=>({getValues:()=>[['Heather','Walker','','']]});
   assert.throws(()=>c.caseyRow4(),/Row 7 needs/);sheet.getRange=oldSheet;
 });
@@ -137,4 +135,36 @@ test('button installation embeds the exact Jotform logo and assigns row callback
   const jotformLogo=fs.readFileSync(path.join(root,'src/tampermonkey/18b-jotform-launcher.js'),'utf8').match(/const ICBINCN_CASEY_LOGO_DATA_URL = 'data:image\/jpeg;base64,([^']+)';/)[1];
   assert.equal(decoded,jotformLogo);assert.equal(removed,1);assert.deepEqual(cleared,['BA4','BA7']);
   assert.deepEqual(inserted,[{col:53,row:4,width:30,height:30,callback:'caseyRow4'},{col:53,row:7,width:30,height:30,callback:'caseyRow7'}]);
+});
+
+test('sidebar launches without a modal and restores editor focus after acknowledgement',()=>{
+  let html,listener,focused=0;
+  const c=vm.createContext({SpreadsheetApp:{getActiveSpreadsheet:()=>({getId:()=>id,getSheets:()=>[{getSheetId:()=>gid,getName:()=> 'Weekly Call Log'}]}),
+    getUi:()=>({showSidebar:()=>{},showModalDialog:()=>{throw new Error('Must not show modal');}})},
+    HtmlService:{createHtmlOutput:text=>{html=text;return {setTitle(){return this;}};}}});
+  vm.runInContext(appsSource,c);
+  c.connectCasey({spreadsheetId:id,sheetId:gid,row:7,params:{first:'Heather',last:'Walker',yob:'1987'}});
+  const requests=[];const top={postMessage:msg=>requests.push(msg)};
+  const status={textContent:''},retry={};
+  const browser=vm.createContext({crypto:require('node:crypto').webcrypto,window:{top,addEventListener:(_,fn)=>listener=fn},
+    document:{getElementById:element=>element==='status'?status:retry},google:{script:{host:{editor:{focus:()=>focused++}}}},
+    setInterval:()=>1,setTimeout:()=>1});
+  vm.runInContext(html.match(/<script>([\s\S]*?)<\/script>/)[1],browser);
+  const poll=requests[0];assert.equal(poll.type,'poll');
+  listener({origin:'https://docs.google.com',source:top,data:{channel:poll.channel,nonce:poll.nonce,type:'results',results:[]}});
+  assert.equal(requests.at(-1).type,'launch');assert.equal(requests.at(-1).launch.row,7);
+  listener({origin:'https://docs.google.com',source:top,data:{channel:poll.channel,nonce:poll.nonce,type:'launched'}});
+  assert.equal(focused,1);assert.match(status.textContent,/Searching in the background/);
+});
+
+test('strict background launch requests an inactive tab and never falls back to window.open',()=>{
+  const helpers=fs.readFileSync(path.join(root,'src/tampermonkey/02-helpers-storage-utils.js'),'utf8');
+  const source=helpers.slice(helpers.indexOf('function openBackgroundTab('),helpers.indexOf('function loadDraft('));
+  let foreground=0,options;
+  const c=vm.createContext({GM_openInTab:(_url,opts)=>{options=opts;return {};},window:{open:()=>{foreground++;return {};}}});
+  vm.runInContext(source,c);assert.ok(c.openBackgroundTab('https://example.org',{requireBackground:true}));assert.equal(options.active,false);
+  c.GM_openInTab=()=>{throw new Error('API unavailable');};
+  assert.equal(c.openBackgroundTab('https://example.org',{requireBackground:true}),null);assert.equal(foreground,0);
+  c.GM_openInTab=undefined;
+  assert.equal(c.openBackgroundTab('https://example.org',{requireBackground:true}),null);assert.equal(foreground,0);
 });

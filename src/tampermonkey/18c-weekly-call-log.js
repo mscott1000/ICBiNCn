@@ -56,9 +56,9 @@ function startWeeklyCallLogSearch(input,openCourtTab = true) {
     params:launch.params,casenetAddedTotal:0,autoMinimized:false,launchedFrom:'weekly-call-log',
     sheetsPending:{...launch,requestId},launchedAt:new Date().toISOString()});
   setIcbincnTabTitleText('Searching (1/3)');
-  if (openCourtTab && !openBackgroundTab('https://www.courts.mo.gov/casenet/nameSearch.do?newSearch=Y')) {
+  if (openCourtTab && !openBackgroundTab('https://www.courts.mo.gov/casenet/nameSearch.do?newSearch=Y',{requireBackground:true})) {
     clearNameState();
-    throw new Error('Could not open the court tab. Enable Tampermonkey tab access and try again.');
+    throw new Error('Could not open the court tab. Enable Tampermonkey background-tab access and try again.');
   }
 }
 
