@@ -1,53 +1,35 @@
-# Casey logo buttons for Weekly Call Log
+# Lightweight Casey for Weekly Call Log
 
-Target: Intake 2026 → Weekly Call Log (sheet ID 1261396864).
+The hybrid version has one small browser-injected Casey logo. Tampermonkey handles selection, reading the selected row, and launching the existing background search. Apps Script only validates and writes completed Summary/Copy outputs to BB/BC; it does not create images, resize rows, install per-row callbacks, read launch parameters, or poll for results.
 
-- BA: the **same Casey artwork** used by the Jotform button, resized for Sheets, with a native assigned click action.
-- Clicking the logo reads **the clicked image’s current row**, taking first name from N, last name from O, and birth year from Q, and starts the existing three-pass Name Search. Middle name is blank, matching Jotform.
-- BB receives the exact `buildSummaryCopyText()` output used by Summary.
-- BC receives the exact `buildGroupedCopyText()` output used by Copy.
+## Install/update
 
-For example, clicking the logo anchored at **BA7** reads **N7, O7, and Q7**, even if another cell is selected. Values are read when clicked, so editing those cells does not require refreshing the button. Date cells and text containing a four-digit birth year are supported.
-
-## Install or update
-
-1. Replace the existing Tampermonkey ICBiNCn script with `dist/ICBINCN.user.js.txt`. Save, enable only this version, and reload the spreadsheet and any existing court tabs. This update is required even if you already installed the earlier 2026-10-11 version.
-2. In Intake 2026, choose **Extensions → Apps Script**. Add a script file named `WeeklyCallLog`, or replace the previously installed `WeeklyCallLog` file’s contents, with **all** of `src/google-apps-script/WeeklyCallLog.gs`. Keep other script files. Include the embedded logo and all generated `caseyRow…` callbacks at the bottom.
-3. If the project already has another `onOpen`, keep one function and add these statements inside it, then remove the duplicate `onOpen` from the new file:
+1. Replace your existing Tampermonkey ICBiNCn script with all of `dist/ICBINCN.user.js.txt`. Save and enable only this version. Replace it even if your current script already says 10.11: earlier revisions used the same date.
+2. In Intake 2026 → Extensions → Apps Script, replace the entire `WeeklyCallLog` file with all of `src/google-apps-script/WeeklyCallLog.gs`. Keep other scripts. Remove the new file’s `onOpen` if you already have a combined `onOpen`, and replace its Casey menu portion with:
 
    ```javascript
-   SpreadsheetApp.getUi().createMenu('Casey')
+   ui.createMenu('Casey')
      .addItem('Connect search results', 'connectCasey')
-     .addItem('Install / refresh BA Casey buttons', 'refreshCaseyLinks')
+     .addItem('Remove old Casey images / links', 'removeLegacyCaseyButtons')
      .addToUi();
    ```
 
-4. Save. Select **refreshCaseyLinks** in the editor’s function dropdown and click **Run**. Complete Google’s authorization prompt if requested. This installs actual Casey images over column BA and replaces the earlier paw links. It preserves BB/BC and other images. Rows with first and last names get a 30×30 logo; their height and BA’s width are raised to at least 34 pixels if needed.
-5. Reload the spreadsheet. Click a Casey logo in BA. Its assigned action reads that row, opens the result sidebar, without opening a modal dialog. The updated userscript opens an inactive background court tab and starts Name Search automatically. No extra Search button press, name entry, or hyperlink popup is required. Keep the sidebar open until it reports that BB and BC were saved.
+3. Save, select `removeLegacyCaseyButtons` in the editor function dropdown, and Run once. This removes only the old Casey drawings and Casey hyperlink formulas in BA; BB/BC and other images are preserved. No image installer is needed. Remove any old `caseyRow…`, image-installer, or duplicate WeeklyCallLog files you added separately; keep unrelated code. An old `caseyOnEdit(e)` call is harmless but can be removed.
+4. Reload Sheets and any open court tabs. Choose **Casey → Connect search results** once per spreadsheet reload. Keep the small connection sidebar open; it does no periodic polling or server work while idle. Reopen it to reconnect after closing it. If the browser read hangs, a ten-second timeout allows retry.
+5. Select a single cell in **BA**, such as **BA7**. One Casey logo appears at the selected cell if Sheets exposes its selection outline; otherwise it appears beside the cell-address/name box at the top left. Its tooltip identifies the selected row. Click it. It reads **N7, O7, and Q7’s birth year**, ignores middle name P, and launches the existing search in an inactive court tab. The selected row is captured on click, so changing selection during the read cannot change the requested row. Edits must be committed before clicking.
+6. When the search completes, Tampermonkey pushes the exact Summary/Copy output once to the connected sidebar. The server writes **BB/BC** together and verifies readback before acknowledgement. No manual paste is required. Results remain queued if the sidebar is closed or a write fails; reconnect or use Retry.
 
-No web app deployment, API key, sharing change, or additional trigger is needed. The old `caseyOnEdit(e)` hook can be removed from your existing `onEdit`, but leaving it is harmless. Existing buttons use edited names/DOBs automatically. After importing or adding clients, choose **Casey → Install / refresh BA Casey buttons** to add their logos.
+## Safeguards
 
-The connectors cannot install bound Apps Script, assign native image actions, or update browser extensions. The live sheet’s earlier paw links remain until you run step 4. Automated tests cover the code; the actual Google iframe relay and court search still require a browser smoke test after installation. Assigned image actions work in the desktop browser, not the Google Sheets mobile app.
+- This integration is restricted to Intake 2026’s Weekly Call Log (gid 1261396864). The logo is hidden on other tabs, template rows 1–3, other columns, and multi-cell selections.
+- A click reads only N:Q for that row using Google Sheets’ signed-in, same-origin visualization endpoint. There are no workbook exports, all-row reads, cached client data, API keys, or external data services. Invalid names/DOB, login responses, and inaccessible reads block launch.
+- Searches run one at a time because Casey uses a shared log. The call-log launcher requires Tampermonkey’s inactive-tab API and never falls back to a foreground tab.
+- Results are matched to one unique first/last name and birth year before writing, including after sorting/inserting rows. Changed or duplicate identities, protected cells, and oversized outputs retain the result for retry/review rather than guessing.
+- Outputs are written literally, preserving line breaks and leading formula characters. Repeated delivery is deduplicated by request ID. Rerunning a search deliberately updates BB/BC.
+- Button updates use lightweight selection checks (600ms while visible) plus pointer/keyboard/resize events. One DOM button and one 128×110 image are reused; no broad mutation observer or repeated image creation is used.
 
-## Behavior and recovery
+## Verification and limits
 
-- A missing or invalid DOB gives a row-specific error when Casey is clicked. Template/control rows 2–3 are untouched.
-- Search values come from the clicked image’s current anchor, not the active selection. Moving a button out of BA or duplicating it requires a refresh. Callback functions cover rows 4–1000; extend that list before installing buttons below row 1000.
-- Run searches one at a time because Casey uses one shared log. A second click during a search gives an error rather than clearing the running search.
-- Results are matched to a unique first name, last name, and birth year before writing, so sorting/inserting rows during a search does not redirect output to another client. Duplicate identities or changed names/DOBs block the write and retain results.
-- BB and BC are replaced only after a completed search, as literal text including line breaks and leading formula characters. Stopped searches do not publish results.
-- Failed/oversized/protected-cell writes retain results. Resolve the issue, then press **Retry pending results**, or copy manually from Casey. Queued results are delivered when the sidebar is opened again.
-- Successful writes are acknowledged only after a matching cell readback. Request IDs suppress duplicate deliveries. Rerunning a search deliberately updates BB and BC.
-- The Jotform integration is unchanged.
+Node tests cover selected BA-row validation, N/O/Q mapping (dates, numeric birth years, date serials), bounded reads, background search launch, completion push/ack, writer identity checks, duplicate/failed writes, and legacy cleanup. Syntax-check the generated bundle and Apps Script after rebuilding with `python scripts/build_tampermonkey.py`.
 
-## Verification
-
-Run `node --test tests/weekly-call-log.test.cjs`, rebuild with `python scripts/build_tampermonkey.py`, and syntax-check the generated userscript and Apps Script. In the desktop browser, select another row and click BA7’s logo; confirm the search uses N7/O7/Q7 and fills the expected client’s BB/BC. Also try an edited DOB, missing DOB, stopped search, sorted row, and temporarily closed sidebar.
-
-## Background focus update
-
-Replace both scripts with the updated versions and reload the spreadsheet. Existing logo buttons keep their assigned callbacks, so no button refresh is needed. Launch requests now pass through the non-modal result sidebar, which returns keyboard focus to the spreadsheet after acknowledgement. The userscript requires Tampermonkey’s inactive-tab API for the call log; it will report an error instead of falling back to a foreground browser tab if that API is unavailable. Browser focus behavior still needs a smoke test in the user’s browser.
-
-## Image-size correction
-
-Google Sheets checks image dimensions before `setWidth`/`setHeight` run. The original 1981×1703 JPEG exceeded its one-million-pixel limit even though it was below 2 MB. The installer now embeds `assets/images/Casey-sheets-button.jpg`, a 128×110 JPEG (14,080 pixels, 7,153 bytes), displayed at 30×30 as before. Replace the complete WeeklyCallLog Apps Script, keep your combined onOpen, save, and run refreshCaseyLinks again. No Tampermonkey update is needed for this image-only correction.
+The actual selected-cell DOM, signed-in Google visualization response, and browser focus need a smoke test in the user’s desktop browser. There is no live browser-control tool in the development environment. This is a prepared/tested code change, not a verified installed browser integration. If the logo does not appear, report the value displayed in Sheets’ cell-address box after selecting BA7 so the selector can be checked against the live UI.
