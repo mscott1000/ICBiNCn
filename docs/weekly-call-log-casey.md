@@ -2,7 +2,7 @@
 
 Target: Intake 2026 → Weekly Call Log (sheet ID 1261396864).
 
-- BA: the **same Casey logo image** used by the Jotform button, with a native assigned click action.
+- BA: the **same Casey artwork** used by the Jotform button, resized for Sheets, with a native assigned click action.
 - Clicking the logo reads **the clicked image’s current row**, taking first name from N, last name from O, and birth year from Q, and starts the existing three-pass Name Search. Middle name is blank, matching Jotform.
 - BB receives the exact `buildSummaryCopyText()` output used by Summary.
 - BC receives the exact `buildGroupedCopyText()` output used by Copy.
@@ -47,3 +47,7 @@ Run `node --test tests/weekly-call-log.test.cjs`, rebuild with `python scripts/b
 ## Background focus update
 
 Replace both scripts with the updated versions and reload the spreadsheet. Existing logo buttons keep their assigned callbacks, so no button refresh is needed. Launch requests now pass through the non-modal result sidebar, which returns keyboard focus to the spreadsheet after acknowledgement. The userscript requires Tampermonkey’s inactive-tab API for the call log; it will report an error instead of falling back to a foreground browser tab if that API is unavailable. Browser focus behavior still needs a smoke test in the user’s browser.
+
+## Image-size correction
+
+Google Sheets checks image dimensions before `setWidth`/`setHeight` run. The original 1981×1703 JPEG exceeded its one-million-pixel limit even though it was below 2 MB. The installer now embeds `assets/images/Casey-sheets-button.jpg`, a 128×110 JPEG (14,080 pixels, 7,153 bytes), displayed at 30×30 as before. Replace the complete WeeklyCallLog Apps Script, keep your combined onOpen, save, and run refreshCaseyLinks again. No Tampermonkey update is needed for this image-only correction.

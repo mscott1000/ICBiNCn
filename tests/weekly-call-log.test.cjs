@@ -120,7 +120,7 @@ test('logo click relay starts the same search passes and opens a background cour
   listener({...event,data:{...message,nonce:'fedcba9876543210'}});assert.equal(responses.at(-1).type,'launch-error');assert.equal(tabs.length,1);
 });
 
-test('button installation embeds the exact Jotform logo and assigns row callbacks without touching BB/BC',()=>{
+test('button installation embeds the Sheets-sized Casey logo and assigns row callbacks without touching BB/BC',()=>{
   const inserted=[],cleared=[];let removed=0,decoded;
   const own={getAltTextTitle:()=> 'ICBiNCn Casey row 4',remove:()=>removed++};
   const other={getAltTextTitle:()=> 'Unrelated image',remove:()=>{throw new Error('Must preserve other images');}};
@@ -132,8 +132,8 @@ test('button installation embeds the exact Jotform logo and assigns row callback
   const c=vm.createContext({SpreadsheetApp:{getActiveSpreadsheet:()=>({getId:()=>id,getSheets:()=>[sheet]})},
     Utilities:{base64Decode:logo=>{decoded=logo;return [];},newBlob:()=>({})}});
   vm.runInContext(appsSource,c);c.refreshCaseyLinks();
-  const jotformLogo=fs.readFileSync(path.join(root,'src/tampermonkey/18b-jotform-launcher.js'),'utf8').match(/const ICBINCN_CASEY_LOGO_DATA_URL = 'data:image\/jpeg;base64,([^']+)';/)[1];
-  assert.equal(decoded,jotformLogo);assert.equal(removed,1);assert.deepEqual(cleared,['BA4','BA7']);
+  const sheetsLogo=fs.readFileSync(path.join(root,'assets/images/Casey-sheets-button.jpg'));
+  assert.equal(decoded,sheetsLogo.toString('base64'));assert.equal(removed,1);assert.deepEqual(cleared,['BA4','BA7']);
   assert.deepEqual(inserted,[{col:53,row:4,width:30,height:30,callback:'caseyRow4'},{col:53,row:7,width:30,height:30,callback:'caseyRow7'}]);
 });
 
@@ -167,4 +167,25 @@ test('strict background launch requests an inactive tab and never falls back to 
   assert.equal(c.openBackgroundTab('https://example.org',{requireBackground:true}),null);assert.equal(foreground,0);
   c.GM_openInTab=undefined;
   assert.equal(c.openBackgroundTab('https://example.org',{requireBackground:true}),null);assert.equal(foreground,0);
+});
+
+
+test('embedded Casey JPEG stays below Sheets image byte and pixel limits',()=>{
+  const encoded=appsSource.match(/const CASEY_BUTTON_LOGO_BASE64 = '([^']+)';/)[1];
+  const bytes=Buffer.from(encoded,'base64');
+  assert.ok(bytes.length < 2*1024*1024);
+  assert.equal(bytes.readUInt16BE(0),0xffd8);
+  let dimensions;
+  for(let offset=2;offset<bytes.length;) {
+    assert.equal(bytes[offset++],0xff);
+    const marker=bytes[offset++];
+    const length=bytes.readUInt16BE(offset);
+    if([0xc0,0xc1,0xc2].includes(marker)) {
+      dimensions={height:bytes.readUInt16BE(offset+3),width:bytes.readUInt16BE(offset+5)};break;
+    }
+    offset+=length;
+  }
+  assert.ok(dimensions,'JPEG must include dimensions');
+  assert.ok(dimensions.width*dimensions.height <= 1000000);
+  assert.ok(Math.max(dimensions.width,dimensions.height) <= 128);
 });
