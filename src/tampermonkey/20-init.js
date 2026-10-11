@@ -1,8 +1,10 @@
 /************************************************************
  * INIT
  ************************************************************/
-if (isJotformTablesPage()) {initializeJotformIntegration();}
+if (isWeeklyCallLogSpreadsheet()) {initializeWeeklyCallLogBridge();}
+else if (isJotformTablesPage()) {initializeJotformIntegration();}
 else {startIcbincnTabBrandingObserver();
+      consumeWeeklyCallLogLaunch();
       uiStatus(getStatus() || 'Ready');
       restoreActiveNameSearchUiOnLoad();
       render();
