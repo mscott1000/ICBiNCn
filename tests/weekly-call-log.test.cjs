@@ -10,7 +10,7 @@ const source = fs.readFileSync(path.join(root,'src/tampermonkey/18c-weekly-call-
 const appsSource = fs.readFileSync(path.join(root,'src/google-apps-script/WeeklyCallLog.gs'),'utf8');
 function launcher(extra = {}) {
   const storage = {};
-  const context = vm.createContext({URLSearchParams,crypto:require('node:crypto').webcrypto,
+  const context = vm.createContext({KEY_NET_STATS:'test-net-stats',URLSearchParams,crypto:require('node:crypto').webcrypto,
     norm:value=>String(value||'').replace(/\s+/g,' ').trim(),
     loadJson:(key,fallback)=>storage[key]||fallback, saveJson:(key,value)=>storage[key]=value,
     isStop:()=>false, buildSummaryCopyText:()=> 'summary\nline 2',buildGroupedCopyText:()=> 'copy\ttext',...extra});
@@ -78,4 +78,63 @@ test('failed writes/readbacks are not acknowledged and always release the lock',
     const {c,properties,released}=apps([['Mary Ann',"O'Neil",'','1990']],options);
     assert.throws(()=>c.writeCaseyResult(result()));assert.equal(properties.casey_completed_requests,undefined);assert.equal(released(),1);
   }
+});
+
+test('clicking the image anchored at BA7 reads N7/O7/Q7, regardless of active selection or original callback row',()=>{
+  const reads=[];let dialog;
+  const image={getScript:()=> 'caseyRow4',getAltTextTitle:()=> 'ICBiNCn Casey row 4',getAnchorCell:()=>({getColumn:()=>53,getRow:()=>7})};
+  const sheet={getSheetId:()=>gid,getName:()=> 'Weekly Call Log',getMaxRows:()=>155,getImages:()=>[image],
+    getRange:(row,col,height,width)=>{reads.push([row,col,height,width]);return {getValues:()=>[['Heather','Walker','Ignored middle',new Date(1987,3,2)]]};},
+    getActiveRange:()=>{throw new Error('Must not read active selection');}};
+  const html={setWidth(){return this;},setHeight(){return this;}};
+  const c=vm.createContext({Date,SpreadsheetApp:{getActiveSpreadsheet:()=>({getId:()=>id,getSheets:()=>[sheet],getSpreadsheetTimeZone:()=> 'America/Mexico_City'}),getUi:()=>({showModalDialog:()=>{}})},
+    Utilities:{formatDate:date=>String(date.getFullYear())},HtmlService:{createHtmlOutput:text=>{dialog=text;return html;}}});
+  vm.runInContext(appsSource,c);c.connectCasey=()=>{};
+  c.caseyRow4();
+  assert.deepEqual(reads,[[7,14,1,4]]);
+  const payload=JSON.parse(dialog.match(/const launch=(.*?),channel=/)[1]);
+  assert.equal(payload.row,7);assert.deepEqual(payload.params,{first:'Heather',last:'Walker',middle:'',yob:'1987'});
+  const js=dialog.match(/<script>([\s\S]*?)<\/script>/)[1];new vm.Script(js);
+  const oldSheet=sheet.getRange;
+  sheet.getRange=()=>({getValues:()=>[['Changed first','Changed last','','2001']]});
+  c.caseyRow4();
+  assert.equal(JSON.parse(dialog.match(/const launch=(.*?),channel=/)[1]).params.first,'Changed first');
+  sheet.getRange=()=>({getValues:()=>[['Heather','Walker','','']]});
+  assert.throws(()=>c.caseyRow4(),/Row 7 needs/);sheet.getRange=oldSheet;
+});
+
+test('logo click relay starts the same search passes and opens a background court tab once',()=>{
+  const writes=[];const tabs=[];let state=null,listener;
+  const {context:c}=launcher({hideIcbincnDockOnJotform:()=>{},window:{addEventListener:(_,fn)=>listener=fn},
+    loadNameState:()=>state,loadTrackState:()=>null,isRun:()=>false,setStop:()=>{},setRun:()=>{},
+    saveDraft:p=>writes.push(p),saveLog:()=>{},saveDebug:()=>{},clearLastHtml:()=>{},
+    buildNameSearchPasses:p=>['criminal','traffic','municourt'],saveNameState:s=>state=s,
+    setIcbincnTabTitleText:()=>{},openBackgroundTab:url=>{tabs.push(url);return {};},clearNameState:()=>state=null});
+  c.initializeWeeklyCallLogBridge();
+  const responses=[];
+  const message={channel:'icbincn-weekly-call-log-v1',spreadsheetId:id,sheetId:gid,nonce:'0123456789abcdef',type:'launch',
+    launch:{spreadsheetId:id,sheetId:gid,row:7,params:{first:'Heather',last:'Walker',middle:'Ignored',yob:'1987'}}};
+  const event={origin:'https://n-test-script.googleusercontent.com',source:{postMessage:r=>responses.push(r)},data:message};
+  listener(event);
+  assert.equal(state.sheetsPending.row,7);assert.equal(state.params.first,'Heather');assert.equal(state.params.last,'Walker');assert.equal(state.params.yob,'1987');assert.equal(state.params.middle,'');
+  assert.deepEqual(Array.from(state.passes),['criminal','traffic','municourt']);assert.equal(tabs.length,1);assert.equal(responses[0].type,'launched');
+  listener(event);assert.equal(tabs.length,1);
+  listener({...event,data:{...message,nonce:'fedcba9876543210'}});assert.equal(responses.at(-1).type,'launch-error');assert.equal(tabs.length,1);
+});
+
+test('button installation embeds the exact Jotform logo and assigns row callbacks without touching BB/BC',()=>{
+  const inserted=[],cleared=[];let removed=0,decoded;
+  const own={getAltTextTitle:()=> 'ICBiNCn Casey row 4',remove:()=>removed++};
+  const other={getAltTextTitle:()=> 'Unrelated image',remove:()=>{throw new Error('Must preserve other images');}};
+  const sheet={getSheetId:()=>gid,getName:()=> 'Weekly Call Log',getLastRow:()=>7,getImages:()=>[own,other],getRowHeight:()=>34,getColumnWidth:()=>100,
+    getRange:(row,col,count,width)=>{assert.equal(row,4);assert.equal(count,4);assert.equal(width,col===14?4:1);return col===14?{getValues:()=>[['First','Last','','1980'],['','','',''],['','','',''],['Heather','Walker','','1987']]}:{getFormulas:()=>[['=old icbincn=weekly-call-log'],[''],[''],['=old icbincn=weekly-call-log']]};},
+    getRangeList:ranges=>({clearContent:()=>cleared.push(...ranges)}),insertImage:(blob,col,row)=>{const button={col,row};inserted.push(button);
+      const chain={setWidth:v=>{button.width=v;return chain;},setHeight:v=>{button.height=v;return chain;},setAnchorCellXOffset:()=>chain,setAnchorCellYOffset:()=>chain,
+        setAltTextTitle:()=>chain,setAltTextDescription:()=>chain,assignScript:name=>{button.callback=name;return chain;}};return chain;}};
+  const c=vm.createContext({SpreadsheetApp:{getActiveSpreadsheet:()=>({getId:()=>id,getSheets:()=>[sheet]})},
+    Utilities:{base64Decode:logo=>{decoded=logo;return [];},newBlob:()=>({})}});
+  vm.runInContext(appsSource,c);c.refreshCaseyLinks();
+  const jotformLogo=fs.readFileSync(path.join(root,'src/tampermonkey/18b-jotform-launcher.js'),'utf8').match(/const ICBINCN_CASEY_LOGO_DATA_URL = 'data:image\/jpeg;base64,([^']+)';/)[1];
+  assert.equal(decoded,jotformLogo);assert.equal(removed,1);assert.deepEqual(cleared,['BA4','BA7']);
+  assert.deepEqual(inserted,[{col:53,row:4,width:30,height:30,callback:'caseyRow4'},{col:53,row:7,width:30,height:30,callback:'caseyRow7'}]);
 });
