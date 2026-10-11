@@ -1,4 +1,3 @@
-/** Paste into a script bound to Intake 2026. No web app deployment is needed. */
 const CASEY_SPREADSHEET_ID = '1TPCAM7rJ9e_YDLrgI4YfjOq_QXZFfo6Sj6c9g9qPth4';
 const CASEY_SHEET_ID = 1261396864;
 
