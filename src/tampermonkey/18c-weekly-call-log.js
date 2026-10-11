@@ -1,5 +1,5 @@
 /************************************************************
- * Weekly Call Log: native BA links + bound Apps Script sidebar
+ * Weekly Call Log: native Casey image buttons + Apps Script relay
  ************************************************************/
 const WEEKLY_CALL_LOG_ID = '1TPCAM7rJ9e_YDLrgI4YfjOq_QXZFfo6Sj6c9g9qPth4';
 const WEEKLY_CALL_LOG_GID = 1261396864;
@@ -31,9 +31,18 @@ function consumeWeeklyCallLogLaunch() {
   if (!launch) return;
   // Consume once; subsequent pass navigations use the existing state machine.
   history.replaceState(null,'',location.pathname + location.search);
+  try {startWeeklyCallLogSearch(launch,false);}
+  catch (error) {uiStatus(error.message);}
+}
+
+function startWeeklyCallLogSearch(input,openCourtTab = true) {
+  const launch = {spreadsheetId:input?.spreadsheetId,sheetId:input?.sheetId,row:input?.row,
+    params:{first:norm(input?.params?.first),middle:'',last:norm(input?.params?.last),yob:norm(input?.params?.yob)}};
+  if (launch.spreadsheetId !== WEEKLY_CALL_LOG_ID || launch.sheetId !== WEEKLY_CALL_LOG_GID ||
+      !Number.isSafeInteger(launch.row) || launch.row < 4 || !launch.params.first || !launch.params.last ||
+      !/^(19|20)\d{2}$/.test(launch.params.yob)) throw new Error('Casey needs a first name in N, last name in O, and valid birth year in Q on this row.');
   if (loadNameState()?.active || isRun() || loadTrackState()?.active) {
-    uiStatus('Another Casey search is running. Wait for completion, then click the BA link again.');
-    return;
+    throw new Error('Another Casey search is running. Wait for completion, then click Casey again.');
   }
   const requestId = typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
   setStop(false);
@@ -47,6 +56,10 @@ function consumeWeeklyCallLogLaunch() {
     params:launch.params,casenetAddedTotal:0,autoMinimized:false,launchedFrom:'weekly-call-log',
     sheetsPending:{...launch,requestId},launchedAt:new Date().toISOString()});
   setIcbincnTabTitleText('Searching (1/3)');
+  if (openCourtTab && !openBackgroundTab('https://www.courts.mo.gov/casenet/nameSearch.do?newSearch=Y')) {
+    clearNameState();
+    throw new Error('Could not open the court tab. Enable Tampermonkey tab access and try again.');
+  }
 }
 
 function persistWeeklyCallLogResult(state) {
@@ -61,6 +74,7 @@ function persistWeeklyCallLogResult(state) {
 
 function initializeWeeklyCallLogBridge() {
   hideIcbincnDockOnJotform();
+  const launchedNonces = new Set();
   window.addEventListener('message',event => {
     // Reply only to the requesting Google Apps Script iframe, never broadcast results.
     if (!/^https:\/\/[a-z0-9-]+\.googleusercontent\.com$/.test(event.origin) || !event.source || event.source === window) return;
@@ -68,7 +82,17 @@ function initializeWeeklyCallLogBridge() {
     if (!message || message.channel !== SHEETS_BRIDGE_CHANNEL || message.spreadsheetId !== WEEKLY_CALL_LOG_ID ||
         message.sheetId !== WEEKLY_CALL_LOG_GID || typeof message.nonce !== 'string' || message.nonce.length < 16) return;
     const results = loadJson(KEY_SHEETS_RESULTS,{});
-    if (message.type === 'ack' && typeof message.requestId === 'string') {
+    if (message.type === 'launch') {
+      try {
+        if (!launchedNonces.has(message.nonce)) {
+          startWeeklyCallLogSearch(message.launch);
+          launchedNonces.add(message.nonce);
+        }
+        event.source.postMessage({channel:SHEETS_BRIDGE_CHANNEL,nonce:message.nonce,type:'launched'},event.origin);
+      } catch (error) {
+        event.source.postMessage({channel:SHEETS_BRIDGE_CHANNEL,nonce:message.nonce,type:'launch-error',error:String(error.message || error)},event.origin);
+      }
+    } else if (message.type === 'ack' && typeof message.requestId === 'string') {
       delete results[message.requestId];
       saveJson(KEY_SHEETS_RESULTS,results);
     } else if (message.type === 'poll') {
