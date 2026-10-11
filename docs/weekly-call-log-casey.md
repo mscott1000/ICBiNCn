@@ -23,7 +23,7 @@ For example, clicking the logo anchored at **BA7** reads **N7, O7, and Q7**, eve
    ```
 
 4. Save. Select **refreshCaseyLinks** in the editor’s function dropdown and click **Run**. Complete Google’s authorization prompt if requested. This installs actual Casey images over column BA and replaces the earlier paw links. It preserves BB/BC and other images. Rows with first and last names get a 30×30 logo; their height and BA’s width are raised to at least 34 pixels if needed.
-5. Reload the spreadsheet. Click a Casey logo in BA. Its assigned action reads that row, opens the result sidebar, and briefly shows a connecting dialog. The updated userscript opens the court tab and starts Name Search automatically. No extra Search button press, name entry, or hyperlink popup is required. Keep the sidebar open until it reports that BB and BC were saved.
+5. Reload the spreadsheet. Click a Casey logo in BA. Its assigned action reads that row, opens the result sidebar, without opening a modal dialog. The updated userscript opens an inactive background court tab and starts Name Search automatically. No extra Search button press, name entry, or hyperlink popup is required. Keep the sidebar open until it reports that BB and BC were saved.
 
 No web app deployment, API key, sharing change, or additional trigger is needed. The old `caseyOnEdit(e)` hook can be removed from your existing `onEdit`, but leaving it is harmless. Existing buttons use edited names/DOBs automatically. After importing or adding clients, choose **Casey → Install / refresh BA Casey buttons** to add their logos.
 
@@ -43,3 +43,7 @@ The connectors cannot install bound Apps Script, assign native image actions, or
 ## Verification
 
 Run `node --test tests/weekly-call-log.test.cjs`, rebuild with `python scripts/build_tampermonkey.py`, and syntax-check the generated userscript and Apps Script. In the desktop browser, select another row and click BA7’s logo; confirm the search uses N7/O7/Q7 and fills the expected client’s BB/BC. Also try an edited DOB, missing DOB, stopped search, sorted row, and temporarily closed sidebar.
+
+## Background focus update
+
+Replace both scripts with the updated versions and reload the spreadsheet. Existing logo buttons keep their assigned callbacks, so no button refresh is needed. Launch requests now pass through the non-modal result sidebar, which returns keyboard focus to the spreadsheet after acknowledgement. The userscript requires Tampermonkey’s inactive-tab API for the call log; it will report an error instead of falling back to a foreground browser tab if that API is unavailable. Browser focus behavior still needs a smoke test in the user’s browser.

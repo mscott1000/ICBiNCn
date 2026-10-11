@@ -134,9 +134,10 @@
                                   const url = URL.createObjectURL(blob);
                                   window.open(url, '_blank', 'noopener,noreferrer');}
 
-  function openBackgroundTab(url) {try {if (typeof GM_openInTab === 'function') {const tab = GM_openInTab(url,{active:false,insert:true,setParent:false});
+  function openBackgroundTab(url,options = {}) {try {if (typeof GM_openInTab === 'function') {const tab = GM_openInTab(url,{active:false,insert:true,setParent:false});
                                                                                  return tab || null;}}
                                    catch {}
+                                   if (options.requireBackground) return null;
                                    try {return window.open(url,'_blank','noopener,noreferrer');}
                                    catch {return null;}}
 
