@@ -35,6 +35,17 @@ GM_addStyle(`:root{ --mo-ui-scale: 1.2;         /* uniformly enlarge the complet
             #moJsonDock.moTextBuilderDock{top:calc(50% + var(--mo-ui-offset-y));
                                          width:min(836px,calc((100dvw - 24px) / var(--mo-ui-scale)));
                                          height:min(576px,calc((100dvh - 24px) / var(--mo-ui-scale)));}
+            #moJsonDock.moNameSearchComplete{top:calc(50% + var(--mo-ui-offset-y));
+                                             height:min(648.7px,calc((100dvh - 24px) / var(--mo-ui-scale)));}
+            .moNameSearchOutputs{display:grid;
+                                 grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+                                 gap:14px;
+                                 min-height:180px;
+                                 flex:1 0 180px;}
+            .moNameSearchOutputs .moField{min-width:0; min-height:0;}
+            .moNameSearchOutputs textarea{flex:1; resize:vertical; white-space:pre-wrap;}
+            #moJsonContent.moNameSearchContent{display:flex; flex-direction:column;}
+            #moJsonContent.moNameSearchContent > .moBlock{flex:0 0 auto;}
             #moJsonDock.moHelpOpen{transform:translate(-20%,-50%);}
             #moJsonDock.moHidden{display:none;}
 
@@ -1038,9 +1049,12 @@ function addBlock(title,htmlInner) {const div = document.createElement('div');
 launcher.addEventListener('click',() => {expandDock();});
 minimizeDock();
 
+const SHOW_NAME_SEARCH_DEBUG_UI = false; // Keep debug storage, formatting, and controls available for later access.
+
 const SHOW_TRACK_THIS_CASE_UI = false; // Temporarily disconnect visible Track This Case UI without removing its automation architecture.
 
 function render() {const log = loadLog();
+                   const nameOutput = loadJson(KEY_NAMESEARCH_OUTPUT,null);
                    const title = dock.querySelector('#moJsonTitle');
                    if (title) title.textContent = appView === 'text' ? textBuilderScreenTitle() : (APP_VIEWS[appView] || APP_VIEWS.home);
                    $content.innerHTML = '';
@@ -1048,6 +1062,7 @@ function render() {const log = loadLog();
                    $content.classList.toggle('moTextBuilderContent',appView === 'text');
                    $content.classList.remove('moTextBuilderMessageContent');
                    $content.classList.toggle('moNameSearchContent',appView === 'name');
+                   dock.classList.toggle('moNameSearchComplete',appView === 'name' && !!nameOutput);
                    dock.classList.toggle('moTextBuilderDock',appView === 'text');
                    const copyBtn = dock.querySelector('#moJsonCopy');
                    if (copyBtn) copyBtn.textContent = `Copy (${log.length})`;
@@ -1085,5 +1100,9 @@ function render() {const log = loadLog();
         <div class="moField"><label style="color:var(--mo-text);">Birth Year</label><input id="moNsYob" type="text" placeholder="YYYY" maxlength="4" value="${escapeHtml(p?.yob || '')}"></div>
         <div style="display:flex; gap:8px; align-items:end; width:100%;"><button class="moBtn moSearchBtn" id="moJsonNameSearch" style="flex:1;">Search</button><button class="moBtn" id="moJsonClearEntries" style="flex:1;">Clear Entries</button></div>
       </div>`);
-                   addBlock('Debug Log',`<div class="moField"><textarea id="moJsonDebug" readonly placeholder="Debug events will appear here">${escapeHtml(formatDebugLog())}</textarea></div><div class="moNameRowBottom" style="grid-template-columns:1fr;"><button class="moBtn" id="moJsonClearDebug" type="button">Clear Debug</button></div>`);
+                   if (nameOutput) {const panes = document.createElement('div');
+                                    panes.className = 'moNameSearchOutputs';
+                                    panes.innerHTML = `<div class="moField"><label for="moNsSummaryOutput">Summary</label><textarea id="moNsSummaryOutput">${escapeHtml(nameOutput.summary || '')}</textarea></div><div class="moField"><label for="moNsCopyOutput">Copy</label><textarea id="moNsCopyOutput">${escapeHtml(nameOutput.copy || '')}</textarea></div>`;
+                                    $content.appendChild(panes);}
+                   if (SHOW_NAME_SEARCH_DEBUG_UI) addBlock('Debug Log',`<div class="moField"><textarea id="moJsonDebug" readonly placeholder="Debug events will appear here">${escapeHtml(formatDebugLog())}</textarea></div><div class="moNameRowBottom" style="grid-template-columns:1fr;"><button class="moBtn" id="moJsonClearDebug" type="button">Clear Debug</button></div>`);
 }
