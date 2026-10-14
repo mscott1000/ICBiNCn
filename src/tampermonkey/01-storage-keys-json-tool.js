@@ -9,6 +9,7 @@
   const DEBUG_MAX = 180;
 
   const KEY_NAMESEARCH = 'mo_casenet_json_namesearch_state_v1';
+  const KEY_NAMESEARCH_OUTPUT = 'mo_casenet_json_namesearch_output_v1'; // editable completion snapshot
   const KEY_UI_DRAFT = 'mo_casenet_json_ui_draft_v1';
   const KEY_TRACK_STATE = 'mo_casenet_track_state_v1';
   const KEY_TRACK_DRAFT = 'mo_casenet_track_draft_v1';

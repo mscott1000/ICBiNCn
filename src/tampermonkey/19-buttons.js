@@ -54,7 +54,8 @@
                                                                          uiStatus('Summary copied to clipboard');
                                                                          render();
                                                                          return;}
-                                             if (id === 'moJsonClear') {saveLog([]);
+                                             if (id === 'moJsonClear') {saveJson(KEY_NAMESEARCH_OUTPUT,null);
+                                                                       saveLog([]);
                                                                        saveDebug([]);
                                                                        clearLastHtml();
                                                                        saveJson(KEY_NET_STATS,{byPath:{}});
@@ -156,6 +157,10 @@
                                      if (action === 'copyEligibleMessage') {GM_setClipboard(textBuilderFormatCaseData(textBuilderDropInEligibleMessage(false),'eligibleCaseDataVisible'),'text'); return uiStatus('Text Builder eligible cases message copied to clipboard');}});
 
   dock.addEventListener('input',(e) => {const id = e?.target?.id || '';
+                                     if (id === 'moNsSummaryOutput' || id === 'moNsCopyOutput') {const output = loadJson(KEY_NAMESEARCH_OUTPUT,null);
+                                                                                              if (output) {output[id === 'moNsSummaryOutput' ? 'summary' : 'copy'] = e.target.value;
+                                                                                                           saveJson(KEY_NAMESEARCH_OUTPUT,output);}
+                                                                                              return;}
                                      const tbKey = e?.target?.dataset?.tbInput;
                                      if (tbKey && appView === 'text') {textBuilderState.data[tbKey] = e.target.value; return;}
                                      if (id === 'moUpcomingInput') {upcomingStorageSet(UPCOMING_INPUT_KEY,e.target.value || ''); return;}
@@ -215,6 +220,8 @@
                                                 if (st.launchedFrom === 'jotform') {try {jotformPersistSearchResult(st);}
                                                                                     catch (e) {dbg('jotform_result_persist_error',{msg:String(e?.message || e)});}}
                                                 setIcbincnTabTitleText('Complete');
+                                                saveJson(KEY_NAMESEARCH_OUTPUT,{summary:buildSummaryCopyText() || '',copy:buildGroupedCopyText() || ''});
+                                                appView = 'name';
                                                 clearNameState();
                                                 expandDock();
                                                 uiStatus(`Done. Case.net: ${casenetAdded}  Municourt.net: ${muniAdded}`);
