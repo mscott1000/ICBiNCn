@@ -21,7 +21,7 @@ GM_addStyle(`:root{ --mo-ui-scale: 1.2;         /* uniformly enlarge the complet
             #moJsonTextBuilderPanel{zoom:var(--mo-ui-scale);}
 
             #moJsonDock{position:fixed; left:50%; top:calc(45% + var(--mo-ui-offset-y)); transform:translate(-50%,-50%);
-                        width:min(1011.56px,calc((100dvw - 24px) / var(--mo-ui-scale))); height:min(499px,calc(100vh - 24px));
+                        width:min(1112.716px,calc((100dvw - 24px) / var(--mo-ui-scale))); height:min(499px,calc(100vh - 24px));
                         z-index:999999;
                         font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
                         box-shadow:var(--mo-shadow);
@@ -34,7 +34,7 @@ GM_addStyle(`:root{ --mo-ui-scale: 1.2;         /* uniformly enlarge the complet
                         flex-direction:column;}
             #moJsonDock.moStandardHeightDock,
             #moJsonDock.moTextBuilderDock{top:calc(50% + var(--mo-ui-offset-y));
-                                         width:min(1011.56px,calc((100dvw - 24px) / var(--mo-ui-scale)));
+                                         width:min(1112.716px,calc((100dvw - 24px) / var(--mo-ui-scale)));
                                          height:min(576px,calc((100dvh - 24px) / var(--mo-ui-scale)));}
             #moJsonDock.moNameSearchComplete{top:calc(50% + var(--mo-ui-offset-y));
                                              height:min(778.44px,calc((100dvh - 24px) / var(--mo-ui-scale)));}
