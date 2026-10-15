@@ -55,6 +55,7 @@ GM_addStyle(`:root{ --mo-ui-scale: 1.2;         /* uniformly enlarge the complet
                                  min-height:180px;
                                  flex:1 0 180px;}
             .moNameSearchOutputs .moField{min-width:0; min-height:0;}
+            .moNameSearchOutputs label{text-align:center;}
             .moNameSearchOutputs textarea{flex:1; resize:vertical; white-space:pre-wrap;}
             #moJsonContent.moNameSearchContent{display:flex; flex-direction:column;}
             #moJsonContent.moNameSearchContent > .moBlock{flex:0 0 auto;}
@@ -296,7 +297,7 @@ GM_addStyle(`:root{ --mo-ui-scale: 1.2;         /* uniformly enlarge the complet
                           height:100%;
                           min-height:52px;
                           padding:14px 16px;
-                          font-size:17px;
+                          font-size:21px; /* +3pt (4 CSS pixels) */
                           font-weight:950;
                           text-align:center;}
             .moFeaturePlaceholder{min-height:180px;}
