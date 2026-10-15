@@ -61,3 +61,17 @@ test('edits survive rerender and new searches discard the previous completion sn
   assert.equal(storage.output.copy,'edited copy');
   c.saveNameState({active:true});assert.equal(storage.output,null);
 });
+test('Case Count follows total log size and Detail labels the legacy full output',()=>{
+  const {context:c,nodes}=setup();
+  const count={textContent:''},sizer={textContent:''};
+  c.dock.querySelector=selector=>selector==='#moJsonCaseCountValue'?count:selector==='#moJsonCaseCountSizer'?sizer:null;
+  let log=[];c.loadLog=()=>log;
+  const ui=read('17-ui.js');
+  vm.runInContext(ui.slice(ui.indexOf('function render()')),c);
+  c.appView='name';c.render();assert.equal(count.textContent,'Cases Found: 0');
+  log=[{},{},{}];c.render();assert.equal(count.textContent,'Cases Found: 3');
+  log=[];c.render();assert.equal(count.textContent,'Cases Found: 0');
+  assert.ok(!ui.includes('<button class="moBtn" id="moJsonSummary">'));
+  assert.ok(!ui.includes('<button class="moBtn" id="moJsonCopy">'));
+  assert.ok(ui.includes('for="moNsCopyOutput">Detail</label>'));
+});
