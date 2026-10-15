@@ -37,6 +37,12 @@ GM_addStyle(`:root{ --mo-ui-scale: 1.2;         /* uniformly enlarge the complet
                                          height:min(576px,calc((100dvh - 24px) / var(--mo-ui-scale)));}
             #moJsonDock.moNameSearchComplete{top:calc(50% + var(--mo-ui-offset-y));
                                              height:min(778.44px,calc((100dvh - 24px) / var(--mo-ui-scale)));}
+            #moJsonDock.moCompactToolDock{height:auto;
+                                         max-height:calc((100dvh - 24px) / var(--mo-ui-scale));
+                                         top:calc(50% + var(--mo-ui-offset-y));}
+            #moJsonDock.moCompactToolDock #moJsonContent{flex:0 1 auto;}
+            #moJsonDock.moCompactToolDock #moJsonContent > .moBlock:last-child{margin-bottom:0;}
+            #moJsonDock.moCompactToolDock .moFeaturePlaceholder{min-height:0;}
             .moNameSearchControls summary{cursor:pointer;
                                            color:var(--mo-muted);
                                            font-size:12px;
@@ -1063,10 +1069,11 @@ function render() {const log = loadLog();
                    const title = dock.querySelector('#moJsonTitle');
                    if (title) title.textContent = appView === 'text' ? textBuilderScreenTitle() : (APP_VIEWS[appView] || APP_VIEWS.home);
                    $content.innerHTML = '';
-                   $content.classList.toggle('moContentStretch',['home','text','track'].includes(appView));
+                   $content.classList.toggle('moContentStretch',['home','text'].includes(appView));
                    $content.classList.toggle('moTextBuilderContent',appView === 'text');
                    $content.classList.remove('moTextBuilderMessageContent');
                    $content.classList.toggle('moNameSearchContent',appView === 'name');
+                   dock.classList.toggle('moCompactToolDock',['name','upcoming','track'].includes(appView) && !(appView === 'name' && nameOutput));
                    dock.classList.toggle('moNameSearchComplete',appView === 'name' && !!nameOutput);
                    dock.classList.toggle('moTextBuilderDock',appView === 'text');
                    const copyBtn = dock.querySelector('#moJsonCopy');
