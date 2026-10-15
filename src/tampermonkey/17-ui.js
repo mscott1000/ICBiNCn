@@ -32,6 +32,7 @@ GM_addStyle(`:root{ --mo-ui-scale: 1.2;         /* uniformly enlarge the complet
                         box-sizing:border-box;
                         display:flex;
                         flex-direction:column;}
+            #moJsonDock.moStandardHeightDock,
             #moJsonDock.moTextBuilderDock{top:calc(50% + var(--mo-ui-offset-y));
                                          width:min(1011.56px,calc((100dvw - 24px) / var(--mo-ui-scale)));
                                          height:min(576px,calc((100dvh - 24px) / var(--mo-ui-scale)));}
@@ -304,6 +305,19 @@ GM_addStyle(`:root{ --mo-ui-scale: 1.2;         /* uniformly enlarge the complet
                                gap:14px;
                                align-items:start;}
             .moUpcomingColumn{min-width:0;}
+            #moJsonContent.moUpcomingContent .moFeaturePlaceholder{display:flex;
+                                                                    flex:1 1 auto;
+                                                                    min-height:0;}
+            #moJsonContent.moUpcomingContent .moUpcomingColumns{flex:1 1 auto;
+                                                               align-items:stretch;}
+            #moJsonContent.moUpcomingContent .moUpcomingColumn{display:flex;
+                                                              flex-direction:column;
+                                                              min-height:0;}
+            #moJsonContent.moUpcomingContent .moUpcomingColumn > .moField{flex:1 1 auto;
+                                                                         min-height:0;}
+            #moJsonContent.moUpcomingContent .moUpcomingColumn textarea{flex:1 1 auto;
+                                                                       min-height:160px;}
+            #moJsonContent.moUpcomingContent .moNameRowBottom{flex:0 0 auto;}
             .moUpcomingRunActions{grid-template-columns:minmax(0,1fr) auto auto;}
             .moUpcomingRunActions .moBtn{min-width:0;
                                          height:auto;
@@ -1069,12 +1083,14 @@ function render() {const log = loadLog();
                    const title = dock.querySelector('#moJsonTitle');
                    if (title) title.textContent = appView === 'text' ? textBuilderScreenTitle() : (APP_VIEWS[appView] || APP_VIEWS.home);
                    $content.innerHTML = '';
-                   $content.classList.toggle('moContentStretch',['home','text'].includes(appView));
+                   $content.classList.toggle('moContentStretch',['home','text','upcoming'].includes(appView));
                    $content.classList.toggle('moTextBuilderContent',appView === 'text');
                    $content.classList.remove('moTextBuilderMessageContent');
                    $content.classList.toggle('moNameSearchContent',appView === 'name');
-                   dock.classList.toggle('moCompactToolDock',['name','upcoming','track'].includes(appView) && !(appView === 'name' && nameOutput));
+                   dock.classList.toggle('moCompactToolDock',['name','track'].includes(appView) && !(appView === 'name' && nameOutput));
                    dock.classList.toggle('moNameSearchComplete',appView === 'name' && !!nameOutput);
+                   $content.classList.toggle('moUpcomingContent',appView === 'upcoming');
+                   dock.classList.toggle('moStandardHeightDock',['home','upcoming'].includes(appView));
                    dock.classList.toggle('moTextBuilderDock',appView === 'text');
                    const copyBtn = dock.querySelector('#moJsonCopy');
                    if (copyBtn) copyBtn.textContent = `Copy (${log.length})`;
