@@ -40,6 +40,12 @@ test('completion snapshots exact button outputs, expands only name view, and hid
   c.render();
   assert.ok(classes.has('moNameSearchComplete'));
   assert.equal(nodes.some(n=>n.title==='Debug Log'),false);
+  const nameHtml=nodes.find(n=>n.title==='Name').html;
+  const collapsed=nameHtml.slice(nameHtml.indexOf('<details'),nameHtml.indexOf('</details>'));
+  assert.ok(collapsed.includes('moNsYob'));
+  assert.ok(collapsed.includes('moJsonNameSearch'));
+  assert.ok(collapsed.includes('moJsonClearEntries'));
+  assert.ok(!/<details[^>]*\bopen\b/.test(nameHtml));
   const panes=nodes.find(n=>n.className==='moNameSearchOutputs');
   assert.ok(panes.innerHTML.indexOf('moNsSummaryOutput')<panes.innerHTML.indexOf('moNsCopyOutput'));
   assert.ok(panes.innerHTML.includes('Summary &lt;court&gt;'));

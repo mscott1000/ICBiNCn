@@ -21,7 +21,7 @@ GM_addStyle(`:root{ --mo-ui-scale: 1.2;         /* uniformly enlarge the complet
             #moJsonTextBuilderPanel{zoom:var(--mo-ui-scale);}
 
             #moJsonDock{position:fixed; left:50%; top:calc(45% + var(--mo-ui-offset-y)); transform:translate(-50%,-50%);
-                        width:min(836px,calc(100vw - 24px)); height:min(499px,calc(100vh - 24px));
+                        width:min(919.6px,calc((100dvw - 24px) / var(--mo-ui-scale))); height:min(499px,calc(100vh - 24px));
                         z-index:999999;
                         font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
                         box-shadow:var(--mo-shadow);
@@ -33,10 +33,15 @@ GM_addStyle(`:root{ --mo-ui-scale: 1.2;         /* uniformly enlarge the complet
                         display:flex;
                         flex-direction:column;}
             #moJsonDock.moTextBuilderDock{top:calc(50% + var(--mo-ui-offset-y));
-                                         width:min(836px,calc((100dvw - 24px) / var(--mo-ui-scale)));
+                                         width:min(919.6px,calc((100dvw - 24px) / var(--mo-ui-scale)));
                                          height:min(576px,calc((100dvh - 24px) / var(--mo-ui-scale)));}
             #moJsonDock.moNameSearchComplete{top:calc(50% + var(--mo-ui-offset-y));
-                                             height:min(648.7px,calc((100dvh - 24px) / var(--mo-ui-scale)));}
+                                             height:min(778.44px,calc((100dvh - 24px) / var(--mo-ui-scale)));}
+            .moNameSearchControls summary{cursor:pointer;
+                                           color:var(--mo-muted);
+                                           font-size:12px;
+                                           font-weight:900;}
+            .moNameSearchControls{margin-top:8px;}
             .moNameSearchOutputs{display:grid;
                                  grid-template-columns:minmax(0,1fr) minmax(0,1fr);
                                  gap:14px;
@@ -1096,10 +1101,12 @@ function render() {const log = loadLog();
         <div class="moField"><input id="moNsMiddle" type="text" placeholder="M.I." value="${escapeHtml(p?.middle || '')}"></div>
         <div class="moField"><input id="moNsLast" type="text" placeholder="Last" value="${escapeHtml(p?.last || '')}"></div>
       </div>
+      ${nameOutput ? '<details class="moNameSearchControls"><summary>Birth Year &amp; Search</summary>' : ''}
       <div class="moNameRowBottom" style="grid-template-columns:minmax(0, 0.36fr) minmax(0, 1.64fr);">
         <div class="moField"><label style="color:var(--mo-text);">Birth Year</label><input id="moNsYob" type="text" placeholder="YYYY" maxlength="4" value="${escapeHtml(p?.yob || '')}"></div>
         <div style="display:flex; gap:8px; align-items:end; width:100%;"><button class="moBtn moSearchBtn" id="moJsonNameSearch" style="flex:1;">Search</button><button class="moBtn" id="moJsonClearEntries" style="flex:1;">Clear Entries</button></div>
-      </div>`);
+      </div>
+      ${nameOutput ? '</details>' : ''}`);
                    if (nameOutput) {const panes = document.createElement('div');
                                     panes.className = 'moNameSearchOutputs';
                                     panes.innerHTML = `<div class="moField"><label for="moNsSummaryOutput">Summary</label><textarea id="moNsSummaryOutput">${escapeHtml(nameOutput.summary || '')}</textarea></div><div class="moField"><label for="moNsCopyOutput">Copy</label><textarea id="moNsCopyOutput">${escapeHtml(nameOutput.copy || '')}</textarea></div>`;
