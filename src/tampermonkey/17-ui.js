@@ -209,9 +209,18 @@ GM_addStyle(`:root{ --mo-ui-scale: 1.2;         /* uniformly enlarge the complet
             #moJsonCopy,.moCopyBtn{background:var(--mo-primary);
                         border:1.5px solid var(--mo-border);
                         color:#fff;}
-            #moJsonHeader .btnRow #moJsonSummary,
-            #moJsonHeader .btnRow #moJsonCopy{padding:6.9px 11.5px;
-                                               font-size:13.8px;}
+            #moJsonCaseCount{position:relative;
+                             border:1.5px solid var(--mo-border);
+                             border-radius:10px;
+                             background:var(--mo-surface);
+                             color:var(--mo-text);
+                             font-size:13.8px;
+                             font-weight:900;}
+            /* Preserve the combined footprint of the former two buttons and their gap. */
+            .moCaseCountSizer{display:flex; gap:8px; visibility:hidden; margin:-1.5px;}
+            .moCaseCountSizer span{padding:6.9px 11.5px; border:1.5px solid transparent; white-space:nowrap;}
+            #moJsonCaseCountValue{position:absolute; inset:0; display:flex; align-items:center;
+                                  justify-content:center; white-space:nowrap;}
             #moJsonCopy:hover,.moCopyBtn:hover{background:var(--mo-primary-dk);}
 
             #moJsonStop,#moUpcomingStop{background:var(--mo-danger);
@@ -655,8 +664,10 @@ dock.innerHTML = `
   <div id="moJsonHeader">
     <div class="title" id="moJsonTitle">I Can't Believe it's Not CaseNet!</div>
     <div class="btnRow">
-      <button class="moBtn" id="moJsonSummary">Summary</button>
-      <button class="moBtn" id="moJsonCopy">Copy</button>
+      <div id="moJsonCaseCount" aria-label="Case Count">
+        <div class="moCaseCountSizer" aria-hidden="true"><span>Summary</span><span id="moJsonCaseCountSizer">Copy (0)</span></div>
+        <span id="moJsonCaseCountValue" role="status">Cases Found: 0</span>
+      </div>
     </div>
     <button id="moJsonCloseX" title="Close">×</button>
   </div>
@@ -701,9 +712,11 @@ const helpPanelTemplate = `
 
 - Buttons -
 
-"Copy" - Displays the number of cases in the tool's log. Click to add the full rundown of case information in the log to your clipboard.
+"Case Count" - Displays "Cases Found: X", the total number of cases in the tool's log.
 
-"Summary" - Click to add a summary of the "copy" log to your clipboard, with only the Case Number, Charge Text, and a 'status' of warrant/nonwarrant/hold on license. It will display those with holds first, then warrants, then nonwarrants, and sort them by jurisdiction.
+"Summary" - The editable left results pane contains a summary of the Detail output, with only the Case Number, Charge Text, and a 'status' of warrant/nonwarrant/hold on license. It will display those with holds first, then warrants, then nonwarrants, and sort them by jurisdiction.
+
+"Detail" - The editable right results pane contains the full rundown of case information in the log. Both results panes appear when Name Search completes.
 
 "X" - Minimizes the tool. If you want to turn the tool off temporarily, click "Manage Extensions" and toggle Tampermonkey off.
 
@@ -1093,8 +1106,10 @@ function render() {const log = loadLog();
                    $content.classList.toggle('moUpcomingContent',appView === 'upcoming');
                    dock.classList.toggle('moStandardHeightDock',['home','upcoming'].includes(appView));
                    dock.classList.toggle('moTextBuilderDock',appView === 'text');
-                   const copyBtn = dock.querySelector('#moJsonCopy');
-                   if (copyBtn) copyBtn.textContent = `Copy (${log.length})`;
+                   const caseCount = dock.querySelector('#moJsonCaseCountValue');
+                   if (caseCount) caseCount.textContent = `Cases Found: ${log.length}`;
+                   const countSizer = dock.querySelector('#moJsonCaseCountSizer');
+                   if (countSizer) countSizer.textContent = `Copy (${log.length})`;
                    const nav = dock.querySelector('#moJsonNavButtons');
                    const actions = dock.querySelector('#moJsonActionButtons');
                    if (nav) nav.innerHTML = appView === 'home' ? '' : '<button class="moBtn" id="moJsonBackBtn">Home</button><button class="moBtn" id="moJsonHelpBtn">Help</button>';
@@ -1133,7 +1148,7 @@ function render() {const log = loadLog();
       ${nameOutput ? '</details>' : ''}`);
                    if (nameOutput) {const panes = document.createElement('div');
                                     panes.className = 'moNameSearchOutputs';
-                                    panes.innerHTML = `<div class="moField"><label for="moNsSummaryOutput">Summary</label><textarea id="moNsSummaryOutput">${escapeHtml(nameOutput.summary || '')}</textarea></div><div class="moField"><label for="moNsCopyOutput">Copy</label><textarea id="moNsCopyOutput">${escapeHtml(nameOutput.copy || '')}</textarea></div>`;
+                                    panes.innerHTML = `<div class="moField"><label for="moNsSummaryOutput">Summary</label><textarea id="moNsSummaryOutput">${escapeHtml(nameOutput.summary || '')}</textarea></div><div class="moField"><label for="moNsCopyOutput">Detail</label><textarea id="moNsCopyOutput">${escapeHtml(nameOutput.copy || '')}</textarea></div>`;
                                     $content.appendChild(panes);}
                    if (SHOW_NAME_SEARCH_DEBUG_UI) addBlock('Debug Log',`<div class="moField"><textarea id="moJsonDebug" readonly placeholder="Debug events will appear here">${escapeHtml(formatDebugLog())}</textarea></div><div class="moNameRowBottom" style="grid-template-columns:1fr;"><button class="moBtn" id="moJsonClearDebug" type="button">Clear Debug</button></div>`);
 }

@@ -44,16 +44,6 @@
                                                                       dbg('stop_clicked',{});
                                                                       render();
                                                                       return;}
-                                             if (id === 'moJsonCopy') {const out = buildGroupedCopyText();
-                                                                      GM_setClipboard(out || '','text');
-                                                                      uiStatus('Copied to Clipboard');
-                                                                      render();
-                                                                      return;}
-                                             if (id === 'moJsonSummary') {const out = buildSummaryCopyText();
-                                                                         GM_setClipboard(out || '','text');
-                                                                         uiStatus('Summary copied to clipboard');
-                                                                         render();
-                                                                         return;}
                                              if (id === 'moJsonClear') {saveJson(KEY_NAMESEARCH_OUTPUT,null);
                                                                        saveLog([]);
                                                                        saveDebug([]);
