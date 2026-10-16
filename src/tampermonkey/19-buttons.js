@@ -44,7 +44,10 @@
                                                                       dbg('stop_clicked',{});
                                                                       render();
                                                                       return;}
-                                             if (id === 'moJsonClear') {saveJson(KEY_NAMESEARCH_OUTPUT,null);
+                                             if (id === 'moJsonClear') {const purgeHistory = registerNameOutputClearClick();
+                                                                       if (purgeHistory) {saveJson(KEY_NAMESEARCH_OUTPUT,null);
+                                                                                          clearNameOutputHistory();}
+                                                                       else saveNameSearchOutput(null);
                                                                        saveLog([]);
                                                                        saveDebug([]);
                                                                        clearLastHtml();
@@ -52,7 +55,7 @@
                                                                        setStop(true);
                                                                        setRun(false);
                                                                        clearNameState();
-                                                                       uiStatus('Log Cleared');
+                                                                       uiStatus(purgeHistory ? 'Log and text undo history cleared' : 'Log Cleared');
                                                                        dbg('log_cleared',{});
                                                                        render();
                                                                        return;}
@@ -147,9 +150,10 @@
                                      if (action === 'copyEligibleMessage') {GM_setClipboard(textBuilderFormatCaseData(textBuilderDropInEligibleMessage(false),'eligibleCaseDataVisible'),'text'); return uiStatus('Text Builder eligible cases message copied to clipboard');}});
 
   dock.addEventListener('input',(e) => {const id = e?.target?.id || '';
-                                     if (id === 'moNsSummaryOutput' || id === 'moNsCopyOutput') {const output = loadJson(KEY_NAMESEARCH_OUTPUT,null);
+                                     if (id === 'moNsSummaryOutput' || id === 'moNsCopyOutput') {if (['historyUndo','historyRedo'].includes(e.inputType)) {handleNameOutputUndo(e,e.inputType === 'historyRedo'); return;}
+                                                                                              const output = loadJson(KEY_NAMESEARCH_OUTPUT,null);
                                                                                               if (output) {output[id === 'moNsSummaryOutput' ? 'summary' : 'copy'] = e.target.value;
-                                                                                                           saveJson(KEY_NAMESEARCH_OUTPUT,output);}
+                                                                                                           saveNameSearchOutput(output);}
                                                                                               return;}
                                      const tbKey = e?.target?.dataset?.tbInput;
                                      if (tbKey && appView === 'text') {textBuilderState.data[tbKey] = e.target.value; return;}
@@ -166,6 +170,16 @@
                                                                                          return;}
                                      });
 
+
+  dock.addEventListener('keydown',(event) => {
+    if (event.altKey || !(event.ctrlKey || event.metaKey)) return;
+    const key = event.key.toLowerCase();
+    if (key === 'z' || (key === 'y' && !event.shiftKey)) handleNameOutputUndo(event,key === 'y' || event.shiftKey);
+  });
+
+  dock.addEventListener('beforeinput',(event) => {
+    if (event.cancelable && ['historyUndo','historyRedo'].includes(event.inputType)) handleNameOutputUndo(event,event.inputType === 'historyRedo');
+  });
 
   async function nameSearchTick() {if (/municourt\.net$/i.test(location.hostname || '')) return;
                                  const st = loadNameState();
@@ -196,6 +210,7 @@
                                                      render();
                                                      const nextLog = loadLog();
                                                      const muniEntries = await searchMunicourtEntriesByName(st.params || {});
+                                                     if (isStop() || loadNameState()?.finalizingStartedAt !== st.finalizingStartedAt) return;
                                                      for (const m of muniEntries) {if (!m?.caseKey) continue;
                                                                                  if (nextLog.some((x) => x.caseKey === m.caseKey)) continue;
                                                                                  nextLog.push(withPleadAndPayTotal(m));
@@ -203,6 +218,7 @@
                                                      saveLog(nextLog);
                                                      dbg('namesearch_municourt_final_pass_done',{count: muniAdded});}
                                                 catch (e) {dbg('namesearch_municourt_final_pass_error',{msg:String(e?.message || e)});}
+                                                if (isStop() || loadNameState()?.finalizingStartedAt !== st.finalizingStartedAt) return;
                                                 const casenetAdded = Number(st.casenetAddedTotal || 0);
                                                 dbg('namesearch_done',{casenetAdded,muniAdded});
                                                 if (st.launchedFrom === 'weekly-call-log') {try {persistWeeklyCallLogResult(st);}
@@ -210,7 +226,7 @@
                                                 if (st.launchedFrom === 'jotform') {try {jotformPersistSearchResult(st);}
                                                                                     catch (e) {dbg('jotform_result_persist_error',{msg:String(e?.message || e)});}}
                                                 setIcbincnTabTitleText('Complete');
-                                                saveJson(KEY_NAMESEARCH_OUTPUT,{summary:buildSummaryCopyText() || '',copy:buildGroupedCopyText() || ''});
+                                                saveNameSearchOutput({summary:buildSummaryCopyText() || '',copy:buildGroupedCopyText() || ''});
                                                 appView = 'name';
                                                 clearNameState();
                                                 expandDock();
