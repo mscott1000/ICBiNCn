@@ -3,7 +3,7 @@
    ************************************************************/
   function loadNameState() {return loadJson(KEY_NAMESEARCH,null);}
 
-  function saveNameState(s) {if (s?.active && !loadNameState()?.active) saveJson(KEY_NAMESEARCH_OUTPUT,null);
+  function saveNameState(s) {if (s?.active && !loadNameState()?.active) saveNameSearchOutput(null);
                              saveJson(KEY_NAMESEARCH,s || null);}
 
   function setIcbincnTabTitleText(text) {const cleaned = norm(text || '');
