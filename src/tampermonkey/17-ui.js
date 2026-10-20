@@ -524,7 +524,7 @@ GM_addStyle(`:root{ --mo-ui-scale: 1.2;         /* uniformly enlarge the complet
                                   margin-top:auto;
                                   margin-bottom:auto;}
             .moTextBuilderOption{background:#fff;
-                                 font-size:16px;
+                                 font-size:21px;
                                  border:1.5px solid #bfdbfe;
                                  color:#0f172a;
                                  padding:11px 12px;
