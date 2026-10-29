@@ -204,9 +204,9 @@
                          if (e.initialAppearanceDate) lines.push(`Initial Appearance: ${e.initialAppearanceDate}`);
                          if (e.licenseHoldDate) lines.push(`License Hold: ${e.licenseHoldDate}`);
                          lines.push(`Upcoming Court Dates: ${e.nextDocketDate || ''}`,'',
-                                         `Charge Description: ${e.chargeDescription || ''}`,
-                                         `Charge Type: ${e.chargeType || ''}`);
-                         if (!/^-\s*-\s*-$/.test(norm(String(e.chargeClass || '')))) lines.push(`Charge Class: ${e.chargeClass || ''}`);
+                                         `Charge Text: ${e.chargeDescription || ''}`,
+                                         `Charge Class: ${e.chargeType || ''}`);
+                         if (!/^-\s*-\s*-$/.test(norm(String(e.chargeClass || '')))) lines.push(`Charge Type: ${e.chargeClass || ''}`);
                          lines.push(`Judge: ${e.judge || ''}`);
                          const pleadAndPayTotal = e.pleadAndPayTotal || lookupPleadAndPayTotal(e) || '- - -';
                          if (!/^-\s*-\s*-$/.test(norm(String(pleadAndPayTotal)))) lines.push(`Plead and Pay Total: ${pleadAndPayTotal}`);
@@ -242,6 +242,7 @@
 
 
   const MUNICIPALITY_CONTACTS_RAW = `ARNOLD MUNICIPAL - (636) 296-0595
+AURORA MUNICIPAL - (417) 678-5121
 BALLWIN MUNICIPAL - (636) 227-9468
 BELLA VILLA MUNICIPAL - (314) 638-8840
 BELLEFONTAINE NEIGHBORS MUNICIPAL - (314) 867-0076
@@ -298,6 +299,7 @@ HUNTLEIGH MUNICIPAL - (314) 446-4248
 JACKSON COUNTY MUNICIPAL - 740-286-2718
 JEFFERSON COUNTY MUNICIPAL - TICKET FROM SHERIFF'S DEPT: (636) 797-6265; TICKET FROM ANY OTHER OFFICER: 636-797-5303
 JENNINGS MUNICIPAL - (314) 385-4670
+JOPLIN MUNICIPAL - (417) 627-2930
 KANSAS CITY MUNICIPAL - (816) 513-2700
 KINLOCH (OPERATES IN ST. LOUIS COUNTY CIRCUIT, DIV 21) - (314) 615-8029
 KIRKWOOD MUNICIPAL - (314) 822-5840

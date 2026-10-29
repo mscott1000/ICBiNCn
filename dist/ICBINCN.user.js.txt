@@ -1,7 +1,7 @@
 // ==UserScript==
-// @name         ICBiNCn 10.20
+// @name         ICBiNCn 10.29
 // @namespace    http://tampermonkey.net/
-// @version      2026-10-20
+// @version      2026-10-29
 // @description  Background Case.net scraper using JSON/XHR endpoints. Navs to search results pages, pulls case data via POST requests, then writes to a persistent log for copying. Now with Track This Case.
 // @author       Mason Scott
 // @match        https://www.courts.mo.gov/casenet/*
@@ -2829,9 +2829,9 @@ async function trackTick() {const st = loadTrackState();
                          if (e.initialAppearanceDate) lines.push(`Initial Appearance: ${e.initialAppearanceDate}`);
                          if (e.licenseHoldDate) lines.push(`License Hold: ${e.licenseHoldDate}`);
                          lines.push(`Upcoming Court Dates: ${e.nextDocketDate || ''}`,'',
-                                         `Charge Description: ${e.chargeDescription || ''}`,
-                                         `Charge Type: ${e.chargeType || ''}`);
-                         if (!/^-\s*-\s*-$/.test(norm(String(e.chargeClass || '')))) lines.push(`Charge Class: ${e.chargeClass || ''}`);
+                                         `Charge Text: ${e.chargeDescription || ''}`,
+                                         `Charge Class: ${e.chargeType || ''}`);
+                         if (!/^-\s*-\s*-$/.test(norm(String(e.chargeClass || '')))) lines.push(`Charge Type: ${e.chargeClass || ''}`);
                          lines.push(`Judge: ${e.judge || ''}`);
                          const pleadAndPayTotal = e.pleadAndPayTotal || lookupPleadAndPayTotal(e) || '- - -';
                          if (!/^-\s*-\s*-$/.test(norm(String(pleadAndPayTotal)))) lines.push(`Plead and Pay Total: ${pleadAndPayTotal}`);
