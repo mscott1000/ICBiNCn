@@ -2852,7 +2852,7 @@ async function trackTick() {const st = loadTrackState();
                                   const sections = [];
                                   function appendSections(jurisdictions) {for (const {entries} of jurisdictions) {
                                                                                                                                 const sortedEntries = entries.map((entry,idx) => ({entry,idx}))
-                                                                                                                                                           .sort((a,b) => {const priorityDiff = getSummaryStatusPriority(a.entry) - getSummaryStatusPriority(b.entry);
+                                                                                                                                                           .sort((a,b) => {const priorityDiff = compareSummaryEntries(a.entry,b.entry);
                                                                                                                                                                            if (priorityDiff) return priorityDiff;
                                                                                                                                                                            return a.idx - b.idx;})
                                                                                                                                                            .map(({entry}) => entry);
@@ -3316,8 +3316,17 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
   function hasUpcomingCourtDate(e) {const upcoming = norm(String(e?.nextDocketDate || ''));
                                     return !!(upcoming && upcoming !== '- - -');}
 
+  function getChargeClassScore(e) {const chargeType = norm(String(e?.chargeType || ''));
+                                    if (/felony/i.test(chargeType)) return 100;
+                                    if (/misdemeanor/i.test(chargeType)) return 50;
+                                    return 0;}
+
+  function compareSummaryEntries(a,b) {return getChargeClassScore(b) - getChargeClassScore(a) || getSummaryStatusPriority(a) - getSummaryStatusPriority(b);}
+
   function getJurisdictionScore(entries) {let score = 0;
                                           for (const e of entries) {if (hasUpcomingCourtDate(e)) continue;
+                                                                    const chargeScore = getChargeClassScore(e);
+                                                                    if (chargeScore) {score += chargeScore; continue;}
                                                                     const label = norm(String(getWarrantLabelForSummary(e) || '')).toLowerCase();
                                                                     if (label.includes('hold')) score += 3;
                                                                     else if (/^warrant\b/.test(label)) score += 2;
@@ -3347,10 +3356,10 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
                                                                              addEntry(isEligibleForOrdering ? eligibleByJurisdiction : ineligibleByJurisdiction,jurisdiction,e);}
                                                    const sortGroups = (map,prioritizeEligibleCircuitFelonies = false) => Array.from(map.entries())
                                                                                    .map(([jurisdiction,groupEntries],idx) => ({jurisdiction,entries: groupEntries,idx,score: getJurisdictionScore(groupEntries),priority: prioritizeEligibleCircuitFelonies ? getEligibleJurisdictionPriority(jurisdiction,groupEntries) : getIneligibleJurisdictionPriority(groupEntries)}))
-                                                                                   .sort((a,b) => {const priorityDiff = b.priority - a.priority;
-                                                                                                   if (priorityDiff) return priorityDiff;
-                                                                                                   const scoreDiff = b.score - a.score;
+                                                                                   .sort((a,b) => {const scoreDiff = b.score - a.score;
                                                                                                    if (scoreDiff) return scoreDiff;
+                                                                                                   const priorityDiff = b.priority - a.priority;
+                                                                                                   if (priorityDiff) return priorityDiff;
                                                                                                    return a.idx - b.idx;});
                                                    return {eligibleJurisdictions: sortGroups(eligibleByJurisdiction,true),
                                                            ineligibleJurisdictions: sortGroups(ineligibleByJurisdiction)};}
@@ -3372,17 +3381,19 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
 
   function buildJurisdictionSummarySections(sortedJurisdictions) {const sections = [];
                                                                   for (const {jurisdiction,entries} of sortedJurisdictions) {const includeJudgeDetails = shouldIncludeJudgeDetails(jurisdiction);
-                                                                                                                              const grouped = new Map();
+                                                                                                                              let grouped = new Map();
                                                                                                                               if (includeJudgeDetails) {for (const entry of entries) {const header = getMunicipalityHeaderForSummary(jurisdiction,entry?.judge || '') || jurisdiction.toUpperCase();
                                                                                                                                                                                      if (!grouped.has(header)) grouped.set(header,[]);
                                                                                                                                                                                      grouped.get(header).push(entry);}}
                                                                                                                               else {const header = getMunicipalityHeaderForSummary(jurisdiction,'') || jurisdiction.toUpperCase();
                                                                                                                                     grouped.set(header,entries);}
 
+                                                                                                                              grouped = new Map([...grouped].sort((a,b) => getJurisdictionScore(b[1]) - getJurisdictionScore(a[1])));
+
                                                                                                                               if (includeJudgeDetails && isExactStLouisCountyCircuitJurisdiction(jurisdiction) && groupedHasStLouisCountyCircuitHeaders(grouped)) {sections.push('ST. LOUIS COUNTY CIRCUIT');
                                                                                                                                                                                                                          let groupIndex = 0;
                                                                                                                                                                                                                          for (const [header,headerEntries] of grouped.entries()) {const sortedEntries = headerEntries.map((entry,idx) => ({entry,idx}))
-                                                                                                                                                                                                                                                                                .sort((a,b) => {const priorityDiff = getSummaryStatusPriority(a.entry) - getSummaryStatusPriority(b.entry);
+                                                                                                                                                                                                                                                                                .sort((a,b) => {const priorityDiff = compareSummaryEntries(a.entry,b.entry);
                                                                                                                                                                                                                                                                                                 if (priorityDiff) return priorityDiff;
                                                                                                                                                                                                                                                                                                 return a.idx - b.idx;})
                                                                                                                                                                                                                                                                                 .map(({entry}) => entry);
@@ -3398,7 +3409,7 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
 
                                                                                                                               if (includeJudgeDetails && grouped.size > 1 && municipalityKey(jurisdiction).includes('CIRCUIT')) {sections.push(jurisdiction.toUpperCase());
                                                                                                                                                                                                for (const [header,headerEntries] of grouped.entries()) {const sortedEntries = headerEntries.map((entry,idx) => ({entry,idx}))
-                                                                                                                                                                                            .sort((a,b) => {const priorityDiff = getSummaryStatusPriority(a.entry) - getSummaryStatusPriority(b.entry);
+                                                                                                                                                                                            .sort((a,b) => {const priorityDiff = compareSummaryEntries(a.entry,b.entry);
                                                                                                                                                                                                             if (priorityDiff) return priorityDiff;
                                                                                                                                                                                                             return a.idx - b.idx;})
                                                                                                                                                                                             .map(({entry}) => entry);
@@ -3412,7 +3423,7 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
 
                                                                                                                               if (includeJudgeDetails && grouped.size > 1) {sections.push(jurisdiction.toUpperCase());
                                                                                                                                                                               for (const [,headerEntries] of grouped.entries()) {const sortedEntries = headerEntries.map((entry,idx) => ({entry,idx}))
-                                                                                                                                                                                                                             .sort((a,b) => {const priorityDiff = getSummaryStatusPriority(a.entry) - getSummaryStatusPriority(b.entry);
+                                                                                                                                                                                                                             .sort((a,b) => {const priorityDiff = compareSummaryEntries(a.entry,b.entry);
                                                                                                                                                                                                                                              if (priorityDiff) return priorityDiff;
                                                                                                                                                                                                                                              return a.idx - b.idx;})
                                                                                                                                                                                                                              .map(({entry}) => entry);
@@ -3426,7 +3437,7 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
                                                                                                                               continue;}
 
                                                                                                                               for (const [header,headerEntries] of grouped.entries()) {const sortedEntries = headerEntries.map((entry,idx) => ({entry,idx}))
-                                                                                                                                                                                   .sort((a,b) => {const priorityDiff = getSummaryStatusPriority(a.entry) - getSummaryStatusPriority(b.entry);
+                                                                                                                                                                                   .sort((a,b) => {const priorityDiff = compareSummaryEntries(a.entry,b.entry);
                                                                                                                                                                                                    if (priorityDiff) return priorityDiff;
                                                                                                                                                                                                    return a.idx - b.idx;})
                                                                                                                                                                                    .map(({entry}) => entry);
