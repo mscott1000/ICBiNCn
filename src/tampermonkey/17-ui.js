@@ -798,6 +798,53 @@ const TEXT_BUILDER_LEGAL_AID_OPTIONS = {
 };
 const TEXT_BUILDER_LEGAL_AID_CATEGORIES = Object.keys(TEXT_BUILDER_LEGAL_AID_OPTIONS);
 
+const TEXT_BUILDER_MULTIPLE_REASONS_PATH = "Can'tDo: Multiple Reasons";
+const TEXT_BUILDER_MULTIPLE_REASONS = [
+  {label:'Private Attorney',key:'multiplePrivateAttorney',placeholder:'Enter summary of cases in eligible courts, with private attorney'},
+  {label:'Out of Network',key:'multipleOutOfNetwork',placeholder:'Enter summary of ineligible cases'},
+  {label:'Repeat Attempt',key:'multipleRepeatAttempt',placeholder:'Enter summary of ineligible cases - make sure to identify which cases are repeats'},
+  {label:'Fresh Start Friday',key:'multipleFreshStartFriday',placeholder:'Enter summary of Fresh Start Friday cases'},
+  {label:'Initial Warrant',key:'multipleInitialWarrant',placeholder:"Enter summary of case(s) in 'initial warrant' status"},
+  {label:'Recent FTA',key:'multipleRecentFta',placeholder:'Enter summary of cases with a recent Failure to Appear'}
+];
+const TEXT_BUILDER_MULTIPLE_OUTPUT_ORDER = ['Repeat Attempt','Initial Warrant','Private Attorney','Fresh Start Friday','Recent FTA','Out of Network'];
+function textBuilderSelectedReasons() {
+  return TEXT_BUILDER_MULTIPLE_REASONS.filter(reason => (textBuilderState.data.multipleReasons || []).includes(reason.label));
+}
+function textBuilderMultipleReasonAction(action,value) {
+  if (action === 'chooseResearchType' && value === TEXT_BUILDER_MULTIPLE_REASONS_PATH) {
+    textBuilderSet('multipleReasons',{researchType:value,multipleReasons:[]});
+    return true;
+  }
+  if (action === 'toggleMultipleReason') {
+    if (!TEXT_BUILDER_MULTIPLE_REASONS.some(reason => reason.label === value)) return true;
+    const selected = new Set(textBuilderState.data.multipleReasons || []);
+    selected.has(value) ? selected.delete(value) : selected.add(value);
+    textBuilderState.data.multipleReasons = [...selected];
+    renderTextBuilder();
+    return true;
+  }
+  if (action === 'confirmMultipleReasons') {
+    if (!textBuilderSelectedReasons().length) {uiStatus('Select at least one reason.'); return true;}
+    textBuilderSet('multipleReasonInput',{multipleReasonIndex:0});
+    return true;
+  }
+  if (action === 'confirmMultipleReasonInput') {
+    const index = textBuilderState.data.multipleReasonIndex + 1;
+    textBuilderSet(index < textBuilderSelectedReasons().length ? 'multipleReasonInput' : 'message',{multipleReasonIndex:index});
+    return true;
+  }
+  return false;
+}
+function textBuilderMultipleReasonsMessage() {
+  const d = textBuilderState.data;
+  const selected = textBuilderSelectedReasons();
+  const sections = TEXT_BUILDER_MULTIPLE_OUTPUT_ORDER.map(label => selected.find(reason => reason.label === label))
+    .filter(Boolean).map(reason => String(d[reason.key] || '')).filter(text => text.trim());
+  return [`Hello, this is ${d.staff} from the Tap In Center. We were unable to find cases that are eligible for our service. Here is a summary and explanation of what we found:`,
+    ...sections,'If you feel we have missed something, please share the case number(s).'].join('\n\n');
+}
+
 function textBuilderInitialState() {return {screen:'root',history:[],data:{courts:[]}};}
 function resetTextBuilder() {textBuilderState = textBuilderInitialState();}
 function textBuilderCourtLabel(court) {const map = {'Clayton':'Clayton Municipal','Florissant':'Florissant Municipal','University City':'University City Municipal','Kirkwood':'Kirkwood Municipal','Manchester':'Manchester Municipal','Richmond Heights':'Richmond Heights Municipal','Webster Groves':'Webster Groves Municipal'};
@@ -818,17 +865,17 @@ function textBuilderBack() {const prev = textBuilderState.history.pop();
                             else {textBuilderState.screen = prev.screen;
                                   textBuilderState.data = prev.data;}
                             renderTextBuilder();}
-function textBuilderScreenTitle() {const map = {staff:'Tap In Staff',researchType:'Post-Research Reply',eligibleDropin:'Eligible Cases Drop-In',ineligibleDropin:'Ineligible Cases Drop-In',privateAttorneyDropin:'Ineligible Cases Drop-In',remainingIneligibleDropin:'Ineligible Cases Drop-In',courts:'Court Options (select all Courts in which a case was found)',seatbeltViolations:'Seatbelt Violations?',ftaDateInput:'FTA Date',address:'Address',addressInput:'Address',followUp:'Follow-Up',followUpReadyDay:'Ready to Submit',newCourtDateInput:'New Court Date',newCourtDateSeatbelt:'New Court Date, Seatbelt?',newCourtDateSeatbeltInput:'Seatbelt',legalAidResources:'Legal Aid Resources',legalAidResourceOptions:textBuilderState.data.legalAidCategory,legalAidMessage:'Constructed Message',message:'Constructed Message'};
+function textBuilderScreenTitle() {const map = {multipleReasons:TEXT_BUILDER_MULTIPLE_REASONS_PATH,multipleReasonInput:`${TEXT_BUILDER_MULTIPLE_REASONS_PATH} - ${textBuilderSelectedReasons()[textBuilderState.data.multipleReasonIndex]?.label || ''}`,staff:'Tap In Staff',researchType:'Post-Research Reply',eligibleDropin:'Eligible Cases Drop-In',ineligibleDropin:'Ineligible Cases Drop-In',privateAttorneyDropin:'Ineligible Cases Drop-In',remainingIneligibleDropin:'Ineligible Cases Drop-In',courts:'Court Options (select all Courts in which a case was found)',seatbeltViolations:'Seatbelt Violations?',ftaDateInput:'FTA Date',address:'Address',addressInput:'Address',followUp:'Follow-Up',followUpReadyDay:'Ready to Submit',newCourtDateInput:'New Court Date',newCourtDateSeatbelt:'New Court Date, Seatbelt?',newCourtDateSeatbeltInput:'Seatbelt',legalAidResources:'Legal Aid Resources',legalAidResourceOptions:textBuilderState.data.legalAidCategory,legalAidMessage:'Constructed Message',message:'Constructed Message'};
                                   const suffix = map[textBuilderState.screen];
                                   return suffix ? `Text Builder - ${suffix}` : 'Text Builder';}
 function textBuilderOptionBlockClass(title,centered) {if (centered) return ' moTextBuilderRootBlock';
                                                      if (title === 'Tap In Staff') return ' moTextBuilderStaffBlock';
                                                      if (title === 'Post-Research Reply') return ' moTextBuilderResearchBlock';
-                                                     if (title && title.startsWith('Court Options')) return ' moTextBuilderCourtsBlock';
+                                                     if (title === TEXT_BUILDER_MULTIPLE_REASONS_PATH || (title && title.startsWith('Court Options'))) return ' moTextBuilderCourtsBlock';
                                                      return '';}
 function textBuilderOptions(title,options,action,multi,centered,tall) {const optionsClass = `moTextBuilderOptions${centered ? ' moCentered' : ''}`;
                                                           const blockClass = `moBlock moTextBuilderOptionBlock${tall ? ' moTextBuilderTall' : ''}${textBuilderOptionBlockClass(title,centered)}`;
-                                                          return `<div class="${blockClass}"><div class="${optionsClass}">${options.map((opt) => `<button class="moTextBuilderOption ${multi && (textBuilderState.data.courts || []).includes(opt) ? 'moSelected' : ''}" data-tb-action="${escapeHtml(action)}" data-tb-value="${escapeHtml(opt)}">${escapeHtml(opt)}</button>`).join('')}</div></div>`;}
+                                                          return `<div class="${blockClass}"><div class="${optionsClass}">${options.map((opt) => `<button class="moTextBuilderOption ${multi && (textBuilderState.data[action === 'toggleMultipleReason' ? 'multipleReasons' : 'courts'] || []).includes(opt) ? 'moSelected' : ''}" data-tb-action="${escapeHtml(action)}" data-tb-value="${escapeHtml(opt)}">${escapeHtml(opt)}</button>`).join('')}</div></div>`;}
 function textBuilderActions(confirmAction) {return `<div class="moTextBuilderActions"><button class="moBtn" data-tb-action="back">Back</button>${confirmAction ? `<button class="moBtn" data-tb-action="${escapeHtml(confirmAction)}">Confirm</button>` : ''}</div>`;}
 function textBuilderTextarea(title,placeholder,confirmAction,valueKey) {return `<div class="moBlock moTextBuilderTextareaBlock"><textarea class="moTextBuilderTextArea" data-tb-input="${escapeHtml(valueKey)}" placeholder="${escapeHtml(placeholder)}">${escapeHtml(textBuilderState.data[valueKey] || '')}</textarea></div>${textBuilderActions(confirmAction)}`;}
 function textBuilderOptionalBlock(text,blockBuilder) {const value = String(text || '').trim();
@@ -856,6 +903,7 @@ function textBuilderFollowUpNewCourtDateMessage() {const d = textBuilderState.da
                                                    const courtText = labels.length <= 1 ? `The ${labels[0] || ''} Court has agreed to recall the warrant` : `The ${textBuilderList(labels)} Courts have agreed to recall the warrants`;
                                                    return `This is ${d.staff} from the Tap In Center - good news! ${courtText} and you have a NEW COURT DATE:\n\n${d.newCourtDate || ''}\n\nYou MUST appear in-person or a warrant will be issued. The Tap In Center is only able to request this recall ONCE PER CASE.${(d.courts || []).includes('Florissant') ? textBuilderOptionalBlock(d.newCourtDateSeatbeltSummary,(summary) => `\n\nAs a reminder, the seatbelt case is still active:\n\n${summary}\n\nYou can address this by phone or in-person with the Florissant clerk. It is now the only remaining warrant in Florissant, and they can provide options for you.`) : ''}`;}
 function textBuilderBuildMessage() {const d = textBuilderState.data;
+                                    if (d.researchType === TEXT_BUILDER_MULTIPLE_REASONS_PATH) return textBuilderMultipleReasonsMessage();
                                     if (d.workflow === 'followUpReady' && d.followUpDay === 'Today is Monday') return `Thank you, we should have everything we need. You do NOT need to come in-person to the Tap In Center program tomorrow evening - though you are always welcome.\n\nWe will be in touch when we hear from our Court partners, and if the request is granted the Court will mail you a new summons with your court date information.`;
                                     if (d.workflow === 'followUpReady' && d.followUpDay === 'Today is Tuesday') return `Thank you, we should have everything we need. You do NOT need to come in-person to the Tap In Center program this evening - though you are always welcome.\n\nWe will be in touch when we hear from our Court partners, and if the request is granted the Court will mail you a new summons with your court date information.`;
                                     if (d.workflow === 'followUpReady' && d.followUpDay === 'Today is Wed-Sun') return `Thank you, we should have everything we need. You do NOT need to come in-person to the Tap In Center program Tuesday evening - though you are always welcome.\n\nWe will be in touch when we hear from our Court partners. If the request is granted the Court will mail you a new summons with your court date information.`;
@@ -905,7 +953,10 @@ function renderTextBuilder() {const dockTitle = dock.querySelector('#moJsonTitle
                               const s = textBuilderState.screen;
                               if (s === 'root') html = textBuilderOptions('', ['Initial Text','Post-Research Reply','Follow-Up','Walk-In Client','Legal Aid Resources'],'chooseRoot',false,true);
                               else if (s === 'staff') html = textBuilderOptions('Tap In Staff',TEXT_BUILDER_STAFF,'chooseStaff',false) + textBuilderActions();
-                              else if (s === 'researchType') html = textBuilderOptions('Post-Research Reply',['CanDo: Everything','CanDo + Can’tDo','Can’tDo: Private Attorney','Can’tDo: Out of Network','Can’tDo: Repeat Attempt','Can’tDo: Fresh Start Friday','Can’tDo: Initial Warrant','Can’tDo: Recent FTA, Not a Warrant Yet','Nothing Found'],'chooseResearchType',false,false,true) + textBuilderActions();
+                              else if (s === 'researchType') html = textBuilderOptions('Post-Research Reply',['CanDo: Everything','CanDo + Can’tDo',TEXT_BUILDER_MULTIPLE_REASONS_PATH,'Can’tDo: Private Attorney','Can’tDo: Out of Network','Can’tDo: Repeat Attempt','Can’tDo: Fresh Start Friday','Can’tDo: Initial Warrant','Can’tDo: Recent FTA, Not a Warrant Yet','Nothing Found'],'chooseResearchType',false,false,true) + textBuilderActions();
+                              else if (s === 'multipleReasons') html = textBuilderOptions(TEXT_BUILDER_MULTIPLE_REASONS_PATH,TEXT_BUILDER_MULTIPLE_REASONS.map(reason => reason.label),'toggleMultipleReason',true,false,true) + textBuilderActions('confirmMultipleReasons');
+                              else if (s === 'multipleReasonInput') {const reason = textBuilderSelectedReasons()[textBuilderState.data.multipleReasonIndex];
+                                html = `<div class="moBlock"><h3>${escapeHtml(reason.label)}</h3></div>` + textBuilderTextarea(reason.label,reason.placeholder,'confirmMultipleReasonInput',reason.key);}
                               else if (s === 'eligibleDropin') html = textBuilderTextarea('Eligible Cases Drop-In','Enter summary of eligible cases','confirmEligible','eligibleCases');
                               else if (s === 'seatbeltViolations') html = textBuilderTextarea('Seatbelt Violations?','Enter Florissant seatbelt violation summary, if any.','confirmSeatbeltViolations','seatbeltViolations');
                               else if (s === 'ineligibleDropin') html = textBuilderTextarea('Ineligible Cases Drop-In',textBuilderState.data.ineligiblePlaceholder || 'Enter summary of ineligible cases','confirmIneligible','ineligibleCases');
@@ -931,7 +982,7 @@ function renderTextBuilder() {const dockTitle = dock.querySelector('#moJsonTitle
                                                                                                  const msg = textBuilderLimitMessage(textBuilderFormatCaseData(textBuilderBuildMessage(),toggleKey));
                                                                                                  const title = hasEligible ? 'Eligible Cases' : 'Ineligible Cases';
                                                                                                  html = `<div class="moBlock"><div class="moTextBuilderPane"><h3>${escapeHtml(title)}</h3><div class="moTextBuilderMessage" id="moTextBuilderConstructed">${escapeHtml(msg)}</div>${textBuilderCaseDataToggle(toggleKey)}</div></div><div class="moTextBuilderActions"><button class="moBtn" data-tb-action="back">Back</button><button class="moBtn" data-tb-action="copyMessage">Copy Message</button></div>`;}}
-                                                         else {const hasCaseData = textBuilderHasCaseData(['eligibleCases','ineligibleCases','privateAttorneyCases','remainingIneligibleCases']);
+                                                         else {const hasCaseData = textBuilderHasCaseData(['eligibleCases','ineligibleCases','privateAttorneyCases','remainingIneligibleCases',...textBuilderSelectedReasons().map(reason => reason.key)]);
                                                                const msg = textBuilderLimitMessage(textBuilderFormatCaseData(textBuilderBuildMessage(),'caseDataVisible'));
                                                                html = `<div class="moBlock"><div class="moTextBuilderPane"><div class="moTextBuilderMessage" id="moTextBuilderConstructed">${escapeHtml(msg)}</div>${hasCaseData ? textBuilderCaseDataToggle('caseDataVisible') : ''}</div></div><div class="moTextBuilderActions"><button class="moBtn" data-tb-action="back">Back</button><button class="moBtn" data-tb-action="copyMessage">Copy Message</button></div>`;}}
                               const target = appView === 'text' ? $content : textBuilderBody;
@@ -954,6 +1005,7 @@ textBuilderPanel.addEventListener('input',(e) => {const key = e?.target?.dataset
 textBuilderPanel.addEventListener('click',(e) => {const action = e?.target?.dataset?.tbAction || e?.target?.id;
                                                  const value = e?.target?.dataset?.tbValue;
                                                  if (action === 'moJsonTextBuilderClose') return closeTextBuilderPanel();
+                                                 if (textBuilderMultipleReasonAction(action,value)) return;
                                                  if (action === 'back') return textBuilderBack();
                                                  if (action === 'toggleCaseData') {textBuilderState.data[value] = !textBuilderCaseDataVisible(value); return renderTextBuilder();}
                                                  if (action === 'chooseRoot') {if (value === 'Initial Text') return textBuilderSet('staff',{workflow:'initial'});

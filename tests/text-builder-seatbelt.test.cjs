@@ -13,6 +13,7 @@ function setup(panel) {
     textBuilderPanel:{addEventListener:(type,fn)=>listeners[type]=fn},
     dock:{addEventListener:(type,fn)=>listeners[type]=fn},
   });
+  vm.runInContext(ui.slice(ui.indexOf('const TEXT_BUILDER_MULTIPLE_REASONS_PATH'),ui.indexOf('function textBuilderInitialState')),context);
   vm.runInContext(ui.slice(ui.indexOf('function textBuilderCourtLabel'),ui.indexOf('function textBuilderOptionBlockClass')),context);
   vm.runInContext(ui.slice(ui.indexOf('function textBuilderOptionalBlock'),ui.indexOf('function textBuilderHasCaseData')),context);
   vm.runInContext(ui.slice(ui.indexOf('function textBuilderFollowUpNewCourtDateMessage'),ui.indexOf('function textBuilderBuildMessage')),context);
