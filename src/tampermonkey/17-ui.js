@@ -839,7 +839,13 @@ function textBuilderMultipleReasonAction(action,value) {
   }
   if (action === 'confirmMultipleReasonInput') {
     const index = textBuilderState.data.multipleReasonIndex + 1;
-    textBuilderSet(index < textBuilderSelectedReasons().length ? 'multipleReasonInput' : 'message',{multipleReasonIndex:index});
+    if (index < textBuilderSelectedReasons().length) textBuilderSet('multipleReasonInput',{multipleReasonIndex:index});
+    else if (textBuilderState.data.researchType === 'CanDo + Can’tDo') {
+      const selected = textBuilderSelectedReasons();
+      const summaries = TEXT_BUILDER_MULTIPLE_OUTPUT_ORDER.map(label => selected.find(reason => reason.label === label))
+        .filter(Boolean).map(reason => textBuilderState.data[reason.key] || '').filter(text => text.trim());
+      textBuilderSet('address',{multipleReasonIndex:index,ineligibleCases:summaries.join('\n\n')});
+    } else textBuilderSet('message',{multipleReasonIndex:index});
     return true;
   }
   return false;
@@ -998,7 +1004,8 @@ function renderTextBuilder() {const dockTitle = dock.querySelector('#moJsonTitle
                               $content.classList.toggle('moTextBuilderMessageContent',appView === 'text' && isMessage);
                               textBuilderBody.classList.toggle('moTextBuilderMessageContent',appView !== 'text' && isMessage);
                               textBuilderPanel.classList.toggle('moTextBuilderMessagePanel',appView !== 'text' && isMessage);
-                              target.innerHTML = html;}
+                              target.innerHTML = html;
+                              if (isMessage) textBuilderAttachInfographics(target);}
 function positionTextBuilderPanel() {const rect = dock.getBoundingClientRect();
                                      const right = Math.max(8,window.innerWidth - rect.left + 10);
                                      const bottom = Math.max(8,window.innerHeight - rect.bottom);
@@ -1035,7 +1042,7 @@ textBuilderPanel.addEventListener('click',(e) => {const action = e?.target?.data
                                                                                       if (value === 'Can’tDo: Initial Warrant') return textBuilderSet('ineligibleDropin',{researchType:value,ineligiblePlaceholder:"Enter summary of case(s) in 'initial warrant' status"});
                                                                                       if (value === 'Can’tDo: Recent FTA, Not a Warrant Yet') return textBuilderSet('ineligibleDropin',{researchType:value,ineligiblePlaceholder:'Enter summary of cases with a recent Failure to Appear'});}
                                                  if (action === 'confirmEligible') {if (textBuilderState.data.workflow === 'walkInDropIn') return textBuilderSet('ineligibleDropin',{ineligiblePlaceholder:'Enter summary of ineligible cases'});
-                                                                                   if (textBuilderState.data.researchType === 'CanDo + Can’tDo') return textBuilderSet('ineligibleDropin',{ineligiblePlaceholder:'Enter summary of ineligible cases'});
+                                                                                   if (textBuilderState.data.researchType === 'CanDo + Can’tDo') return textBuilderSet('multipleReasons',{multipleReasons:[]});
                                                                                    return textBuilderSet(textBuilderNeedsSeatbeltViolations() ? 'seatbeltViolations' : 'address');}
                                                  if (action === 'confirmSeatbeltViolations') return textBuilderSet('address');
                                                  if (action === 'confirmIneligible') {if (textBuilderState.data.workflow === 'walkInDropIn') return textBuilderSet('message');
