@@ -127,6 +127,7 @@
   dock.addEventListener('click',(e) => {const action = e?.target?.dataset?.tbAction;
                                      if (!action || appView !== 'text') return;
                                      const value = e?.target?.dataset?.tbValue;
+                                     if (textBuilderMultipleReasonAction(action,value)) return;
                                      if (action === 'back') return textBuilderBack();
                                      if (action === 'toggleCaseData') {textBuilderState.data[value] = !textBuilderCaseDataVisible(value); return renderTextBuilder();}
                                      if (action === 'chooseRoot') {if (value === 'Initial Text') return textBuilderSet('staff',{workflow:'initial'}); if (value === 'Post-Research Reply') return textBuilderSet('staff',{workflow:'postResearch'}); if (value === 'Walk-In Client') return textBuilderSet('staff',{workflow:'walkInDropIn',researchType:'Walk-In Client'}); if (value === 'Legal Aid Resources') return textBuilderSet('legalAidResources',{workflow:'legalAidResources'}); return textBuilderSet('followUp',{workflow:'followUp'});}
