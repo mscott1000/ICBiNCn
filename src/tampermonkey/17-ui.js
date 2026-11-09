@@ -509,6 +509,14 @@ GM_addStyle(`:root{ --mo-ui-scale: 1.2;         /* uniformly enlarge the complet
             #moJsonContent.moTextBuilderContent .moTextBuilderTextareaBlock .moTextBuilderTextArea{flex:1 1 auto;
                                                                                                    min-height:0;
                                                                                                    resize:none;}
+            #moJsonContent.moTextBuilderContent > .moTextBuilderReasonHeader,
+            #moJsonTextBuilderBody > .moTextBuilderReasonHeader{flex:0 0 auto;
+                                                            padding:6px 10px;
+                                                            margin-bottom:0;}
+            #moJsonContent.moTextBuilderContent .moTextBuilderReasonHeader > h3,
+            #moJsonTextBuilderBody .moTextBuilderReasonHeader > h3{font-size:13px;
+                                                                 line-height:1.25;
+                                                                 margin:0;}
             .moTextBuilderOptions.moCentered{width:100%;
                                              align-self:stretch;}
             .moTextBuilderOptions{display:flex;
@@ -956,7 +964,7 @@ function renderTextBuilder() {const dockTitle = dock.querySelector('#moJsonTitle
                               else if (s === 'researchType') html = textBuilderOptions('Post-Research Reply',['CanDo: Everything','CanDo + Can’tDo',TEXT_BUILDER_MULTIPLE_REASONS_PATH,'Can’tDo: Private Attorney','Can’tDo: Out of Network','Can’tDo: Repeat Attempt','Can’tDo: Fresh Start Friday','Can’tDo: Initial Warrant','Can’tDo: Recent FTA, Not a Warrant Yet','Nothing Found'],'chooseResearchType',false,false,true) + textBuilderActions();
                               else if (s === 'multipleReasons') html = textBuilderOptions(TEXT_BUILDER_MULTIPLE_REASONS_PATH,TEXT_BUILDER_MULTIPLE_REASONS.map(reason => reason.label),'toggleMultipleReason',true,false,true) + textBuilderActions('confirmMultipleReasons');
                               else if (s === 'multipleReasonInput') {const reason = textBuilderSelectedReasons()[textBuilderState.data.multipleReasonIndex];
-                                html = `<div class="moBlock"><h3>${escapeHtml(reason.label)}</h3></div>` + textBuilderTextarea(reason.label,reason.placeholder,'confirmMultipleReasonInput',reason.key);}
+                                html = `<div class="moBlock moTextBuilderReasonHeader"><h3>${escapeHtml(reason.label)}</h3></div>` + textBuilderTextarea(reason.label,reason.placeholder,'confirmMultipleReasonInput',reason.key);}
                               else if (s === 'eligibleDropin') html = textBuilderTextarea('Eligible Cases Drop-In','Enter summary of eligible cases','confirmEligible','eligibleCases');
                               else if (s === 'seatbeltViolations') html = textBuilderTextarea('Seatbelt Violations?','Enter Florissant seatbelt violation summary, if any.','confirmSeatbeltViolations','seatbeltViolations');
                               else if (s === 'ineligibleDropin') html = textBuilderTextarea('Ineligible Cases Drop-In',textBuilderState.data.ineligiblePlaceholder || 'Enter summary of ineligible cases','confirmIneligible','ineligibleCases');
