@@ -1,0 +1,81 @@
+// Run with node tests/constructed-infographics.browser.cjs (Playwright + Chromium).
+const {chromium}=require('playwright');
+const fs=require('node:fs');
+const assert=require('node:assert/strict');
+const path=require('node:path');
+const read=f=>fs.readFileSync(path.join(__dirname,'../src/tampermonkey',f),'utf8');
+(async()=>{
+ const browser=await chromium.launch({headless:true,...(fs.existsSync('/usr/bin/chromium')?{executablePath:'/usr/bin/chromium'}:{}),args:['--no-sandbox']});
+ try {
+ const page=await browser.newPage({viewport:{width:1440,height:1000}});
+ await page.route('https://www.courts.mo.gov/**',route=>route.fulfill({contentType:'text/html',body:'<!doctype html><html><body></body></html>'}));
+ await page.goto('https://www.courts.mo.gov/casenet/');
+ const errors=[];page.on('pageerror',e=>errors.push(e.message));
+ const ui=read('17-ui.js');
+ const css=ui.slice(ui.indexOf('GM_addStyle(`')+13,ui.indexOf('`);'));
+ await page.setContent(`<style>${css}</style><div id="moJsonDock" class="moTextBuilderDock" style="position:static;transform:none;width:1100px;height:800px"><div id="moJsonTitle"></div><div id="moJsonContent" class="moContentStretch moTextBuilderContent" style="flex:1;min-height:0"></div></div><div id="moJsonTextBuilderPanel"><div id="moJsonTextBuilderBody"></div></div>`);
+ await page.addScriptTag({content:`
+ const dock=document.getElementById('moJsonDock'), $content=document.getElementById('moJsonContent'),textBuilderPanel=document.getElementById('moJsonTextBuilderPanel'),textBuilderBody=document.getElementById('moJsonTextBuilderBody');
+ let appView='text';let textBuilderState={screen:'researchType',history:[],data:{workflow:'postResearch',staff:'Casey',courts:['Florissant']}};
+ const TEXT_BUILDER_STAFF=['Casey'],TEXT_BUILDER_COURTS=['Florissant','City of St. Louis Municipal'];
+ function escapeHtml(s){return String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');}
+ function GM_addStyle(css){const s=document.createElement('style');s.textContent=css;document.head.append(s);}
+ function uiStatus(s){window.lastStatus=s;}function GM_setClipboard(s){window.copiedText=s;}
+ ${ui.slice(ui.indexOf('const TEXT_BUILDER_MULTIPLE_REASONS_PATH'),ui.indexOf('function positionTextBuilderPanel()'))}
+ ${read('17a-constructed-infographics.js')}
+ ${read('19-buttons.js').slice(read('19-buttons.js').indexOf("dock.addEventListener('click',(e) => {const action = e?.target?.dataset?.tbAction;"),read('19-buttons.js').indexOf("\n\n  dock.addEventListener('input'"))}
+ dock.addEventListener('input',e=>{if(e.target.dataset.tbInput)textBuilderState.data[e.target.dataset.tbInput]=e.target.value;});
+ renderTextBuilder();
+ `});
+ const action=async(a,v)=>{const selector=v?`[data-tb-action="${a}"][data-tb-value="${v}"]`:`[data-tb-action="${a}"]`;await page.locator(selector).click();};
+ const eligible='FLORISSANT MUNICIPAL - (314) 921-3322\n- 100: Failed To Register Vehicle - warrant\nCITY OF ST. LOUIS MUNICIPAL\n- 200: Speeding - warrant';
+ await action('chooseResearchType','CanDo + Can’tDo');
+ await action('toggleCourt','Florissant');
+ await action('toggleCourt','City of St. Louis Municipal');
+ await action('confirmCourts');
+ await page.locator('[data-tb-input="eligibleCases"]').fill(eligible);await action('confirmEligible');
+ await action('toggleMultipleReason','Repeat Attempt');await action('toggleMultipleReason','Recent FTA');await action('confirmMultipleReasons');
+ await page.locator('[data-tb-input="multipleRepeatAttempt"]').fill('- 300: Failed To Register Vehicle - warrant');await action('confirmMultipleReasonInput');
+ await page.locator('[data-tb-input="multipleRecentFta"]').fill('- 400: Failure To Maintain Insurance - open (no warrant found)');await action('confirmMultipleReasonInput');
+ await action('chooseAddress','Need Address');
+ assert.equal(await page.locator('.moInfographicCard').count(),2);
+ assert.ok((await page.locator('#moTextBuilderConstructed').innerText()).includes('Failed To Register Vehicle'));
+ const eligibleCard=page.locator('[data-info-type="eligible"]');const ineligibleCard=page.locator('[data-info-type="ineligible"]');
+ assert.ok((await ineligibleCard.locator('svg').textContent()).includes('Failed To Re. . .'));
+ assert.ok(!(await ineligibleCard.locator('svg').textContent()).includes('Hello'));
+ assert.ok((await eligibleCard.locator('svg').textContent()).includes('Failed To Register Vehicle'));
+ const geometry=await page.evaluate(()=>({text:document.querySelector('.moConstructedText').getBoundingClientRect().toJSON(),images:document.querySelector('.moConstructedImages').getBoundingClientRect().toJSON()}));
+ assert.ok(geometry.text.right<geometry.images.x);
+ const step=eligibleCard.locator('[data-info-box]').filter({hasText:'Click to add a next step'}).first();
+ await step.click();await eligibleCard.locator('[data-info-edit]').fill('Call the court on Tuesday');
+ assert.ok((await eligibleCard.locator('svg').textContent()).includes('Call the court on Tuesday'));
+ const moved=await page.evaluate(()=>{const d=textBuilderState.data.infographicDrafts.eligible;return {id:d.selected,y:d.model.boxes.find(b=>b.id===d.selected).y};});
+ const box=eligibleCard.locator(`[data-info-box="${moved.id}"]`);
+ await box.scrollIntoViewIfNeeded();const bounds=await box.boundingBox();
+ await page.mouse.move(bounds.x+20,bounds.y+10);await page.mouse.down();await page.mouse.move(bounds.x+20,bounds.y+35,{steps:5});await page.mouse.up();
+ assert.ok(await page.evaluate(y=>{const d=textBuilderState.data.infographicDrafts.eligible;return d.model.boxes.find(b=>b.id===d.selected).y>y;},moved.y));
+ await action('toggleCaseData');assert.ok((await eligibleCard.locator('svg').textContent()).includes('Call the court on Tuesday'));
+ // Both real encoders produce their requested MIME and magic bytes, with editable text retained.
+ const encodings=await page.evaluate(async()=>{
+ const m=textBuilderState.data.infographicDrafts.eligible.model;
+ const jpg=await textBuilderInfographicBlob(m,'image/jpeg');const png=await textBuilderInfographicBlob(m,'image/png');
+ return {jpg:{type:jpg.type,bytes:Array.from(new Uint8Array(await jpg.arrayBuffer()).slice(0,3))},png:{type:png.type,bytes:Array.from(new Uint8Array(await png.arrayBuffer()).slice(0,4))},steps:m.boxes.filter(b=>b.kind==='step').map(b=>b.text)};
+ });
+ assert.equal(encodings.jpg.type,'image/jpeg');assert.deepEqual(encodings.jpg.bytes,[255,216,255]);assert.deepEqual(encodings.png.bytes,[137,80,78,71]);assert.ok(encodings.steps.includes('Call the court on Tuesday'));
+ const download=page.waitForEvent('download');await eligibleCard.locator('[data-info-action="download"]').click();assert.equal((await download).suggestedFilename(),'constructed-infographic-eligible.jpg');
+ await page.context().grantPermissions(['clipboard-read','clipboard-write'],{origin:'https://www.courts.mo.gov'});
+ await eligibleCard.locator('[data-info-action="copy"]').click();
+ await page.waitForFunction(()=>document.querySelector('.moInfographicStatus').textContent==='Image copied.');
+ assert.ok(await page.evaluate(async()=> (await navigator.clipboard.read()).some(item=>item.types.includes('image/png'))));
+ await page.evaluate(()=>{Object.defineProperty(navigator,'clipboard',{configurable:true,value:{write:async items=>{const blob=await items[0].getType('image/png');window.copiedImage={type:blob.type,size:blob.size};}}});});
+ await eligibleCard.locator('[data-info-action="copy"]').click();await page.waitForFunction(()=>window.copiedImage?.size>0);assert.equal(await page.evaluate(()=>window.copiedImage.type),'image/png');
+ await eligibleCard.locator('[data-info-action="add"]').click();await eligibleCard.locator('[data-info-edit]').fill('Custom note');await eligibleCard.locator('[data-info-action="remove"]').click();assert.ok(!(await eligibleCard.locator('svg').textContent()).includes('Custom note'));
+ await page.evaluate(()=>{Object.defineProperty(navigator,'clipboard',{configurable:true,value:{write:async()=>{throw new Error('Permission denied');}}});});
+ await eligibleCard.locator('[data-info-action="copy"]').click();await page.waitForFunction(()=>document.querySelector('.moInfographicStatus').textContent.includes('Download JPG'));
+ if(process.env.INFOGRAPHIC_TEST_SCREENSHOT) await page.screenshot({path:process.env.INFOGRAPHIC_TEST_SCREENSHOT});
+ // Same message workspace also mounts in the legacy panel.
+ await page.evaluate(()=>{appView='home';renderTextBuilder();});assert.equal(await page.locator('#moJsonTextBuilderBody .moInfographicCard').count(),2);
+ assert.deepEqual(errors,[]);
+ console.log('Browser checks passed: mixed flow, grouped previews, editing, drag, retained drafts, JPEG/PNG encoding, JPG download, clipboard success/failure, add/remove and panel rendering.');
+ } finally {await browser.close();}
+})().catch(error=>{console.error(error);process.exitCode=1;});
