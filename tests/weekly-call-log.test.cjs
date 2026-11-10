@@ -3,7 +3,7 @@ const root=path.join(__dirname,'..'),id='1TPCAM7rJ9e_YDLrgI4YfjOq_QXZFfo6Sj6c9g9
 const source=fs.readFileSync(path.join(root,'src/tampermonkey/18c-weekly-call-log.js'),'utf8');
 const appsSource=fs.readFileSync(path.join(root,'src/google-apps-script/WeeklyCallLog.gs'),'utf8');
 function launcher(extra={}){
- const storage={};const c=vm.createContext({URLSearchParams,AbortController,setTimeout,clearTimeout,crypto:require('node:crypto').webcrypto,KEY_NET_STATS:'test-net',
+ const storage={};const c=vm.createContext({LOGO_CASEY_IMAGE:'data:image/png;base64,fixture',URLSearchParams,AbortController,setTimeout,clearTimeout,crypto:require('node:crypto').webcrypto,KEY_NET_STATS:'test-net',
  norm:v=>String(v||'').replace(/\s+/g,' ').trim(),loadJson:(k,f)=>storage[k]||f,saveJson:(k,v)=>storage[k]=v,isStop:()=>false,
  buildSummaryCopyText:()=> 'summary\nline',buildGroupedCopyText:()=> 'copy\ttext',...extra});vm.runInContext(source,c);
  c.installWeeklyCallLogButton=()=>{};return {c,storage};
@@ -71,7 +71,7 @@ test('one injected button snapshots BA7 on click and reuses the existing backgro
  const box={get value(){return selected;},getBoundingClientRect:()=>({right:100,top:40})};
  const button={style:{},dataset:{},appendChild:()=>{},setAttribute:()=>{},addEventListener:(name,fn)=>handlers[name]=fn};
  const document={hidden:false,activeElement:null,body:{appendChild:item=>appended.push(item)},createElement:type=>type==='button'?button:{},querySelector:selector=>selector.includes('t-name-box')?box:null,addEventListener:()=>{}};
- const c=vm.createContext({URLSearchParams,location:{hash:'#gid='+gid,search:''},document,window:{addEventListener:()=>{}},GM_addStyle:()=>{},innerWidth:1200,innerHeight:800,setInterval:fn=>{tick=fn;},requestAnimationFrame:fn=>fn(),alert:msg=>alerts.push(msg)});
+ const c=vm.createContext({LOGO_CASEY_IMAGE:'data:image/png;base64,fixture',URLSearchParams,location:{hash:'#gid='+gid,search:''},document,window:{addEventListener:()=>{}},GM_addStyle:()=>{},innerWidth:1200,innerHeight:800,setInterval:fn=>{tick=fn;},requestAnimationFrame:fn=>fn(),alert:msg=>alerts.push(msg)});
  vm.runInContext(source,c);c.readWeeklyCallLogRow=async row=>{readRow=row;selected='BA9';return result({row});};c.startWeeklyCallLogSearch=input=>launched=input;
  c.installWeeklyCallLogButton(()=>true);assert.equal(appended.length,1);assert.equal(button.hidden,false);assert.equal(button.dataset.row,'7');
  await handlers.click({preventDefault:()=>{},stopPropagation:()=>{}});assert.equal(readRow,7);assert.equal(launched.row,7);assert.equal(button.disabled,false);assert.equal(alerts.length,0);

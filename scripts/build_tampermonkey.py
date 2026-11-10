@@ -6,6 +6,7 @@ OUTPUTS = [
     ROOT / 'dist' / 'ICBINCN.user.js.txt',
 ]
 
+# Only active modules are bundled. src/deferred/ is retained for future development.
 parts = sorted(SOURCE_DIR.glob('*.js'))
 if not parts:
     raise SystemExit(f'No source parts found in {SOURCE_DIR}')
