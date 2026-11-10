@@ -16,7 +16,7 @@ The eligible image contains “Cases we CAN request” and “Next Steps for TIC
 5. Recent FTA, Not a Warrant Yet
 6. Not in TIC Network (Out of Network)
 
-The ineligible image has no surrounding editor headings or card frames, and “Cases we CANNOT request” is centered.
+The ineligible image has no surrounding editor headings or card frames, and both section headings are centered. “Cases we CANNOT request” has a thin text-width underline. “Next Steps for You” has a full-width demarcation below it, without a direct text underline. The ineligible layout uses a pale blush case panel, larger bold headings, muted uppercase court labels, and fine separators between reasons.
 
 Images contain entered summaries rather than the message's added greeting, explanation, or closing. Only ineligible images shorten charges: charge text after the first colon and before `- warrant` or `- open (no warrant found)` is capped at 12 characters, followed by `. . .` if truncated. Case identifiers and status suffixes remain intact. The text message and entered summaries are not modified.
 
