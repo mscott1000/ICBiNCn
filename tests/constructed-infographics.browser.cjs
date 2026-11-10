@@ -67,15 +67,24 @@ const read=f=>fs.readFileSync(path.join(__dirname,'../src/tampermonkey',f),'utf8
  assert.ok((await eligibleCard.locator('svg').textContent()).includes('Failed To Register Vehicle'));
  const geometry=await page.evaluate(()=>({text:document.querySelector('.moConstructedText').getBoundingClientRect().toJSON(),images:document.querySelector('.moConstructedImages').getBoundingClientRect().toJSON()}));
  assert.ok(geometry.text.right<geometry.images.x);
- const step=eligibleCard.locator('[data-info-box]').filter({hasText:'Click to add a next step'}).first();
- await step.click();await eligibleCard.locator('[data-info-edit]').fill('Call the court on Tuesday');
- assert.ok((await eligibleCard.locator('svg').textContent()).includes('Call the court on Tuesday'));
- const moved=await page.evaluate(()=>{const d=textBuilderState.data.infographicDrafts.eligible;return {id:d.selected,y:d.model.boxes.find(b=>b.id===d.selected).y};});
- const box=eligibleCard.locator(`[data-info-box="${moved.id}"]`);
- await box.scrollIntoViewIfNeeded();const bounds=await box.boundingBox();
- await page.mouse.move(bounds.x+20,bounds.y+10);await page.mouse.down();await page.mouse.move(bounds.x+20,bounds.y+35,{steps:5});await page.mouse.up();
- assert.ok(await page.evaluate(y=>{const d=textBuilderState.data.infographicDrafts.eligible;return d.model.boxes.find(b=>b.id===d.selected).y>y;},moved.y));
- await action('toggleCaseData');assert.ok((await eligibleCard.locator('svg').textContent()).includes('Call the court on Tuesday'));
+ assert.equal(await eligibleCard.locator(':scope > h3').count(),0);
+ assert.equal(await eligibleCard.evaluate(el=>getComputedStyle(el).borderTopWidth),'0px');
+ assert.equal(await eligibleCard.locator('[data-info-edit], [data-info-box]').count(),0);
+ assert.deepEqual(await eligibleCard.locator('button').allTextContents(),['Add next step','Copy Image','Download for Email']);
+ assert.equal(await eligibleCard.locator('[data-info-step]').count(),1);
+ for(const heading of ['Cases we CAN request','Next Steps for TIC']) assert.equal(await eligibleCard.locator('svg text').filter({hasText:heading}).getAttribute('text-anchor'),'middle');
+ const lockedEligible=await page.evaluate(()=>JSON.stringify(textBuilderState.data.infographicDrafts.eligible.model.boxes.filter(b=>b.kind!=='step')));
+ await eligibleCard.locator('[data-info-step]').fill('Call the court on Tuesday');
+ await eligibleCard.locator('[data-info-action="addStep"]').click();
+ await eligibleCard.locator('[data-info-step]').nth(1).fill('Send the request');
+ const fixedEligible=await page.evaluate(()=>textBuilderState.data.infographicDrafts.eligible.model.boxes.filter(b=>b.kind==='step').map(b=>({x:b.x,y:b.y})));
+ await eligibleCard.locator('[data-info-step]').first().scrollIntoViewIfNeeded();const eligibleBounds=await eligibleCard.locator('[data-info-step]').first().boundingBox();
+ await page.mouse.move(eligibleBounds.x+10,eligibleBounds.y+10);await page.mouse.down();await page.mouse.move(eligibleBounds.x+40,eligibleBounds.y+40);await page.mouse.up();
+ assert.deepEqual(await page.evaluate(()=>textBuilderState.data.infographicDrafts.eligible.model.boxes.filter(b=>b.kind==='step').map(b=>({x:b.x,y:b.y}))),fixedEligible);
+ assert.equal(await page.evaluate(()=>JSON.stringify(textBuilderState.data.infographicDrafts.eligible.model.boxes.filter(b=>b.kind!=='step'))),lockedEligible);
+ await action('toggleCaseData');
+ assert.equal(await eligibleCard.locator('[data-info-step]').first().inputValue(),'Call the court on Tuesday');
+ assert.equal(await eligibleCard.locator('[data-info-step]').nth(1).inputValue(),'Send the request');
  // Both real encoders produce their requested MIME and magic bytes, with editable text retained.
  const encodings=await page.evaluate(async()=>{
  const m=textBuilderState.data.infographicDrafts.eligible.model;
@@ -93,13 +102,12 @@ const read=f=>fs.readFileSync(path.join(__dirname,'../src/tampermonkey',f),'utf8
  assert.ok(await page.evaluate(async()=> (await navigator.clipboard.read()).some(item=>item.types.includes('image/png'))));
  await page.evaluate(()=>{Object.defineProperty(navigator,'clipboard',{configurable:true,value:{write:async items=>{const blob=await items[0].getType('image/png');window.copiedImage={type:blob.type,size:blob.size};}}});});
  await eligibleCard.locator('[data-info-action="copy"]').click();await page.waitForFunction(()=>window.copiedImage?.size>0);assert.equal(await page.evaluate(()=>window.copiedImage.type),'image/png');
- await eligibleCard.locator('[data-info-action="add"]').click();await eligibleCard.locator('[data-info-edit]').fill('Custom note');await eligibleCard.locator('[data-info-action="remove"]').click();assert.ok(!(await eligibleCard.locator('svg').textContent()).includes('Custom note'));
  await page.evaluate(()=>{Object.defineProperty(navigator,'clipboard',{configurable:true,value:{write:async()=>{throw new Error('Permission denied');}}});});
- await eligibleCard.locator('[data-info-action="copy"]').click();await page.waitForFunction(()=>document.querySelector('.moInfographicStatus').textContent.includes('Download JPG'));
+ await eligibleCard.locator('[data-info-action="copy"]').click();await page.waitForFunction(()=>document.querySelector('.moInfographicStatus').textContent.includes('Download for Email'));
  if(process.env.INFOGRAPHIC_TEST_SCREENSHOT) await page.screenshot({path:process.env.INFOGRAPHIC_TEST_SCREENSHOT});
  // Same message workspace also mounts in the legacy panel.
  await page.evaluate(()=>{appView='home';renderTextBuilder();});assert.equal(await page.locator('#moJsonTextBuilderBody .moInfographicCard').count(),2);
  assert.deepEqual(errors,[]);
- console.log('Browser checks passed: mixed flow, grouped previews, editing, drag, retained drafts, JPEG/PNG encoding, JPG download, clipboard success/failure, add/remove and panel rendering.');
+ console.log('Browser checks passed: mixed flow, grouped previews, direct step editing, fixed positions, retained drafts, JPEG/PNG encoding, JPG download, clipboard success/failure, adding steps and panel rendering.');
  } finally {await browser.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});

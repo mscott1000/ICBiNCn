@@ -28,14 +28,14 @@ test('eligible and ineligible sources use only entered summaries and correct rea
  c.textBuilderState.data={researchType:'Nothing Found'};assert.equal(c.textBuilderInfographicSources().length,0);
  c.textBuilderState.data={researchType:'CanDo: Everything',eligibleCases:'eligible only'};assert.equal(c.textBuilderInfographicSources()[0].type,'eligible');
 });
-test('models group courts, grow for long input, and generate three empty next-step boxes',()=>{
+test('models group courts, grow for long input, and generate one empty next-step field',()=>{
  const c=setup();
  const text='FLORISSANT MUNICIPAL - (314) 921-3322\n- 1: Failed To Register Vehicle - warrant\nCITY OF ST. LOUIS MUNICIPAL\n- 2: Another Long Charge - warrant';
  const eligible=c.textBuilderInfographicModel({type:'eligible',sections:[{text}]},measure);
  assert.equal(eligible.boxes.filter(b=>b.text.includes('MUNICIPAL')).length,2);
  assert.ok(eligible.boxes.some(b=>b.text.includes('Failed To Register Vehicle')));
  assert.equal(eligible.boxes.filter(b=>b.kind==='step').map(b=>b.text).join(''),'');
- assert.equal(eligible.boxes.filter(b=>b.kind==='step').length,3);
+ assert.equal(eligible.boxes.filter(b=>b.kind==='step').length,1);
  assert.equal(eligible.boxes.find(b=>b.kind==='stepsHeading').text,'Next Steps for TIC');
  const ineligible=c.textBuilderInfographicModel({type:'ineligible',sections:[{title:'Repeat Attempt',text}]},measure);
  assert.ok(ineligible.boxes.some(b=>b.text.includes('Failed To Re. . .')));
@@ -59,7 +59,7 @@ test('ineligible steps start with one field, reflow without overlaps, and retain
  const original=JSON.stringify(model.boxes.filter(b=>b.kind!=='step'));
  model.boxes.find(b=>b.kind==='step').text=Array(40).fill('Long next step entry').join('\n');
  model.boxes.push({id:'another',text:'Second step',kind:'step',x:44,y:0,width:712,size:23,bold:false});
- c.textBuilderIneligibleReflow(model,measure);
+ c.textBuilderInfographicReflow(model,measure);
  const steps=model.boxes.filter(b=>b.kind==='step');
  assert.ok(steps[1].y>steps[0].y+c.textBuilderInfographicBoxHeight(steps[0],measure));
  assert.ok(model.height>steps[1].y+c.textBuilderInfographicBoxHeight(steps[1],measure));
@@ -79,4 +79,24 @@ test('approved ineligible format has a title underline and only a wide next-step
  const stepsTitle=model.boxes.find(b=>b.kind==='stepsHeading');
  assert.ok(!lines.some(line=>line.y===stepsTitle.y+c.textBuilderInfographicBoxHeight(stepsTitle,measure)+5));
  assert.ok(lines.some(line=>line.y===title.y+c.textBuilderInfographicBoxHeight(title,measure)+5));
+});
+
+test('eligible layout shares the approved headings, rules and fixed steps without charge truncation',()=>{
+ const c=setup();const source={type:'eligible',sections:[{text:'FLORISSANT MUNICIPAL\n- 123: Register Vehicle Without Valid Plates - warrant\nCITY OF ST. LOUIS MUNICIPAL\n- 234: Other charge - warrant'}]};
+ const model=c.textBuilderInfographicModel(source,measure);
+ assert.equal(model.boxes.find(b=>b.kind==='heading').text,'Cases we CAN request');
+ assert.equal(model.boxes.find(b=>b.kind==='heading').size,44);
+ assert.equal(model.boxes.find(b=>b.kind==='stepsHeading').text,'Next Steps for TIC');
+ assert.equal(model.boxes.find(b=>b.kind==='stepsHeading').size,38);
+ assert.equal(model.boxes.filter(b=>b.kind==='step').length,1);
+ assert.equal(model.boxes.filter(b=>b.kind==='court').length,2);
+ assert.ok(model.boxes.some(b=>b.text.includes('Register Vehicle Without Valid Plates')));
+ assert.equal(model.sectionRules.length,1);
+ const rules=c.textBuilderInfographicDecorations(model,measure);
+ assert.ok(rules.some(line=>line.y===model.caseBottom+122));
+ assert.equal(rules.length,3);
+ const locked=JSON.stringify(model.boxes.filter(b=>b.kind!=='step'));
+ model.boxes.find(b=>b.kind==='step').text='Send request';
+ c.textBuilderInfographicReflow(model,measure);
+ assert.equal(JSON.stringify(model.boxes.filter(b=>b.kind!=='step')),locked);
 });

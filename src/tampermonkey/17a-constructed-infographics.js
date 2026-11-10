@@ -70,9 +70,8 @@ function textBuilderInfographicLines(box,measure) {
 }
 function textBuilderInfographicBoxHeight(box,measure) {return Math.max(1,textBuilderInfographicLines(box,measure).length) * box.size * 1.4;}
 function textBuilderInfographicModel(source,measure) {
-  const ineligible = source.type === 'ineligible';
   const model = {type:source.type,width:800,height:1000,caseBottom:620,boxes:[],sectionRules:[]};
-  let y = ineligible ? 60 : 42;
+  let y = 60;
   const add = (text,size,bold,kind='case') => {
     const width = kind === 'step' ? 712 : Math.min(712,Math.max(160,measure(text,size,bold)+8));
     const box = {id:`box-${model.boxes.length}`,text,x:44,y,width,size,bold,kind};
@@ -80,29 +79,30 @@ function textBuilderInfographicModel(source,measure) {
     y += textBuilderInfographicBoxHeight(box,measure) + 18;
     return box;
   };
-  add(source.type === 'eligible' ? 'Cases we CAN request' : 'Cases we CANNOT request',ineligible ? 44 : 32,true,'heading');
-  y += ineligible ? 50 : 15;
+  add(source.type === 'eligible' ? 'Cases we CAN request' : 'Cases we CANNOT request',44,true,'heading');
+  y += 50;
   for (const [index,section] of source.sections.entries()) {
-    if (ineligible && index > 0) {model.sectionRules.push(y);y += 44;}
-    if (section.title) add(section.title,ineligible ? 36 : 25,true,'subheading');
+    if (index > 0) {model.sectionRules.push(y);y += 44;}
+    if (section.title) add(section.title,36,true,'subheading');
     const rows = textBuilderInfographicRows(section.text,source.type === 'ineligible');
     const showCourts = rows.filter(row => row.court).length > 1;
+    let courtCount = 0;
     for (const row of rows) {
       // A single court needs no subdivision; multiple courts keep their Summary headings.
       if (row.court && !showCourts && source.type === 'eligible') continue;
-      add(ineligible && row.court ? row.text.toUpperCase() : row.text,row.court ? 22 : (ineligible ? 28 : 21),row.court,ineligible && row.court ? 'court' : 'case');
+      if (source.type === 'eligible' && row.court && courtCount++ > 0) {model.sectionRules.push(y);y += 44;}
+      add(row.court ? row.text.toUpperCase() : row.text,row.court ? 22 : 28,row.court,row.court ? 'court' : 'case');
     }
     y += 16;
   }
-  model.caseBottom = Math.max(ineligible ? 620 : 440,y + (ineligible ? 42 : 10));
+  model.caseBottom = Math.max(620,y + 42);
   y = model.caseBottom + 54;
-  add(source.type === 'eligible' ? 'Next Steps for TIC' : 'Next Steps for You',ineligible ? 38 : 30,true,'stepsHeading');
-  for (let i=0;i<(source.type === 'ineligible' ? 1 : 3);i++) {add('',23,false,'step'); y += 58;}
-  model.height = Math.max(900,y + 24);
-  if (source.type === 'ineligible') textBuilderIneligibleReflow(model,measure);
+  add(source.type === 'eligible' ? 'Next Steps for TIC' : 'Next Steps for You',38,true,'stepsHeading');
+  add('',23,false,'step');
+  textBuilderInfographicReflow(model,measure);
   return model;
 }
-function textBuilderIneligibleReflow(model,measure) {
+function textBuilderInfographicReflow(model,measure) {
   let y = model.caseBottom + 148;
   for (const box of model.boxes.filter(box => box.kind === 'step')) {
     box.x = 44; box.y = y; box.width = 712;
@@ -111,12 +111,10 @@ function textBuilderIneligibleReflow(model,measure) {
   model.height = Math.max(700,y + 18);
 }
 function textBuilderInfographicRules(model) {
-  if (model.type !== 'ineligible') return [model.caseBottom+232,model.caseBottom+340];
   return model.boxes.filter(box => box.kind === 'step').slice(1).map(box => box.y-14);
 }
 function textBuilderInfographicDecorations(model,measure) {
   const lines = textBuilderInfographicRules(model).map(y => ({x1:44,x2:756,y,color:'#d1d5db'}));
-  if (model.type !== 'ineligible') return lines;
   const title = model.boxes.find(box => box.kind === 'heading');
   const width = Math.min(712,Math.max(...textBuilderInfographicLines(title,measure).map(text => measure(text,title.size,true))));
   lines.push({x1:400-width/2,x2:400+width/2,y:title.y+textBuilderInfographicBoxHeight(title,measure)+5,color:'#858b91'});
@@ -130,11 +128,11 @@ function textBuilderInfographicDraft(source) {
   const fingerprint = JSON.stringify(source);
   const drafts = d.infographicDrafts || (d.infographicDrafts = {});
   if (!drafts[source.type] || drafts[source.type].fingerprint !== fingerprint) {
-    drafts[source.type] = {fingerprint,model:textBuilderInfographicModel(source,textBuilderInfographicMeasure()),selected:null};
+    drafts[source.type] = {fingerprint,model:textBuilderInfographicModel(source,textBuilderInfographicMeasure())};
   }
   return drafts[source.type];
 }
-function textBuilderInfographicSvg(model,selected,editing=true) {
+function textBuilderInfographicSvg(model,editing=true) {
   const esc = escapeHtml;
   const measure = textBuilderInfographicMeasure();
   const panel = (y,height,fill) => `<rect x="18" y="${y}" width="764" height="${height}" rx="15" fill="${fill}" stroke="#cbd5ce"/>`;
@@ -143,32 +141,21 @@ function textBuilderInfographicSvg(model,selected,editing=true) {
   const boxes = model.boxes.map(box => {
     const lines = textBuilderInfographicLines(box,measure);
     const height = textBuilderInfographicBoxHeight(box,measure);
-    if (model.type === 'ineligible' && editing && box.kind === 'step') {
+    if (editing && box.kind === 'step') {
       const fieldHeight = Math.max(80,height);
-      return `<foreignObject x="${box.x}" y="${box.y}" width="${box.width}" height="${fieldHeight}"><textarea xmlns="http://www.w3.org/1999/xhtml" class="moIneligibleStep" data-info-step="${esc(box.id)}" aria-label="Next step ${model.boxes.filter(b => b.kind === 'step').indexOf(box)+1}" placeholder="Enter next step" style="font:${box.size}px/1.4 Arial">${esc(box.text)}</textarea></foreignObject>`;
+      return `<foreignObject x="${box.x}" y="${box.y}" width="${box.width}" height="${fieldHeight}"><textarea xmlns="http://www.w3.org/1999/xhtml" class="moInfographicStep" data-info-step="${esc(box.id)}" aria-label="Next step ${model.boxes.filter(b => b.kind === 'step').indexOf(box)+1}" placeholder="Enter next step" style="font:${box.size}px/1.4 Arial">${esc(box.text)}</textarea></foreignObject>`;
     }
-    const movable = editing && model.type !== 'ineligible';
-    const centered = model.type === 'ineligible' && ['heading','stepsHeading'].includes(box.kind);
-    const hint = movable && !box.text ? 'Click to add a next step' : '';
-    return `<g ${movable ? `data-info-box="${esc(box.id)}" tabindex="0" role="button" aria-label="${esc(box.text || 'Blank next step')}"` : ''} transform="translate(${box.x},${box.y})">
-      ${movable ? `<rect x="-5" y="-5" width="${box.width+10}" height="${height+10}" rx="3" fill="transparent" stroke="${selected === box.id ? '#2563eb' : 'transparent'}" stroke-dasharray="5 3"/>` : ''}
-      <text font-family="Arial, sans-serif" font-size="${box.size}" font-weight="${box.bold ? '700' : '400'}" fill="${hint ? '#9ca3af' : box.kind === 'court' ? '#73787c' : '#17212b'}" ${centered ? 'text-anchor="middle"' : ''} dominant-baseline="text-before-edge">${(hint ? [hint] : lines).map((line,i) => `<tspan x="${centered ? model.width/2-box.x : 0}" y="${i*box.size*1.4}">${esc(line)}</tspan>`).join('')}</text></g>`;
+    const centered = ['heading','stepsHeading'].includes(box.kind);
+    return `<g transform="translate(${box.x},${box.y})">
+      <text font-family="Arial, sans-serif" font-size="${box.size}" font-weight="${box.bold ? '700' : '400'}" fill="${box.kind === 'court' ? '#73787c' : '#17212b'}" ${centered ? 'text-anchor="middle"' : ''} dominant-baseline="text-before-edge">${lines.map((line,i) => `<tspan x="${centered ? model.width/2-box.x : 0}" y="${i*box.size*1.4}">${esc(line)}</tspan>`).join('')}</text></g>`;
   }).join('');
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${model.width} ${model.height}" class="moInfographicSvg" aria-label="${model.type === 'eligible' ? 'Eligible' : 'Ineligible'} Constructed Infographic"><rect width="800" height="${model.height}" fill="white"/>${panel(18,model.caseBottom-18,model.type === 'eligible' ? '#eff9ef' : '#fff4f4')}${panel(stepsY,model.height-stepsY-18,'#ffffff')}${rules}${boxes}</svg>`;
 }
 function textBuilderInfographicCard(source) {
   const draft = textBuilderInfographicDraft(source);
-  if (source.type === 'ineligible') return `<section class="moInfographicCard moIneligibleCard" data-info-type="ineligible">
-    <div class="moInfographicPreview">${textBuilderInfographicSvg(draft.model,null)}</div>
+  return `<section class="moInfographicCard" data-info-type="${source.type}">
+    <div class="moInfographicPreview">${textBuilderInfographicSvg(draft.model)}</div>
     <div class="moInfographicTools"><button class="moBtn" data-info-action="addStep">Add next step</button><button class="moBtn" data-info-action="copy">Copy Image</button><button class="moBtn" data-info-action="download">Download for Email</button></div>
-    <div class="moInfographicStatus" role="status" aria-live="polite"></div></section>`;
-  const label = source.type === 'eligible' ? 'Eligible cases' : 'Ineligible cases';
-  return `<section class="moInfographicCard" data-info-type="${source.type}"><h3>${label}</h3>
-    <div class="moInfographicPreview">${textBuilderInfographicSvg(draft.model,draft.selected)}</div>
-    <p class="moInfographicHelp">Select a text box to edit. Drag it to move, or use arrow keys.</p>
-    <label class="moInfographicInspector">Selected text<textarea data-info-edit aria-label="Edit selected infographic text" placeholder="Select a text box above" disabled></textarea></label>
-    <div class="moInfographicTools"><button class="moBtn" data-info-action="add">Add text box</button><button class="moBtn" data-info-action="remove">Remove selected</button><button class="moBtn" data-info-action="reset">Reset image</button></div>
-    <div class="moInfographicTools"><button class="moBtn" data-info-action="copy">Copy Image</button><button class="moBtn" data-info-action="download">Download JPG</button></div>
     <div class="moInfographicStatus" role="status" aria-live="polite"></div></section>`;
 }
 function textBuilderAttachInfographics(target) {
@@ -189,66 +176,10 @@ function textBuilderAttachInfographics(target) {
   for (const card of images.querySelectorAll('.moInfographicCard')) textBuilderBindInfographic(card,sources.find(s => s.type === card.dataset.infoType));
 }
 function textBuilderBindInfographic(card,source) {
-  if (source.type === 'ineligible') return textBuilderBindIneligible(card,source);
-  let draft = textBuilderInfographicDraft(source);
-  const preview = card.querySelector('.moInfographicPreview');
-  const input = card.querySelector('[data-info-edit]');
-  const status = card.querySelector('.moInfographicStatus');
-  const selected = () => draft.model.boxes.find(box => box.id === draft.selected);
-  const redraw = () => {preview.innerHTML = textBuilderInfographicSvg(draft.model,draft.selected);};
-  const inspect = () => {const box = selected(); input.disabled = !box; input.value = box ? box.text : '';};
-  const grow = box => {draft.model.height = Math.max(draft.model.height,box.y + textBuilderInfographicBoxHeight(box,textBuilderInfographicMeasure()) + 35);};
-  inspect();
-  input.addEventListener('input',() => {const box = selected(); if (!box) return; box.text = input.value; grow(box); redraw();});
-  preview.addEventListener('pointerdown',event => {
-    const group = event.target.closest('[data-info-box]');
-    if (!group) return;
-    event.preventDefault();
-    draft.selected = group.dataset.infoBox;
-    const box = selected();
-    const svg = group.ownerSVGElement;
-    const inverse = svg.getScreenCTM().inverse();
-    const start = new DOMPoint(event.clientX,event.clientY).matrixTransform(inverse);
-    const origin = {x:box.x,y:box.y};
-    inspect(); redraw();
-    preview.setPointerCapture(event.pointerId);
-    const move = e => {
-      const point = new DOMPoint(e.clientX,e.clientY).matrixTransform(inverse);
-      box.x = Math.max(24,Math.min(draft.model.width-box.width-24,origin.x+point.x-start.x));
-      box.y = Math.max(24,Math.min(draft.model.height-textBuilderInfographicBoxHeight(box,textBuilderInfographicMeasure())-24,origin.y+point.y-start.y));
-      redraw();
-    };
-    const end = () => {preview.removeEventListener('pointermove',move); preview.removeEventListener('pointerup',end); preview.removeEventListener('pointercancel',end);};
-    preview.addEventListener('pointermove',move); preview.addEventListener('pointerup',end); preview.addEventListener('pointercancel',end);
-  });
-  preview.addEventListener('keydown',event => {
-    const group = event.target.closest('[data-info-box]'); if (!group) return;
-    draft.selected = group.dataset.infoBox;
-    if (event.key === 'Enter' || event.key === ' ') {event.preventDefault(); inspect(); input.focus(); return;}
-    const delta = {ArrowLeft:[-5,0],ArrowRight:[5,0],ArrowUp:[0,-5],ArrowDown:[0,5]}[event.key];
-    if (!delta) return;
-    event.preventDefault(); const box = selected();
-    box.x = Math.max(24,Math.min(draft.model.width-box.width-24,box.x+delta[0]));
-    box.y = Math.max(24,Math.min(draft.model.height-textBuilderInfographicBoxHeight(box,textBuilderInfographicMeasure())-24,box.y+delta[1]));
-    inspect(); redraw(); preview.querySelector(`[data-info-box="${box.id}"]`).focus();
-  });
-  card.addEventListener('click',event => {
-    const action = event.target.closest('[data-info-action]')?.dataset.infoAction;
-    if (!action) return;
-    if (action === 'add') {const id = `added-${Date.now()}-${draft.model.boxes.length}`; draft.model.boxes.push({id,text:'New text',x:100,y:draft.model.caseBottom+150,width:600,size:23,bold:false,kind:'custom'}); draft.selected=id; inspect();redraw();return;}
-    if (action === 'remove') {draft.model.boxes = draft.model.boxes.filter(box => box.id !== draft.selected);draft.selected=null;inspect();redraw();return;}
-    if (action === 'reset') {if (!window.confirm('Reset this infographic and discard its edits?')) return; draft.model=textBuilderInfographicModel(source,textBuilderInfographicMeasure());draft.selected=null;inspect();redraw();return;}
-    if (action === 'copy' || action === 'download') {
-      status.textContent = action === 'copy' ? 'Copying image…' : 'Preparing JPG…';
-      textBuilderInfographicExport(draft.model,action).then(() => {status.textContent = action === 'copy' ? 'Image copied.' : 'JPG downloaded.';}).catch(error => {status.textContent = `${error.message || error} ${action === 'copy' ? 'Use Download JPG if clipboard access is unavailable.' : ''}`;});
-    }
-  });
-}
-function textBuilderBindIneligible(card,source) {
   const draft = textBuilderInfographicDraft(source);
   const preview = card.querySelector('.moInfographicPreview');
   const status = card.querySelector('.moInfographicStatus');
-  const redraw = () => {preview.innerHTML = textBuilderInfographicSvg(draft.model,null);};
+  const redraw = () => {preview.innerHTML = textBuilderInfographicSvg(draft.model);};
   preview.addEventListener('input',event => {
     const id = event.target.dataset.infoStep;
     const box = draft.model.boxes.find(box => box.kind === 'step' && box.id === id);
@@ -256,7 +187,7 @@ function textBuilderBindIneligible(card,source) {
     const start = event.target.selectionStart, end = event.target.selectionEnd;
     const scroll = preview.scrollTop;
     box.text = event.target.value;
-    textBuilderIneligibleReflow(draft.model,textBuilderInfographicMeasure());
+    textBuilderInfographicReflow(draft.model,textBuilderInfographicMeasure());
     redraw();
     const field = preview.querySelector(`[data-info-step="${id}"]`);
     field.focus({preventScroll:true}); field.setSelectionRange(start,end); preview.scrollTop = scroll;
@@ -266,7 +197,7 @@ function textBuilderBindIneligible(card,source) {
     if (action === 'addStep') {
       const id = `step-${draft.model.boxes.length}`;
       draft.model.boxes.push({id,text:'',x:44,y:0,width:712,size:23,bold:false,kind:'step'});
-      textBuilderIneligibleReflow(draft.model,textBuilderInfographicMeasure()); redraw();
+      textBuilderInfographicReflow(draft.model,textBuilderInfographicMeasure()); redraw();
       const field = preview.querySelector(`[data-info-step="${id}"]`); field.focus(); field.scrollIntoView({block:'nearest'});
     } else if (action === 'copy' || action === 'download') {
       status.textContent = action === 'copy' ? 'Copying image…' : 'Preparing JPG…';
@@ -284,8 +215,8 @@ function textBuilderInfographicBlob(model,mime) {
   const stepsY=model.caseBottom+18;panel(stepsY,model.height-stepsY-18,'#ffffff');
   const measure=textBuilderInfographicMeasure();
   for(const line of textBuilderInfographicDecorations(model,measure)) {ctx.strokeStyle=line.color;ctx.beginPath();ctx.moveTo(line.x1,line.y);ctx.lineTo(line.x2,line.y);ctx.stroke();}
- ctx.textBaseline='top';ctx.fillStyle='#17212b';
-  for(const box of model.boxes) {ctx.font=`${box.bold?'700':'400'} ${box.size}px Arial`;ctx.fillStyle=box.kind==='court'?'#73787c':'#17212b';ctx.textAlign=model.type==='ineligible' && ['heading','stepsHeading'].includes(box.kind)?'center':'left';textBuilderInfographicLines(box,measure).forEach((line,i)=>ctx.fillText(line,ctx.textAlign==='center'?model.width/2:box.x,box.y+i*box.size*1.4));}
+  ctx.textBaseline='top';ctx.fillStyle='#17212b';
+  for(const box of model.boxes) {ctx.font=`${box.bold?'700':'400'} ${box.size}px Arial`;ctx.fillStyle=box.kind==='court'?'#73787c':'#17212b';ctx.textAlign=['heading','stepsHeading'].includes(box.kind)?'center':'left';textBuilderInfographicLines(box,measure).forEach((line,i)=>ctx.fillText(line,ctx.textAlign==='center'?model.width/2:box.x,box.y+i*box.size*1.4));}
   return new Promise((resolve,reject)=>canvas.toBlob(blob=>blob?resolve(blob):reject(new Error('Could not render image.')),mime,0.95));
 }
 async function textBuilderInfographicExport(model,action) {
@@ -303,21 +234,12 @@ GM_addStyle(`
 .moConstructedWorkspace{display:grid;grid-template-columns:minmax(0,0.9fr) minmax(0,1.1fr);gap:12px;flex:1;min-height:0;width:100%;height:100%;}
 .moConstructedText{display:flex;flex-direction:column;min-width:0;min-height:0;overflow:hidden;}
 .moConstructedImages{min-width:0;min-height:0;overflow:auto;overscroll-behavior:contain;padding:0 4px 8px;}
-.moInfographicCard.moIneligibleCard{border:0;background:transparent;padding:0;border-radius:0;}
-.moIneligibleCard .moInfographicPreview{border:0;max-height:none;overflow:visible;}
-.moIneligibleStep{box-sizing:border-box;width:100%;height:100%;padding:0;margin:0;border:0;border-radius:0;resize:none;color:#17212b;background:transparent;outline:0;}
-.moIneligibleStep::placeholder{color:#9ca3af;}
-.moIneligibleStep:focus{outline:1px solid #93c5fd;outline-offset:-1px;}
-.moIneligibleCard .moInfographicSvg{touch-action:auto;}
-.moInfographicCard{border:1px solid #cbd5e1;border-radius:10px;background:#f8fafc;padding:10px;margin-bottom:12px;}
-.moInfographicCard h3{font-size:14px;margin:0 0 8px;}
-.moInfographicPreview{background:#fff;border:1px solid #cbd5e1;max-height:390px;overflow:auto;}
-.moInfographicSvg{display:block;width:100%;height:auto;touch-action:none;}
-.moInfographicSvg [data-info-box]{cursor:move;outline:none;}
-.moInfographicSvg [data-info-box]:focus > rect{stroke:#2563eb;}
-.moInfographicHelp{font-size:12px;margin:7px 0;color:#475569;}
-.moInfographicInspector{display:block;font-size:12px;font-weight:700;}
-.moInfographicInspector textarea{display:block;box-sizing:border-box;width:100%;min-height:65px;resize:vertical;font:13px/1.4 Arial;padding:6px;border:1px solid #94a3b8;border-radius:5px;}
+.moInfographicCard{border:0;background:transparent;padding:0;border-radius:0;margin-bottom:12px;}
+.moInfographicPreview{border:0;max-height:none;overflow:visible;}
+.moInfographicStep{box-sizing:border-box;width:100%;height:100%;padding:0;margin:0;border:0;border-radius:0;resize:none;color:#17212b;background:transparent;outline:0;}
+.moInfographicStep::placeholder{color:#9ca3af;}
+.moInfographicStep:focus{outline:1px solid #93c5fd;outline-offset:-1px;}
+.moInfographicSvg{display:block;width:100%;height:auto;touch-action:auto;}
 .moInfographicTools{display:flex;gap:5px;flex-wrap:wrap;margin-top:7px;}
 .moInfographicTools .moBtn{font-size:12px;padding:6px 8px;}
 .moInfographicStatus{font-size:12px;margin-top:5px;overflow-wrap:anywhere;}
