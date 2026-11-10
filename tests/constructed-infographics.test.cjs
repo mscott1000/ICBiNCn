@@ -66,3 +66,17 @@ test('ineligible steps start with one field, reflow without overlaps, and retain
  assert.equal(c.textBuilderInfographicRules(model).length,1);
  assert.equal(JSON.stringify(model.boxes.filter(b=>b.kind!=='step')),original);
 });
+
+test('approved ineligible format has a title underline and only a wide next-step demarcation',()=>{
+ const c=setup();const model=c.textBuilderInfographicModel({type:'ineligible',sections:[{title:'Repeat Attempt',text:'FLORISSANT MUNICIPAL\n- 123: Register Vehicle - warrant'},{title:'Not in TIC Network',text:'OTHER MUNICIPAL COURT\n- 234: Other charge - warrant'}]},measure);
+ const title=model.boxes.find(b=>b.kind==='heading');
+ assert.equal(title.size,44);assert.equal(model.boxes.find(b=>b.kind==='subheading').size,36);
+ assert.ok(model.boxes.some(b=>b.kind==='court'));
+ const lines=c.textBuilderInfographicDecorations(model,measure);
+ assert.equal(lines.length,3); // case-title underline, section separator, next-step demarcation
+ const demarcation=lines.find(line=>line.y===model.caseBottom+122);
+ assert.equal(demarcation.x1,44);assert.equal(demarcation.x2,756);
+ const stepsTitle=model.boxes.find(b=>b.kind==='stepsHeading');
+ assert.ok(!lines.some(line=>line.y===stepsTitle.y+c.textBuilderInfographicBoxHeight(stepsTitle,measure)+5));
+ assert.ok(lines.some(line=>line.y===title.y+c.textBuilderInfographicBoxHeight(title,measure)+5));
+});

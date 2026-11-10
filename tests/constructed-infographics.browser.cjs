@@ -60,6 +60,7 @@ const read=f=>fs.readFileSync(path.join(__dirname,'../src/tampermonkey',f),'utf8
  await page.mouse.move(stepBounds.x+15,stepBounds.y+15);await page.mouse.down();await page.mouse.move(stepBounds.x+45,stepBounds.y+45);await page.mouse.up();
  assert.deepEqual(await page.evaluate(()=>textBuilderState.data.infographicDrafts.ineligible.model.boxes.filter(b=>b.kind==='step').map(b=>({x:b.x,y:b.y}))),frozen);
  const title= ineligibleCard.locator('svg text').first();assert.equal(await title.getAttribute('text-anchor'),'middle');
+ assert.equal(await ineligibleCard.locator('svg text').filter({hasText:'Next Steps for You'}).getAttribute('text-anchor'),'middle');
  const infoDownload=page.waitForEvent('download');await ineligibleCard.locator('[data-info-action="download"]').click();assert.equal((await infoDownload).suggestedFilename(),'constructed-infographic-ineligible.jpg');
  assert.ok((await ineligibleCard.locator('svg').textContent()).includes('Failed To Re. . .'));
  assert.ok(!(await ineligibleCard.locator('svg').textContent()).includes('Hello'));
