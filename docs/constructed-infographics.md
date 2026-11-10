@@ -16,20 +16,18 @@ The eligible image contains “Cases we CAN request” and “Next Steps for TIC
 5. Recent FTA, Not a Warrant Yet
 6. Not in TIC Network (Out of Network)
 
-The ineligible image has no surrounding editor headings or card frames, and both section headings are centered. “Cases we CANNOT request” has a thin text-width underline. “Next Steps for You” has a full-width demarcation below it, without a direct text underline. The ineligible layout uses a pale blush case panel, larger bold headings, muted uppercase court labels, and fine separators between reasons.
+Both images have no surrounding editor headings or card frames, and both section headings are centered. Each case heading has a thin text-width underline. Each next-step heading has a full-width demarcation below it, without a direct text underline. Both layouts use larger bold headings, muted uppercase court labels, and fine separators between groups. The eligible case panel is pale green; the ineligible panel is pale blush.
 
 Images contain entered summaries rather than the message's added greeting, explanation, or closing. Only ineligible images shorten charges: charge text after the first colon and before `- warrant` or `- open (no warrant found)` is capped at 12 characters, followed by `. . .` if truncated. Case identifiers and status suffixes remain intact. The text message and entered summaries are not modified.
 
 ## Editing and exporting
 
-For the **ineligible image**, case content and headings are read-only. “Next Steps for You” starts with one blank field. Type directly into that field; **Add next step** creates another blank field. Fields stay in place and expand vertically to fit their content, with faint dividers between entries. Only three buttons appear: **Add next step**, **Copy Image**, and **Download for Email**. The latter downloads a JPEG for attaching to an email; it does not send email.
+Both images keep case content and headings read-only. “Next Steps for TIC” (eligible) and “Next Steps for You” (ineligible) each start with one blank field. Type directly into that field; **Add next step** creates another blank field. Fields stay in place and expand vertically to fit their content, with faint dividers between entries. Each image has only three buttons: **Add next step**, **Copy Image**, and **Download for Email**. The latter downloads a JPEG for attaching to an email; it does not send email.
 
-For the **eligible image**, select a text box in the preview, then edit **Selected text**. Drag a box to reposition it; keyboard users can focus a box and press Enter to edit, or use arrow keys to move it. Add and remove text boxes with the corresponding controls. Its next-step slots start blank.
+**Copy Image** copies a rendered PNG through the browser's image clipboard. Browser clipboard permission may be required; errors appear below the controls. **Download for Email** downloads the edited image as a high-resolution JPEG. Entry-field placeholders and editing controls are omitted from exports. Images render locally without an image service or external fonts.
 
-**Copy Image** copies a rendered PNG through the browser's image clipboard. Browser clipboard permission may be required; errors appear below the controls. **Download JPG** (eligible) and **Download for Email** (ineligible) download the edited image as a high-resolution JPEG. Selection outlines, entry-field placeholders, and editing controls are omitted from exports. Images render locally without an image service or external fonts.
-
-Each image has an independent draft. Edits survive message rerendering, such as toggling case-data display. Changing the source summaries regenerates the affected image. **Reset image** on the eligible image discards its edits after confirmation. Drafts last for the current Text Builder session and are not persisted across page reloads.
+Each image has an independent draft. Edits survive message rerendering, such as toggling case-data display. Changing the source summaries regenerates the affected image. Drafts last for the current Text Builder session and are not persisted across page reloads.
 
 ## Validation
 
-Run `node --test tests/*.test.cjs` for data routing, summary truncation, layout models, and existing behavior. Run `node tests/constructed-infographics.browser.cjs` with Playwright and Chromium installed for the mixed flow, editing, dragging, image encoding, download, clipboard, and panel checks. Set `INFOGRAPHIC_TEST_SCREENSHOT` to save an optional browser screenshot.
+Run `node --test tests/*.test.cjs` for data routing, summary truncation, layout models, and existing behavior. Run `node tests/constructed-infographics.browser.cjs` with Playwright and Chromium installed for the mixed flow, direct next-step editing, fixed field positions, image encoding, download, clipboard, and panel checks. Set `INFOGRAPHIC_TEST_SCREENSHOT` to save an optional browser screenshot.
