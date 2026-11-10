@@ -38,6 +38,14 @@ const read=f=>fs.readFileSync(path.join(__dirname,'../src/tampermonkey',f),'utf8
  await page.locator('[data-tb-input="multipleRepeatAttempt"]').fill('- 300: Failed To Register Vehicle - warrant');await action('confirmMultipleReasonInput');
  await page.locator('[data-tb-input="multipleRecentFta"]').fill('- 400: Failure To Maintain Insurance - open (no warrant found)');await action('confirmMultipleReasonInput');
  await action('chooseAddress','Need Address');
+ // Host pages can style SVG text and textarea elements, including with important rules.
+ await page.addStyleTag({content:'svg text, svg tspan, .moInfographicStep { font-family: Georgia, serif !important; font-size: 12px !important; font-weight: 400 !important; font-style: italic !important; letter-spacing: 3px !important; text-transform: uppercase !important; }'});
+ for(const type of ['eligible','ineligible']) {
+  const typography=await page.locator(`[data-info-type="${type}"] svg text`).first().evaluate(el=>{const text=getComputedStyle(el),span=getComputedStyle(el.querySelector('tspan'));return [text,span].map(s=>({family:s.fontFamily,size:s.fontSize,weight:s.fontWeight,style:s.fontStyle,spacing:s.letterSpacing,transform:s.textTransform}));});
+  for(const style of typography){assert.match(style.family,/Arial/);assert.equal(style.size,'44px');assert.equal(style.weight,'700');assert.equal(style.style,'normal');assert.ok(['normal','0px'].includes(style.spacing));assert.equal(style.transform,'none');}
+  const fieldStyle=await page.locator(`[data-info-type="${type}"] [data-info-step]`).first().evaluate(el=>({family:getComputedStyle(el).fontFamily,size:getComputedStyle(el).fontSize,weight:getComputedStyle(el).fontWeight}));
+  assert.match(fieldStyle.family,/Arial/);assert.equal(fieldStyle.size,'23px');assert.equal(fieldStyle.weight,'400');
+ }
  assert.equal(await page.locator('.moInfographicCard').count(),2);
  assert.ok((await page.locator('#moTextBuilderConstructed').innerText()).includes('Failed To Register Vehicle'));
  const eligibleCard=page.locator('[data-info-type="eligible"]');const ineligibleCard=page.locator('[data-info-type="ineligible"]');
