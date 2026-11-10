@@ -32,3 +32,7 @@ The source parts are numbered so they concatenate in the correct order. The curr
 - Codex repository navigation map: `docs/repository-map-for-codex.md`
 - Case-number batch UI discovery checklist: `docs/case-number-batch-ui-requirements.md`
 - Jotform visual-change data requirements: `docs/jotform-table-visual-change-instructions.md`
+
+## Casey logo
+
+`assets/images/ICBINCN Logo_Casey.png` is the original transparent PNG supplied on November 10, 2026. Its alpha channel is preserved in the embedded Help, Jotform, Sheets, and tab-icon images. The older opaque JPEG assets have been replaced; the original PNG is stored without re-encoding.

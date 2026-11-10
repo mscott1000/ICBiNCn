@@ -27,7 +27,7 @@
                                    let link = document.querySelector('link[data-icbincn-favicon="1"]');
                                    if (!link) {link = document.createElement('link');
                                                link.rel = 'icon';
-                                               link.type = 'image/jpeg';
+                                               link.type = 'image/png';
                                                link.dataset.icbincnFavicon = '1';
                                                head.appendChild(link);}
                                    if (link.href !== desired) link.href = desired;}
