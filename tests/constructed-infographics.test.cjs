@@ -100,3 +100,16 @@ test('eligible layout shares the approved headings, rules and fixed steps withou
  c.textBuilderInfographicReflow(model,measure);
  assert.equal(JSON.stringify(model.boxes.filter(b=>b.kind!=='step')),locked);
 });
+
+test('bundled Inter is the font used by preview and export, and failed loads cannot use a fallback',async()=>{
+ const bytes=fs.readFileSync(`${__dirname}/../assets/fonts/Inter-Variable.ttf`);
+ const embedded=file.match(/const TEXT_BUILDER_INTER_BASE64 = '([^']+)'/)[1];
+ assert.deepEqual(Buffer.from(embedded,'base64'),bytes);
+ assert.ok(bytes.length>100000);
+ const c=vm.createContext({GM_addStyle:()=>{},atob:s=>Buffer.from(s,'base64').toString('binary'),FontFace:class{load(){return Promise.reject(new Error('font load failed'));}}});
+ vm.runInContext(file,c);
+ assert.match(c.textBuilderInfographicFontStyle(44,true),/TICInfographicInter/);
+ assert.equal(c.textBuilderInfographicCanvasFont(44,true),'700 44px TICInfographicInter, sans-serif');
+ await assert.rejects(c.textBuilderLoadInfographicFont(),/font load failed/);
+ assert.throws(()=>c.textBuilderInfographicMeasure(),/not finished loading/);
+});

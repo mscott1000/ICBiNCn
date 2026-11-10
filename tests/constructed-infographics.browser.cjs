@@ -37,14 +37,26 @@ const read=f=>fs.readFileSync(path.join(__dirname,'../src/tampermonkey',f),'utf8
  await action('toggleMultipleReason','Repeat Attempt');await action('toggleMultipleReason','Recent FTA');await action('confirmMultipleReasons');
  await page.locator('[data-tb-input="multipleRepeatAttempt"]').fill('- 300: Failed To Register Vehicle - warrant');await action('confirmMultipleReasonInput');
  await page.locator('[data-tb-input="multipleRecentFta"]').fill('- 400: Failure To Maintain Insurance - open (no warrant found)');await action('confirmMultipleReasonInput');
+ // Hold the local font load to prove no fallback-font image is generated first.
+ await page.evaluate(()=>{
+   const NativeFontFace=window.FontFace;
+   window.FontFace=function(...args){const face=new NativeFontFace(...args);const load=face.load.bind(face);face.load=async()=>{await new Promise(resolve=>window.releaseInfographicFont=resolve);return load();};return face;};
+ });
  await action('chooseAddress','Need Address');
+ assert.equal(await page.locator('.moInfographicCard').count(),0);
+ assert.ok((await page.locator('.moInfographicFontStatus').innerText()).includes('Loading'));
+ await page.evaluate(()=>window.releaseInfographicFont());
+ await page.locator('[data-info-type="eligible"]').waitFor();
+ assert.ok(await page.evaluate(()=>textBuilderInterReady && document.fonts.check('700 44px TICInfographicInter')));
+ const fontWidths=await page.evaluate(()=>{const ctx=document.createElement('canvas').getContext('2d');ctx.font=textBuilderInfographicCanvasFont(44,true);const inter=ctx.measureText('Cases we CANNOT request').width;ctx.font='700 44px Arial';return {inter,arial:ctx.measureText('Cases we CANNOT request').width};});
+ assert.ok(Math.abs(fontWidths.inter-fontWidths.arial)>1,'Inter must be loaded, not an Arial fallback');
  // Host pages can style SVG text and textarea elements, including with important rules.
  await page.addStyleTag({content:'svg text, svg tspan, .moInfographicStep { font-family: Georgia, serif !important; font-size: 12px !important; font-weight: 400 !important; font-style: italic !important; letter-spacing: 3px !important; text-transform: uppercase !important; }'});
  for(const type of ['eligible','ineligible']) {
   const typography=await page.locator(`[data-info-type="${type}"] svg text`).first().evaluate(el=>{const text=getComputedStyle(el),span=getComputedStyle(el.querySelector('tspan'));return [text,span].map(s=>({family:s.fontFamily,size:s.fontSize,weight:s.fontWeight,style:s.fontStyle,spacing:s.letterSpacing,transform:s.textTransform}));});
-  for(const style of typography){assert.match(style.family,/Arial/);assert.equal(style.size,'44px');assert.equal(style.weight,'700');assert.equal(style.style,'normal');assert.ok(['normal','0px'].includes(style.spacing));assert.equal(style.transform,'none');}
+  for(const style of typography){assert.match(style.family,/TICInfographicInter/);assert.equal(style.size,'44px');assert.equal(style.weight,'700');assert.equal(style.style,'normal');assert.ok(['normal','0px'].includes(style.spacing));assert.equal(style.transform,'none');}
   const fieldStyle=await page.locator(`[data-info-type="${type}"] [data-info-step]`).first().evaluate(el=>({family:getComputedStyle(el).fontFamily,size:getComputedStyle(el).fontSize,weight:getComputedStyle(el).fontWeight}));
-  assert.match(fieldStyle.family,/Arial/);assert.equal(fieldStyle.size,'23px');assert.equal(fieldStyle.weight,'400');
+  assert.match(fieldStyle.family,/TICInfographicInter/);assert.equal(fieldStyle.size,'23px');assert.equal(fieldStyle.weight,'400');
  }
  assert.equal(await page.locator('.moInfographicCard').count(),2);
  assert.ok((await page.locator('#moTextBuilderConstructed').innerText()).includes('Failed To Register Vehicle'));
@@ -116,6 +128,6 @@ const read=f=>fs.readFileSync(path.join(__dirname,'../src/tampermonkey',f),'utf8
  // Same message workspace also mounts in the legacy panel.
  await page.evaluate(()=>{appView='home';renderTextBuilder();});assert.equal(await page.locator('#moJsonTextBuilderBody .moInfographicCard').count(),2);
  assert.deepEqual(errors,[]);
- console.log('Browser checks passed: mixed flow, grouped previews, direct step editing, fixed positions, retained drafts, JPEG/PNG encoding, JPG download, clipboard success/failure, adding steps and panel rendering.');
+ console.log('Browser checks passed: embedded Inter loading, font isolation, mixed flow, grouped previews, direct step editing, fixed positions, retained drafts, JPEG/PNG encoding, JPG download, clipboard success/failure, adding steps and panel rendering.');
  } finally {await browser.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});

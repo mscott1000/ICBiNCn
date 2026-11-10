@@ -24,10 +24,14 @@ Images contain entered summaries rather than the message's added greeting, expla
 
 Both images keep case content and headings read-only. “Next Steps for TIC” (eligible) and “Next Steps for You” (ineligible) each start with one blank field. Type directly into that field; **Add next step** creates another blank field. Fields stay in place and expand vertically to fit their content, with faint dividers between entries. Each image has only three buttons: **Add next step**, **Copy Image**, and **Download for Email**. The latter downloads a JPEG for attaching to an email; it does not send email.
 
-**Copy Image** copies a rendered PNG through the browser's image clipboard. Browser clipboard permission may be required; errors appear below the controls. **Download for Email** downloads the edited image as a high-resolution JPEG. Entry-field placeholders and editing controls are omitted from exports. Images render locally without an image service or external fonts. The Text Builder preview explicitly protects its Arial typography from host-page CSS so font family, size, weight, and spacing match the Canvas exports.
+**Copy Image** copies a rendered PNG through the browser's image clipboard. Browser clipboard permission may be required; errors appear below the controls. **Download for Email** downloads the edited image as a high-resolution JPEG. Entry-field placeholders and editing controls are omitted from exports. Images render locally using the bundled Inter typeface: regular for case text and next steps, bold for headings and court labels. Inter loads from embedded font bytes before layout or export; no network font request or locally installed Inter is required. If loading fails, the UI reports the error instead of generating an image with a substitute font. The preview protects Inter typography from host-page CSS so font family, size, weight, and spacing match Canvas exports.
 
 Each image has an independent draft. Edits survive message rerendering, such as toggling case-data display. Changing the source summaries regenerates the affected image. Drafts last for the current Text Builder session and are not persisted across page reloads.
 
 ## Validation
 
 Run `node --test tests/*.test.cjs` for data routing, summary truncation, layout models, and existing behavior. Run `node tests/constructed-infographics.browser.cjs` with Playwright and Chromium installed for the mixed flow, direct next-step editing, fixed field positions, image encoding, download, clipboard, and panel checks. Set `INFOGRAPHIC_TEST_SCREENSHOT` to save an optional browser screenshot.
+
+## Bundled typeface
+
+`assets/fonts/Inter-Variable.ttf` is derived from Google Fonts’ Inter variable font, with optical size pinned to 14 for consistent SVG and Canvas measurement. Weight remains variable, with 400 and 700 used by the infographic. The original source is https://github.com/google/fonts/tree/main/ofl/inter and the SIL Open Font License is included at `assets/fonts/OFL-Inter.txt`. The userscript embeds the same font bytes directly in its infographic module.
