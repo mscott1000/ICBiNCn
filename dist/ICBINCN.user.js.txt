@@ -4853,9 +4853,15 @@ function textBuilderInfographicRows(text,truncate) {
     .map(line => ({text:truncate ? textBuilderInfographicTruncate(line) : line,
       court:!line.includes(':') && /(?:\bmunicipal\b|\bcircuit\b|\bcourt\b|\(\d{3}\)\s*\d{3}[- ]\d{4})/i.test(line)}));
 }
+// SVG presentation attributes lose to host-page CSS. Lock typography on text,
+// tspans and inline entry fields so preview measurements match Canvas exports.
+function textBuilderInfographicFontStyle(size,bold) {
+  return `font:normal ${bold ? '700' : '400'} ${size}px/1.4 Arial, sans-serif !important;letter-spacing:0 !important;word-spacing:0 !important;text-transform:none !important;`;
+}
+function textBuilderInfographicCanvasFont(size,bold) {return `${bold ? '700' : '400'} ${size}px Arial, sans-serif`;}
 function textBuilderInfographicMeasure() {
   const ctx = document.createElement('canvas').getContext('2d');
-  return (text,size,bold) => {ctx.font = `${bold ? '700' : '400'} ${size}px Arial`; return ctx.measureText(text).width;};
+  return (text,size,bold) => {ctx.font = textBuilderInfographicCanvasFont(size,bold); return ctx.measureText(text).width;};
 }
 function textBuilderInfographicLines(box,measure) {
   const lines = [];
@@ -4950,11 +4956,12 @@ function textBuilderInfographicSvg(model,editing=true) {
     const height = textBuilderInfographicBoxHeight(box,measure);
     if (editing && box.kind === 'step') {
       const fieldHeight = Math.max(80,height);
-      return `<foreignObject x="${box.x}" y="${box.y}" width="${box.width}" height="${fieldHeight}"><textarea xmlns="http://www.w3.org/1999/xhtml" class="moInfographicStep" data-info-step="${esc(box.id)}" aria-label="Next step ${model.boxes.filter(b => b.kind === 'step').indexOf(box)+1}" placeholder="Enter next step" style="font:${box.size}px/1.4 Arial">${esc(box.text)}</textarea></foreignObject>`;
+      return `<foreignObject x="${box.x}" y="${box.y}" width="${box.width}" height="${fieldHeight}"><textarea xmlns="http://www.w3.org/1999/xhtml" class="moInfographicStep" data-info-step="${esc(box.id)}" aria-label="Next step ${model.boxes.filter(b => b.kind === 'step').indexOf(box)+1}" placeholder="Enter next step" style="${textBuilderInfographicFontStyle(box.size,false)}">${esc(box.text)}</textarea></foreignObject>`;
     }
     const centered = ['heading','stepsHeading'].includes(box.kind);
+    const style = textBuilderInfographicFontStyle(box.size,box.bold);
     return `<g transform="translate(${box.x},${box.y})">
-      <text font-family="Arial, sans-serif" font-size="${box.size}" font-weight="${box.bold ? '700' : '400'}" fill="${box.kind === 'court' ? '#73787c' : '#17212b'}" ${centered ? 'text-anchor="middle"' : ''} dominant-baseline="text-before-edge">${lines.map((line,i) => `<tspan x="${centered ? model.width/2-box.x : 0}" y="${i*box.size*1.4}">${esc(line)}</tspan>`).join('')}</text></g>`;
+      <text style="${style}" font-family="Arial, sans-serif" font-size="${box.size}" font-weight="${box.bold ? '700' : '400'}" fill="${box.kind === 'court' ? '#73787c' : '#17212b'}" ${centered ? 'text-anchor="middle"' : ''} dominant-baseline="text-before-edge">${lines.map((line,i) => `<tspan style="${style}" x="${centered ? model.width/2-box.x : 0}" y="${i*box.size*1.4}">${esc(line)}</tspan>`).join('')}</text></g>`;
   }).join('');
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${model.width} ${model.height}" class="moInfographicSvg" aria-label="${model.type === 'eligible' ? 'Eligible' : 'Ineligible'} Constructed Infographic"><rect width="800" height="${model.height}" fill="white"/>${panel(18,model.caseBottom-18,model.type === 'eligible' ? '#eff9ef' : '#fff4f4')}${panel(stepsY,model.height-stepsY-18,'#ffffff')}${rules}${boxes}</svg>`;
 }
@@ -5023,7 +5030,7 @@ function textBuilderInfographicBlob(model,mime) {
   const measure=textBuilderInfographicMeasure();
   for(const line of textBuilderInfographicDecorations(model,measure)) {ctx.strokeStyle=line.color;ctx.beginPath();ctx.moveTo(line.x1,line.y);ctx.lineTo(line.x2,line.y);ctx.stroke();}
   ctx.textBaseline='top';ctx.fillStyle='#17212b';
-  for(const box of model.boxes) {ctx.font=`${box.bold?'700':'400'} ${box.size}px Arial`;ctx.fillStyle=box.kind==='court'?'#73787c':'#17212b';ctx.textAlign=['heading','stepsHeading'].includes(box.kind)?'center':'left';textBuilderInfographicLines(box,measure).forEach((line,i)=>ctx.fillText(line,ctx.textAlign==='center'?model.width/2:box.x,box.y+i*box.size*1.4));}
+  for(const box of model.boxes) {ctx.font=textBuilderInfographicCanvasFont(box.size,box.bold);ctx.fillStyle=box.kind==='court'?'#73787c':'#17212b';ctx.textAlign=['heading','stepsHeading'].includes(box.kind)?'center':'left';textBuilderInfographicLines(box,measure).forEach((line,i)=>ctx.fillText(line,ctx.textAlign==='center'?model.width/2:box.x,box.y+i*box.size*1.4));}
   return new Promise((resolve,reject)=>canvas.toBlob(blob=>blob?resolve(blob):reject(new Error('Could not render image.')),mime,0.95));
 }
 async function textBuilderInfographicExport(model,action) {
