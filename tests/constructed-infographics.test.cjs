@@ -51,3 +51,18 @@ test('mixed summaries finish at Address and populate the existing constructed me
  c.textBuilderMultipleReasonAction('confirmMultipleReasonInput');
  assert.equal(c.textBuilderState.screen,'address');assert.equal(c.textBuilderState.data.ineligibleCases,'repeat\n\nnetwork');
 });
+
+test('ineligible steps start with one field, reflow without overlaps, and retain locked case content',()=>{
+ const c=setup();const model=c.textBuilderInfographicModel({type:'ineligible',sections:[{title:'Repeat Attempt',text:'- 123: Register Vehicle - warrant'}]},measure);
+ assert.equal(model.boxes.filter(b=>b.kind==='step').length,1);
+ assert.equal(model.boxes.find(b=>b.kind==='step').text,'');
+ const original=JSON.stringify(model.boxes.filter(b=>b.kind!=='step'));
+ model.boxes.find(b=>b.kind==='step').text=Array(40).fill('Long next step entry').join('\n');
+ model.boxes.push({id:'another',text:'Second step',kind:'step',x:44,y:0,width:712,size:23,bold:false});
+ c.textBuilderIneligibleReflow(model,measure);
+ const steps=model.boxes.filter(b=>b.kind==='step');
+ assert.ok(steps[1].y>steps[0].y+c.textBuilderInfographicBoxHeight(steps[0],measure));
+ assert.ok(model.height>steps[1].y+c.textBuilderInfographicBoxHeight(steps[1],measure));
+ assert.equal(c.textBuilderInfographicRules(model).length,1);
+ assert.equal(JSON.stringify(model.boxes.filter(b=>b.kind!=='step')),original);
+});
