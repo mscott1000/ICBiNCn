@@ -216,9 +216,6 @@
                          if (e?._source === 'municourt' && norm(e?.muniCaseDetailText || '')) lines.push('MuniCourt Detail:',e.muniCaseDetailText,'','','');
                          return lines.join('\n');}
 
-  function getCopySectionHeader(jurisdiction) {const rawHeader = getMunicipalityHeaderForSummary(jurisdiction,'') || jurisdiction.toUpperCase();
-                                               return norm(rawHeader.replace(/\s*-\s*(?:\(?\d{3}\)?[\s\d\-\.\(\)A-Z;']+|FRESH START FRIDAYS?)\s*$/i,'')) || rawHeader;}
-
   function buildGroupedCopyText() {const log = loadLog();
                                   const expected = norm(document.getElementById('moNsYob')?.value || '');
                                   const filteredLog = log.filter((e) => {const m = yobMatchesExpected(expected,e?.yobRaw || e?.yob || '');
@@ -238,8 +235,6 @@
                                   appendSections(eligibleJurisdictions);
                                   appendSections(ineligibleJurisdictions);
                                   return sections.join('\n').trim();}
-
-
 
   const MUNICIPALITY_CONTACTS_RAW = `ARNOLD MUNICIPAL - (636) 296-0595
 AURORA MUNICIPAL - (417) 678-5121
@@ -505,9 +500,6 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
                                                     if (key.includes('ST. LOUIS COUNTY') || key.includes('ST LOUIS COUNTY')) return true;
                                                     return false;}
 
-
-
-
   function parseMunicipalityLine(line) {const trimmed = String(line || '').trim();
                                       if (!trimmed) return null;
                                       const clerkLineMatch = trimmed.match(/^(.*?)\s*-\s*-\s*Court\s+Clerk:\s*(.*?)\s*-\s*-\s*$/i) || trimmed.match(/^(.*?)\s*-\s*Court\s+Clerk:\s*(.+)$/i);
@@ -545,7 +537,6 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
                                                                        map.get(parsed.key).push(parsed);}
                                            return map;}
 
-
   const MUNICIPALITY_CONTACTS = parseMunicipalityContacts(MUNICIPALITY_CONTACTS_RAW);
 
   function getMunicipalityHeaderForSummary(jurisdiction,judgeName = '') {const key = municipalityKey(jurisdiction);
@@ -573,7 +564,6 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
                                                                         if (judgeKey && shouldIncludeJudgeDetails(jurisdiction)) return `${key} - Judge ${formatJudgeDisplayName(judgeKey)}`;
                                                                         return pool[0].displayWithJudge || pool[0].display;}
 
-
   const FRESH_START_FRIDAY_TEXT = "* The virtual court program 'Fresh Start Fridays' allows those with active warrants in the St. Louis County Municipal Court to ask for the warrant to be recalled and for a new court date to be set without fear of arrest. The judge holds this virtual docket at 10am every Friday, except for those that fall on a county, state or federal holiday. This link will take you to the virtual courtroom:\nhttps://mocourts.webex.com/meet/courtney.whiteside";
 
   function getCaseNumberForSummary(e) {const fromTitle = norm(String(e?.caseTitle || '').split('–')[0]);
@@ -589,7 +579,6 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
                                                     if (stripped) return stripped;
                                                     return fromKey;}
                                       return '- - -';}
-
 
   function formatSummaryCaseLine(caseNo,charge,lineStatus,separator = ':') {return `- ${caseNo}${separator} ${charge} - ${lineStatus}`;}
 

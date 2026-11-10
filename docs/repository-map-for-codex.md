@@ -2,6 +2,10 @@
 
 Use this map before editing so future changes stay focused and the bundled userscript remains stable.
 
+## Deferred features reminder
+
+Google Voice assistant and the older case-number batch scraper are retained in `src/deferred/` for future development, deliberately excluded from Tampermonkey distribution. Read `docs/deferred-features.md` before building upon or reconnecting either feature. Do not delete them as dead code or automatically bundle them.
+
 ## Edit decision tree
 
 1. **Main Tampermonkey behavior:** edit the numbered files in `src/tampermonkey/`, then run `python scripts/build_tampermonkey.py` to regenerate `dist/ICBINCN.user.js.txt`.

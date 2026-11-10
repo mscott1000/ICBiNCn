@@ -93,8 +93,6 @@
 
   function loadLastHtml() {return loadJson(KEY_LAST_HTML, null);}
 
-  function uniq(arr) {return [...new Set(arr.filter(Boolean))];}
-
   function getTabId() {try {let id = sessionStorage.getItem(TAB_ID_KEY);
                             if (!id) {id = `tab_${Date.now().toString(36)}_${Math.random().toString(36).slice(2,8)}`;
                                      sessionStorage.setItem(TAB_ID_KEY,id);}
@@ -149,28 +147,7 @@
 
   function clearLastHtml() {saveLastHtml(null);}
 
-  function loadCaseBatchDraft() {return loadJson(KEY_CASE_BATCH_DRAFT,{caseNumbersText:''});}
-
-  function saveCaseBatchDraft(d) {saveJson(KEY_CASE_BATCH_DRAFT,d || {caseNumbersText:''});}
-
   function readUiParams() {return {first:  norm(document.getElementById('moNsFirst')?.value || ''),
                                   middle: norm(document.getElementById('moNsMiddle')?.value || ''),
                                   last:   norm(document.getElementById('moNsLast')?.value || ''),
                                   yob:    norm(document.getElementById('moNsYob')?.value || ''),};}
-
-  function writeUiParams(p) {const x = p || {};
-                             const set = (id, v) => {const el = document.getElementById(id);
-                                                    if (!el) return;
-                                                    el.value = String(v || '');};
-                             set('moNsFirst', x.first);
-                             set('moNsMiddle', x.middle);
-                             set('moNsLast', x.last);
-                             set('moNsYob', x.yob);}
-
-  function gateNewSearch() {const logLen = loadLog().length;
-                            const dbgLen = loadDebug().length;
-                            if (logLen > 0 || dbgLen > 0) {uiStatus('Clear Log/Debug before starting a new Search.');
-                                                           dbg('search_blocked_not_cleared', { logLen, dbgLen });
-                                                           render();
-                                                           return false;}
-                            return true;}

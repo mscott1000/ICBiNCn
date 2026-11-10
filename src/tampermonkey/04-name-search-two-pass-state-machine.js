@@ -111,11 +111,3 @@
                                  sel.value = '100';
                                  sel.dispatchEvent(new Event('input',{bubbles:true}));
                                  sel.dispatchEvent(new Event('change',{bubbles:true}));}
-
-  function getNextButton() {return document.querySelector('#nameSearchResult_next');}
-
-  function nextIsDisabled(btn) {if (!btn) return true;
-                                return btn.classList.contains('disabled') || btn.getAttribute('aria-disabled') === 'true';}
-
-  function getActivePageText() {const cur = document.querySelector('#nameSearchResult_paginate a.paginate_button.current');
-                                return cur ? norm(cur.textContent) : '';}

@@ -5,6 +5,7 @@ This repository keeps the CaseNet userscript and supporting research materials o
 ## Repository structure
 
 - `src/tampermonkey/` — maintainable userscript source parts grouped by feature.
+- `src/deferred/` — retained Google Voice and older case-number batch code, excluded from the install bundle; see `docs/deferred-features.md`.
 - `dist/` — generated build outputs intended for install/publish workflows.
 - `scripts/` — utility scripts (including build tooling).
 - `docs/` — requirements, analysis notes, and implementation documentation.

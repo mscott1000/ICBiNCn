@@ -75,16 +75,6 @@
                                                           if (s) return s;}
                                  return '';}
 
-  function muniFieldFromDetail(detailText,label,nextLabels = []) {const raw = norm(detailText || '');
-                                                                   if (!raw || !label) return '';
-                                                                   const escapedLabel = label.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
-                                                                   const nextPattern = nextLabels.map((x) => x && x.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).filter(Boolean).join('|');
-                                                                   const regex = nextPattern
-                                                                     ? new RegExp(`${escapedLabel}:\\s*([\\s\\S]*?)(?=\\s*(?:${nextPattern}):|$)`,'i')
-                                                                     : new RegExp(`${escapedLabel}:\\s*([\\s\\S]*?)$`,'i');
-                                                                   const m = raw.match(regex);
-                                                                   return m?.[1] ? norm(m[1]) : '';}
-
   function isMuniWarrantStatus(rawStatus) {return /^warrant$/i.test(norm(rawStatus || ''));}
 
   function mapMuniStatus(rawStatus,rawWarrant) {const status = norm(rawStatus || '');
@@ -391,8 +381,8 @@
                                    return first || text;}
 
   function mapMuniRecordToEntry(rec,sourceLabel,caseNumberHint = '') {const detail = norm(rec?.muniCaseDetailText || '');
-                                                                       const ticketFromDetail = muniFieldFromDetail(detail,'Ticket #',['OCN','Court Name','Bond Set Amount']);
-                                                                       const statusFromDetail = muniFieldFromDetail(detail,'Status',['Case #','Ticket #']);
+                                                                       const ticketFromDetail = getMuniFieldFromDetail(detail,'Ticket #',['OCN','Court Name','Bond Set Amount']);
+                                                                       const statusFromDetail = getMuniFieldFromDetail(detail,'Status',['Case #','Ticket #']);
                                                                        const caseTicketNumber = valueFromAny(rec,['case_ticket_number','case_ticket_no','case__ticket_number']);
                                                                        const caseNo = primaryMuniCaseNumber(valueFromAny(rec,['ticketNumber','ticket_','caseNumber','case_','caseNo','caseNum','citationNo','citationNumber']) || caseTicketNumber) || ticketFromDetail || norm(caseNumberHint).toUpperCase() || '- - -';
                                                                        const location = valueFromAny(rec,['courtName','court_name','court','municipality','city','location']) || '- - -';
@@ -524,14 +514,3 @@
                                                       return entries;}
 
   if (/municourt\.net$/i.test(location.hostname || '')) runMunicourtRemoteWorkerIfNeeded().catch(() => {});
-
-  async function searchMunicourtEntriesByCaseNumbers(batch) {const entries = [];
-                                                            const seen = new Set();
-                                                            for (const item of batch || []) {const caseNumber = norm(item?.caseNumber || '').toUpperCase();
-                                                                                            if (!caseNumber) continue;
-                                                                                            const candidates = await fetchMunicourtCandidates({caseNumber});
-                                                                                            for (const c of candidates) {const entry = mapMuniRecordToEntry(c.record,c.source || MUNI_BASE_URL,caseNumber);
-                                                                                                                       if (!entry.caseKey || seen.has(entry.caseKey)) continue;
-                                                                                                                       seen.add(entry.caseKey);
-                                                                                                                       entries.push(entry);}}
-                                                            return entries;}
