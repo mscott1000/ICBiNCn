@@ -13,8 +13,8 @@ Before making changes that visually alter Jotform table rows or columns, follow 
 
 ## Current userscript release
 
-- Version/date: `2026-11-09`
-- Userscript title: `ICBiNCn 11.09`
+- Version/date: `2026-11-10`
+- Userscript title: `ICBiNCn 11.10`
 
 ## GitHub delivery workflow
 
