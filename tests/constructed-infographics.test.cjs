@@ -34,17 +34,17 @@ test('eligible and ineligible sources use only entered summaries and correct rea
  c.textBuilderState.data={researchType:'Nothing Found'};assert.equal(c.textBuilderInfographicSources().length,0);
  c.textBuilderState.data={researchType:'CanDo: Everything',eligibleCases:'eligible only'};assert.equal(c.textBuilderInfographicSources()[0].type,'eligible');
 });
-test('models group courts, grow for long input, and generate one empty next-step field',()=>{
+test('models group courts, grow for long input, and generate the correct starting steps',()=>{
  const c=setup();
  const text='FLORISSANT MUNICIPAL - (314) 921-3322\n- 1: Failed To Register Vehicle - warrant\nCITY OF ST. LOUIS MUNICIPAL\n- 2: Another Long Charge - warrant';
  const eligible=c.textBuilderInfographicModel({type:'eligible',sections:[{text}]},measure);
  assert.equal(eligible.boxes.filter(b=>b.text.includes('MUNICIPAL')).length,2);
- assert.ok(eligible.boxes.some(b=>b.text.includes('Failed To Register Vehicle')));
- assert.equal(eligible.boxes.filter(b=>b.kind==='step').map(b=>b.text).join(''),'');
- assert.equal(eligible.boxes.filter(b=>b.kind==='step').length,1);
+ assert.ok(eligible.boxes.some(b=>String(b.fullText || b.text).includes('Failed To Register Vehicle')));
+ assert.equal(eligible.boxes.filter(b=>b.kind==='step').map(b=>b.text).join('|'),'Request a recall from the Court|When we hear back, we will text you');
+ assert.equal(eligible.boxes.filter(b=>b.kind==='step').length,2);
  assert.equal(eligible.boxes.find(b=>b.kind==='stepsHeading').text,'Next Steps for TIC');
  const ineligible=c.textBuilderInfographicModel({type:'ineligible',sections:[{title:'Repeat Attempt',text}]},measure);
- assert.ok(ineligible.boxes.some(b=>b.text.includes('Failed To Register Vehicle')));
+ assert.ok(ineligible.boxes.some(b=>String(b.fullText || b.text).includes('Failed To Register Vehicle')));
  assert.equal(ineligible.tables.length,2);
  assert.equal(ineligible.boxes.find(b=>b.kind==='stepsHeading').text,'Next Steps for You');
  const long=c.textBuilderInfographicModel({type:'ineligible',sections:[{title:'Repeat Attempt',text:Array(100).fill('- 123: Failed To Register Vehicle - warrant').join('\n')}]},measure);
@@ -88,20 +88,20 @@ test('approved ineligible format has a title underline and only a wide next-step
  assert.ok(lines.some(line=>line.y===title.y+c.textBuilderInfographicBoxHeight(title,measure)+5));
 });
 
-test('eligible layout shares the approved headings, rules and fixed steps without charge truncation',()=>{
+test('eligible layout preserves full source data and uses the approved headings and editable defaults',()=>{
  const c=setup();const source={type:'eligible',sections:[{text:'FLORISSANT MUNICIPAL\n- 123: Register Vehicle Without Valid Plates - warrant\nCITY OF ST. LOUIS MUNICIPAL\n- 234: Other charge - warrant'}]};
  const model=c.textBuilderInfographicModel(source,measure);
  assert.equal(model.boxes.find(b=>b.kind==='heading').text,'Cases we CAN request');
  assert.equal(model.boxes.find(b=>b.kind==='heading').size,44);
  assert.equal(model.boxes.find(b=>b.kind==='stepsHeading').text,'Next Steps for TIC');
  assert.equal(model.boxes.find(b=>b.kind==='stepsHeading').size,38);
- assert.equal(model.boxes.filter(b=>b.kind==='step').length,1);
+ assert.equal(model.boxes.filter(b=>b.kind==='step').length,2);
  assert.equal(model.boxes.filter(b=>b.kind==='court').length,2);
- assert.ok(model.boxes.some(b=>b.text.includes('Register Vehicle Without Valid Plates')));
+ assert.ok(model.boxes.some(b=>String(b.fullText || b.text).includes('Register Vehicle Without Valid Plates')));
  assert.equal(model.tables.length,2);
  const rules=c.textBuilderInfographicDecorations(model,measure);
  assert.ok(rules.some(line=>line.y===model.caseBottom+122));
- assert.equal(rules.length,2);
+ assert.equal(rules.length,3);
  const locked=JSON.stringify(model.boxes.filter(b=>b.kind!=='step'));
  model.boxes.find(b=>b.kind==='step').text='Send request';
  c.textBuilderInfographicReflow(model,measure);
@@ -121,17 +121,15 @@ test('bundled Inter is the font used by preview and export, and failed loads can
  assert.throws(()=>c.textBuilderInfographicMeasure(),/not finished loading/);
 });
 
-test('table geometry wraps long case text and leaves next steps below the case tables',()=>{
+test('case tables truncate data to exactly one line while retaining full source data',()=>{
  const c=setup();for(const type of ['eligible','ineligible']){
- const source={type,sections:[{title:type==='ineligible'?'Repeat Attempt':undefined,text:'FLORISSANT MUNICIPAL\n- 123: '+('A long charge description '.repeat(15))+'- warrant - hold placed on license'}]};
- const model=c.textBuilderInfographicModel(source,measure);assert.equal(model.tables.length,1);
- const table=model.tables[0];assert.equal(table.boxes.slice(0,3).map(b=>b.text).join('|'),'Case Number|Warrant Found?|License Hold?');assert.ok(table.rows[1].height>64);
- assert.ok(model.caseBottom>table.y+table.height);
- for(const row of table.rows)for(const cell of table.boxes.filter(b=>b.y===row.y+15))assert.ok(c.textBuilderInfographicBoxHeight(cell,measure)+30<=row.height);
- assert.equal(table.boxes[4].text,'Yes');assert.equal(table.boxes[5].text,'Yes');
+ const full='123: '+('A long charge description '.repeat(15));
+ const model=c.textBuilderInfographicModel({type,sections:[{text:'FLORISSANT MUNICIPAL\n- '+full+'- warrant - hold placed on license'}]},measure);
+ const table=model.tables[0];assert.equal(table.widths.length,type==='eligible'?1:3);
+ const cell=table.boxes.find(b=>b.kind==='tableCell');assert.ok(cell.text.endsWith('...'));assert.equal(c.textBuilderInfographicLines(cell,measure).length,1);assert.ok(measure(cell.text,cell.size,false)<=cell.width);assert.ok(cell.fullText.startsWith('123: A long charge description'));
+ assert.equal(table.rows[1].height,64);assert.ok(model.caseBottom>table.y+table.height);
  }
 });
-
 test('table headers are vertically centered, keep the case label left aligned, and fit status labels on one line',()=>{
  const c=setup();const table=c.textBuilderInfographicTable([{label:'123: Charge',warrant:'Yes',license:'No'}],100,measure,0);
  const header=table.rows[0];const cells=table.boxes.slice(0,3);
@@ -140,4 +138,28 @@ test('table headers are vertically centered, keep the case label left aligned, a
  const model={tables:[table]};assert.ok(!c.textBuilderInfographicTableSvg(model).includes('#e5ebe8'));assert.ok(!c.textBuilderInfographicTableSvg(model).includes('#f8faf9'));
  const fills=[];const ctx={beginPath(){},moveTo(){},lineTo(){},stroke(){},strokeRect(){},fillRect(){fills.push(this.fillStyle);}};
  c.textBuilderInfographicDrawTables(ctx,model);assert.equal(fills.join(','),'#ffffff,#ffffff');
+});
+
+test('ellipsis reserves its own width and short or exactly fitting entries remain intact',()=>{
+ const c=setup();const width=s=>Array.from(s).length;
+ assert.equal(c.textBuilderInfographicFitLine('123: Short',10,21,false,width),'123: Short');
+ assert.equal(c.textBuilderInfographicFitLine('123: Short',9,21,false,width),'123: S...');
+ assert.equal(c.textBuilderInfographicFitLine('😀😀😀😀😀😀',5,21,false,width),'😀😀...');
+});
+test('pipe-prefixed clerk metadata belongs beneath the court header, never in a case cell',()=>{
+ const c=setup();const clerk='| Court Clerk: (314) 615-1539 |';const court='ST. LOUIS COUNTY CIRCUIT, DIV 39 - Judge KELLY SNYDER';
+ const groups=c.textBuilderInfographicCourtGroups(court+'\n'+clerk+'\n- 123: Charge - warrant');
+ assert.equal(groups[0].details[0],clerk);assert.equal(groups[0].entries.length,1);assert.equal(c.textBuilderInfographicCaseEntry(clerk),null);
+ const m=c.textBuilderInfographicModel({type:'ineligible',sections:[{text:court+'\n'+clerk+'\n- 123: Charge - warrant'}]},measure);
+ const i=m.boxes.findIndex(b=>b.kind==='court');assert.equal(m.boxes[i+1].kind,'courtDetail');assert.equal(m.boxes[i+1].text,clerk);assert.ok(m.boxes[i+1].y>m.boxes[i].y);
+ assert.ok(!m.tables[0].boxes.some(b=>b.text.includes('Court Clerk')));
+});
+test('upcoming dates retain full date/time/case text and repeat the location for multiple dates',()=>{
+ const c=setup();const first='11/20/2026; 9:00 AM (for 123, 456)';const second='12/01/2026; 1:30 PM (for 789)';const third='12/15/2026; 8:00 AM (for 101)';
+ const text='FLORISSANT MUNICIPAL\n- 123: Charge - warrant\nUpcoming Court Dates:\nST. LOUIS COUNTY CIRCUIT, DIV 39\n'+first+'\n'+second+'\nCITY OF ST. LOUIS MUNICIPAL\n'+third;
+ const split=c.textBuilderInfographicSplitUpcoming(text);assert.equal(split.dates.length,3);assert.equal(split.dates[0].date,first);assert.equal(split.dates[1].location,split.dates[0].location);assert.equal(split.dates[2].location,'CITY OF ST. LOUIS MUNICIPAL');
+ const m=c.textBuilderInfographicModel({type:'ineligible',sections:[{title:'Repeat Attempt',text}]},measure);
+ const table=m.tables.find(t=>t.kind==='upcoming');assert.equal(table.boxes.slice(0,2).map(b=>b.text).join('|'),'Court Date|Location');assert.equal(table.rows.length,4);assert.equal(table.boxes[2].text,first);assert.equal(table.boxes[4].text,second);assert.equal(table.boxes[6].text,third);assert.ok(!table.boxes[2].singleLine);
+ assert.equal(m.boxes.filter(b=>b.text==='Upcoming Court Dates').length,1);assert.equal(m.tables.find(t=>t.kind==='ineligible').rows.length,2);assert.ok(m.caseBottom>table.y+table.height);
+ const only=c.textBuilderInfographicModel({type:'ineligible',sections:[{text:'Upcoming Court Dates:'}]},measure);assert.equal(only.tables[0].kind,'upcoming');
 });

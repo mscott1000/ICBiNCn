@@ -35,7 +35,7 @@ const read=f=>fs.readFileSync(path.join(__dirname,'../src/tampermonkey',f),'utf8
  await action('confirmCourts');
  await page.locator('[data-tb-input="eligibleCases"]').fill(eligible);await action('confirmEligible');
  await action('toggleMultipleReason','Repeat Attempt');await action('toggleMultipleReason','Recent FTA');await action('confirmMultipleReasons');
- await page.locator('[data-tb-input="multipleRepeatAttempt"]').fill('FLORISSANT MUNICIPAL\n- 300: Failed To Register Vehicle - warrant - hold placed on license');await action('confirmMultipleReasonInput');
+ await page.locator('[data-tb-input="multipleRepeatAttempt"]').fill('ST. LOUIS COUNTY CIRCUIT, DIV 39 - Judge KELLY SNYDER\n| Court Clerk: (314) 615-1539 |\n- 300: Failed To Register Vehicle With A Very Long Charge Description - warrant - hold placed on license\nUpcoming Court Dates:\nST. LOUIS COUNTY CIRCUIT, DIV 39\n11/20/2026; 9:00 AM (for 300, 301)\n12/01/2026; 1:30 PM (for 302)\nCITY OF ST. LOUIS MUNICIPAL\n12/15/2026; 8:00 AM (for 400)');await action('confirmMultipleReasonInput');
  await page.locator('[data-tb-input="multipleRecentFta"]').fill('CITY OF ST. LOUIS MUNICIPAL\n- 400: Failure To Maintain Insurance - open (no warrant found)');await action('confirmMultipleReasonInput');
  // Hold the local font load to prove no fallback-font image is generated first.
  await page.evaluate(()=>{
@@ -61,13 +61,20 @@ const read=f=>fs.readFileSync(path.join(__dirname,'../src/tampermonkey',f),'utf8
  assert.equal(await page.locator('.moInfographicCard').count(),2);
  assert.ok((await page.locator('#moTextBuilderConstructed').innerText()).includes('Failed To Register Vehicle'));
  const eligibleCard=page.locator('[data-info-type="eligible"]');const ineligibleCard=page.locator('[data-info-type="ineligible"]');
- for(const card of [eligibleCard,ineligibleCard]){assert.equal(await card.locator('[data-info-table]').count(),2);for(const title of ['Case Number','Warrant Found?','License Hold?'])assert.equal(await card.locator('svg text').evaluateAll((nodes,title)=>nodes.filter(node=>node.getAttribute('aria-label')===title).length,title),2);}
- const headersFit=await page.evaluate(()=>Object.values(textBuilderState.data.infographicDrafts).every(draft=>draft.model.tables.every(table=>table.boxes.slice(0,3).every(cell=>textBuilderInfographicLines(cell,textBuilderInfographicMeasure()).length===1 && Math.abs(cell.y-(table.y+(table.rows[0].height-textBuilderInfographicBoxHeight(cell,textBuilderInfographicMeasure()))/2))<0.01))));
+ for(const [card,headers,count] of [[eligibleCard,['Case Number'],2],[ineligibleCard,['Case Number','Warrant Found?','License Hold?'],3]]){assert.equal(await card.locator('[data-info-table]').count(),count);for(const title of headers)assert.equal(await card.locator('svg text').evaluateAll((nodes,title)=>nodes.filter(node=>node.getAttribute('aria-label')===title).length,title),2);}
+ assert.equal(await eligibleCard.locator('text[aria-label="Warrant Found?"]').count(),0);
+ assert.equal(await eligibleCard.locator('text[aria-label="License Hold?"]').count(),0);
+ const newData=await page.evaluate(()=>{const m=textBuilderState.data.infographicDrafts.ineligible.model;return {upcoming:m.tables.find(t=>t.kind==='upcoming').boxes.map(b=>b.text),clerk:m.boxes.find(b=>b.kind==='courtDetail').text,cases:m.tables.filter(t=>t.kind==='ineligible').flatMap(t=>t.boxes.filter(b=>b.singleLine).map(b=>({text:b.text,width:b.width,size:b.size})))}});
+ for(const text of ['Repeat Attempt','Recent FTA, Not a Warrant Yet','Upcoming Court Dates']) assert.equal(await ineligibleCard.locator('svg text').evaluateAll((nodes,text)=>nodes.find(node=>node.getAttribute('aria-label')===text).getAttribute('text-anchor'),text),'middle');
+ assert.equal(newData.upcoming[0],'Court Date');assert.equal(newData.upcoming[1],'Location');assert.equal(newData.upcoming[2],'11/20/2026; 9:00 AM (for 300, 301)');assert.equal(newData.upcoming[3],newData.upcoming[5]);assert.ok(newData.clerk.startsWith('| Court Clerk:'));
+ assert.ok(newData.cases[0].text.endsWith('...'));
+ assert.ok(await page.evaluate(()=>Object.values(textBuilderState.data.infographicDrafts).every(d=>d.model.tables.filter(t=>t.kind!=='upcoming').every(t=>t.boxes.filter(b=>b.singleLine).every(b=>textBuilderInfographicLines(b,textBuilderInfographicMeasure()).length===1 && textBuilderInfographicMeasure()(b.text,b.size,b.bold)<=b.width)))));
+ const headersFit=await page.evaluate(()=>Object.values(textBuilderState.data.infographicDrafts).every(draft=>draft.model.tables.every(table=>table.boxes.slice(0,table.widths.length).every(cell=>textBuilderInfographicLines(cell,textBuilderInfographicMeasure()).length===1 && Math.abs(cell.y-(table.y+(table.rows[0].height-textBuilderInfographicBoxHeight(cell,textBuilderInfographicMeasure()))/2))<0.01))));
  assert.ok(headersFit);
  for(const card of [eligibleCard,ineligibleCard]){
   const fills=await card.locator('[data-info-table] rect').evaluateAll(nodes=>nodes.map(node=>node.getAttribute('fill')));assert.ok(fills.every(fill=>fill==='#ffffff'||fill==='none'));
   assert.equal(await card.locator('text[aria-label="Case Number"]').first().getAttribute('text-anchor'),null);
-  for(const title of ['Warrant Found?','License Hold?'])assert.equal(await card.locator('text').evaluateAll((nodes,title)=>nodes.find(node=>node.getAttribute('aria-label')===title).getAttribute('text-anchor'),title),'middle');
+  for(const title of (card===eligibleCard?[]:['Warrant Found?','License Hold?']))assert.equal(await card.locator('text').evaluateAll((nodes,title)=>nodes.find(node=>node.getAttribute('aria-label')===title).getAttribute('text-anchor'),title),'middle');
  }
  const tableData=await page.evaluate(()=>textBuilderState.data.infographicDrafts.ineligible.model.tables.map(t=>t.boxes.slice(3).map(b=>b.text)));
  assert.equal(tableData[0][1],'Yes');assert.equal(tableData[0][2],'Yes');assert.equal(tableData[1][1],'No');assert.equal(tableData[1][2],'No');
@@ -93,7 +100,7 @@ const read=f=>fs.readFileSync(path.join(__dirname,'../src/tampermonkey',f),'utf8
  const title= ineligibleCard.locator('svg text').first();assert.equal(await title.getAttribute('text-anchor'),'middle');
  assert.equal(await ineligibleCard.locator('svg text').filter({hasText:'Next Steps for You'}).getAttribute('text-anchor'),'middle');
  const infoDownload=page.waitForEvent('download');await ineligibleCard.locator('[data-info-action="download"]').click();assert.equal((await infoDownload).suggestedFilename(),'constructed-infographic-ineligible.jpg');
- assert.ok((await ineligibleCard.locator('svg text').evaluateAll(nodes=>nodes.map(node=>node.getAttribute('aria-label')).join(' '))).includes('Failed To Register Vehicle'));
+ assert.ok((await ineligibleCard.locator('svg text').evaluateAll(nodes=>nodes.map(node=>node.getAttribute('aria-label')).join(' '))).includes('...'));
  assert.ok(!(await ineligibleCard.locator('svg text').evaluateAll(nodes=>nodes.map(node=>node.getAttribute('aria-label')).join(' '))).includes('Hello'));
  assert.ok((await eligibleCard.locator('svg text').evaluateAll(nodes=>nodes.map(node=>node.getAttribute('aria-label')).join(' '))).includes('Failed To Register Vehicle'));
  const geometry=await page.evaluate(()=>({text:document.querySelector('.moConstructedText').getBoundingClientRect().toJSON(),images:document.querySelector('.moConstructedImages').getBoundingClientRect().toJSON()}));
@@ -102,12 +109,14 @@ const read=f=>fs.readFileSync(path.join(__dirname,'../src/tampermonkey',f),'utf8
  assert.equal(await eligibleCard.evaluate(el=>getComputedStyle(el).borderTopWidth),'0px');
  assert.equal(await eligibleCard.locator('[data-info-edit], [data-info-box]').count(),0);
  assert.deepEqual(await eligibleCard.locator('button').allTextContents(),['Add next step','Copy Image','Download for Email']);
- assert.equal(await eligibleCard.locator('[data-info-step]').count(),1);
+ assert.equal(await eligibleCard.locator('[data-info-step]').count(),2);
+ assert.equal(await eligibleCard.locator('[data-info-step]').first().inputValue(),'Request a recall from the Court');
+ assert.equal(await eligibleCard.locator('[data-info-step]').nth(1).inputValue(),'When we hear back, we will text you');
  for(const heading of ['Cases we CAN request','Next Steps for TIC']) assert.equal(await eligibleCard.locator('svg text').filter({hasText:heading}).getAttribute('text-anchor'),'middle');
  const lockedEligible=await page.evaluate(()=>JSON.stringify(textBuilderState.data.infographicDrafts.eligible.model.boxes.filter(b=>b.kind!=='step')));
- await eligibleCard.locator('[data-info-step]').fill('Call the court on Tuesday');
+ await eligibleCard.locator('[data-info-step]').first().fill('Call the court on Tuesday');
  await eligibleCard.locator('[data-info-action="addStep"]').click();
- await eligibleCard.locator('[data-info-step]').nth(1).fill('Send the request');
+ await eligibleCard.locator('[data-info-step]').nth(2).fill('Send the request');
  const fixedEligible=await page.evaluate(()=>textBuilderState.data.infographicDrafts.eligible.model.boxes.filter(b=>b.kind==='step').map(b=>({x:b.x,y:b.y})));
  await eligibleCard.locator('[data-info-step]').first().scrollIntoViewIfNeeded();const eligibleBounds=await eligibleCard.locator('[data-info-step]').first().boundingBox();
  await page.mouse.move(eligibleBounds.x+10,eligibleBounds.y+10);await page.mouse.down();await page.mouse.move(eligibleBounds.x+40,eligibleBounds.y+40);await page.mouse.up();
@@ -115,7 +124,8 @@ const read=f=>fs.readFileSync(path.join(__dirname,'../src/tampermonkey',f),'utf8
  assert.equal(await page.evaluate(()=>JSON.stringify(textBuilderState.data.infographicDrafts.eligible.model.boxes.filter(b=>b.kind!=='step'))),lockedEligible);
  await action('toggleCaseData');
  assert.equal(await eligibleCard.locator('[data-info-step]').first().inputValue(),'Call the court on Tuesday');
- assert.equal(await eligibleCard.locator('[data-info-step]').nth(1).inputValue(),'Send the request');
+ assert.equal(await eligibleCard.locator('[data-info-step]').nth(1).inputValue(),'When we hear back, we will text you');
+ assert.equal(await eligibleCard.locator('[data-info-step]').nth(2).inputValue(),'Send the request');
  // Both real encoders produce their requested MIME and magic bytes, with editable text retained.
  const encodings=await page.evaluate(async()=>{
  const m=textBuilderState.data.infographicDrafts.eligible.model;
