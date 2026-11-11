@@ -141,7 +141,9 @@ function textBuilderInfographicModel(source,measure) {
   return model;
 }
 function textBuilderInfographicTable(entries,y,measure,idStart) {
-  const widths = [404,154,154];
+  const warrantWidth = Math.max(184,Math.ceil(measure('Warrant Found?',18,true))+28);
+  const licenseWidth = Math.max(168,Math.ceil(measure('License Hold?',18,true))+28);
+  const widths = [712-warrantWidth-licenseWidth,warrantWidth,licenseWidth];
   const table = {x:44,y,width:712,height:0,rows:[],boxes:[],widths};
   const rows = [['Case Number','Warrant Found?','License Hold?'],...entries.map(entry => [entry.label,entry.warrant,entry.license])];
   let rowY = y;
@@ -153,6 +155,7 @@ function textBuilderInfographicTable(entries,y,measure,idStart) {
       x += widths[column];return box;
     });
     const height = Math.max(header ? 60 : 64,...cells.map(box => textBuilderInfographicBoxHeight(box,measure)+30));
+    if (header) for (const cell of cells) cell.y = rowY+(height-textBuilderInfographicBoxHeight(cell,measure))/2;
     table.rows.push({y:rowY,height,header,index});table.boxes.push(...cells);rowY += height;
   }
   table.height = rowY-y;
@@ -160,7 +163,7 @@ function textBuilderInfographicTable(entries,y,measure,idStart) {
 }
 function textBuilderInfographicTableSvg(model) {
   return (model.tables || []).map(table => {
-    const rows = table.rows.map(row => `<rect x="${table.x}" y="${row.y}" width="${table.width}" height="${row.height}" fill="${row.header ? '#e5ebe8' : row.index%2 ? '#ffffff' : '#f8faf9'}"/><line x1="${table.x}" x2="${table.x+table.width}" y1="${row.y+row.height}" y2="${row.y+row.height}" stroke="#d1d9d5"/>`).join('');
+    const rows = table.rows.map(row => `<rect x="${table.x}" y="${row.y}" width="${table.width}" height="${row.height}" fill="#ffffff"/><line x1="${table.x}" x2="${table.x+table.width}" y1="${row.y+row.height}" y2="${row.y+row.height}" stroke="#d1d9d5"/>`).join('');
     let x = table.x;
     const columns = table.widths.slice(0,-1).map(width => {x+=width;return `<line x1="${x}" x2="${x}" y1="${table.y}" y2="${table.y+table.height}" stroke="#d1d9d5"/>`;}).join('');
     return `<g data-info-table="true" role="table" aria-label="Cases by court">${rows}${columns}<rect x="${table.x}" y="${table.y}" width="${table.width}" height="${table.height}" fill="none" stroke="#cbd5ce"/></g>`;
@@ -170,7 +173,7 @@ function textBuilderInfographicDrawTables(ctx,model) {
   for (const table of model.tables || []) {
     ctx.lineWidth=1;
     for (const row of table.rows) {
-      ctx.fillStyle=row.header ? '#e5ebe8' : row.index%2 ? '#ffffff' : '#f8faf9';ctx.fillRect(table.x,row.y,table.width,row.height);
+      ctx.fillStyle='#ffffff';ctx.fillRect(table.x,row.y,table.width,row.height);
       ctx.strokeStyle='#d1d9d5';ctx.beginPath();ctx.moveTo(table.x,row.y+row.height);ctx.lineTo(table.x+table.width,row.y+row.height);ctx.stroke();
     }
     let x=table.x;
