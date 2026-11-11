@@ -12,9 +12,9 @@ The eligible image contains “Cases we CAN request” and “Next Steps for TIC
 1. Repeat Attempt
 2. Initial Warrant
 3. Private Attorney
-4. St. Louis County Municipal Court (Fresh Start Friday)
+4. St. Louis County Municipal Court, followed on a new line by `| Fresh Start Fridays - (314) 615-8760 |` (Fresh Start Friday)
 5. Recent FTA, Not a Warrant Yet
-6. Not in TIC Network (Out of Network)
+6. Out of TIC Network (Out of Network)
 
 Both images have no surrounding editor headings or card frames, and both section headings are centered. Each case heading has a thin text-width underline. Each next-step heading has a full-width demarcation below it, without a direct text underline. Both layouts use larger bold headings, muted uppercase court labels, and fine separators between groups. The eligible case panel is pale green; the ineligible panel is pale blush.
 
@@ -25,6 +25,10 @@ Eligible case tables have a single **Case Number** column. Ineligible case table
 Table cells all use the same white background. Headers are vertically centered; Case Number stays left aligned, while Warrant Found? and License Hold? are horizontally centered and fit on one line. In ineligible case tables, `- open (no warrant found)` maps to **No**, `- warrant` maps to **Yes**, and the open marker takes precedence if both occur. Missing/unrecognized warrant status shows **—**. License Hold? is **Yes** when `hold placed on license` occurs, otherwise **No**. Matching is case-insensitive.
 
 Lines beginning with `|`, such as `| Court Clerk: (314) 615-1539 |`, stay with the preceding court heading and appear immediately below it, never as a case-number cell. Subsection titles and court heading blocks are centered above their tables.
+
+### Fresh Start Friday
+
+Fresh Start Friday inputs use the fixed, centered two-line subsection heading above. The summary marker `ST. LOUIS COUNTY MUNICIPAL - (314) 615-8760 | FRESH START FRIDAYS*` identifies the following cases; it is not repeated as a court heading or placed in a case cell. Extracted court/clerk heading blocks are suppressed for this subsection because its fixed heading already supplies that information. Case rows still populate Case Number, Warrant Found?, and License Hold? normally. Applies to the individual path, Multiple Reasons, and CanDo + Can’tDo. Other reason sections retain their normal court headings.
 
 ### Upcoming Court Dates
 

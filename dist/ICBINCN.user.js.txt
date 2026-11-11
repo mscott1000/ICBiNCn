@@ -4758,9 +4758,9 @@ function textBuilderInfographicReasons() {
     {label:'Repeat Attempt',title:'Repeat Attempt',path:'Can’tDo: Repeat Attempt',key:'multipleRepeatAttempt'},
     {label:'Initial Warrant',title:'Initial Warrant',path:'Can’tDo: Initial Warrant',key:'multipleInitialWarrant'},
     {label:'Private Attorney',title:'Private Attorney',path:'Can’tDo: Private Attorney',key:'multiplePrivateAttorney'},
-    {label:'Fresh Start Friday',title:'St. Louis County Municipal Court',path:'Can’tDo: Fresh Start Friday',key:'multipleFreshStartFriday'},
+    {label:'Fresh Start Friday',title:'St. Louis County Municipal Court\n| Fresh Start Fridays - (314) 615-8760 |',fixedCourtHeader:true,path:'Can’tDo: Fresh Start Friday',key:'multipleFreshStartFriday'},
     {label:'Recent FTA',title:'Recent FTA, Not a Warrant Yet',path:'Can’tDo: Recent FTA, Not a Warrant Yet',key:'multipleRecentFta'},
-    {label:'Out of Network',title:'Not in TIC Network',path:'Can’tDo: Out of Network',key:'multipleOutOfNetwork'}
+    {label:'Out of Network',title:'Out of TIC Network',path:'Can’tDo: Out of Network',key:'multipleOutOfNetwork'}
   ];
 }
 function textBuilderInfographicSources() {
@@ -4771,13 +4771,13 @@ function textBuilderInfographicSources() {
   if (mixed || d.researchType === 'CanDo: Everything') sources.push({type:'eligible',sections:[{text:d.eligibleCases || ''}]});
   const reasons = textBuilderInfographicReasons();
   if (multiple) {
-    const sections = reasons.filter(r => (d.multipleReasons || []).includes(r.label)).map(r => ({title:r.title,text:d[r.key] || ''}));
+    const sections = reasons.filter(r => (d.multipleReasons || []).includes(r.label)).map(r => ({title:r.title,text:d[r.key] || '',fixedCourtHeader:Boolean(r.fixedCourtHeader)}));
     if (sections.length) sources.push({type:'ineligible',sections});
   } else {
     const reason = reasons.find(r => r.path === d.researchType);
     if (reason) {
       const text = reason.label === 'Private Attorney' ? [d.privateAttorneyCases,d.remainingIneligibleCases].filter(Boolean).join('\n\n') : d.ineligibleCases;
-      sources.push({type:'ineligible',sections:[{title:reason.title,text:text || ''}]});
+      sources.push({type:'ineligible',sections:[{title:reason.title,text:text || '',fixedCourtHeader:Boolean(reason.fixedCourtHeader)}]});
     }
   }
   return sources;
@@ -4897,8 +4897,10 @@ function textBuilderInfographicModel(source,measure) {
     if (section.title) add(section.title,36,true,'subheading');
     for (const [groupIndex,group] of textBuilderInfographicCourtGroups(summary.cases).entries()) {
       if (groupIndex > 0) y += 24;
-      if (group.court) add(group.court,22,true,'court');
-      for (const detail of group.details) add(detail,20,false,'courtDetail');
+      if (!section.fixedCourtHeader) {
+        if (group.court) add(group.court,22,true,'court');
+        for (const detail of group.details) add(detail,20,false,'courtDetail');
+      }
       for (const note of group.notes) add(note,24,false);
       if (group.entries.length) {
         const table = textBuilderInfographicTable(group.entries,y,measure,model.boxes.length,source.type);
