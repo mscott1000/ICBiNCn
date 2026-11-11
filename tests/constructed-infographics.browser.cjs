@@ -148,6 +148,13 @@ const read=f=>fs.readFileSync(path.join(__dirname,'../src/tampermonkey',f),'utf8
  if(process.env.INFOGRAPHIC_TEST_SCREENSHOT) await page.screenshot({path:process.env.INFOGRAPHIC_TEST_SCREENSHOT});
  // Same message workspace also mounts in the legacy panel.
  await page.evaluate(()=>{appView='home';renderTextBuilder();});assert.equal(await page.locator('#moJsonTextBuilderBody .moInfographicCard').count(),2);
+ await page.evaluate(()=>{textBuilderState={screen:'message',history:[],data:{workflow:'postResearch',researchType:'Can’tDo: Fresh Start Friday',staff:'Casey',ineligibleCases:'ST. LOUIS COUNTY MUNICIPAL - (314) 615-8760 | FRESH START FRIDAYS*\n- 123: Charge - warrant - hold placed on license'}};renderTextBuilder();});
+ const fsf=page.locator('#moJsonTextBuilderBody [data-info-type="ineligible"]');
+ const fsfHeading=await fsf.locator('text').evaluateAll(nodes=>nodes.find(node=>node.getAttribute('aria-label').includes('Fresh Start Fridays')).querySelectorAll('tspan').length);
+ assert.equal(fsfHeading,2);
+ assert.equal(await fsf.locator('text').evaluateAll(nodes=>nodes.filter(node=>(node.getAttribute('aria-label')||'').includes('FRESH START FRIDAYS*')).length),0);
+ await page.evaluate(()=>{textBuilderState.data.researchType='Can’tDo: Out of Network';renderTextBuilder();});
+ assert.equal(await page.locator('#moJsonTextBuilderBody text[aria-label="Out of TIC Network"]').count(),1);
  assert.deepEqual(errors,[]);
  console.log('Browser checks passed: embedded Inter loading, font isolation, mixed flow, grouped previews, direct step editing, fixed positions, retained drafts, JPEG/PNG encoding, JPG download, clipboard success/failure, adding steps and panel rendering.');
  } finally {await browser.close();}

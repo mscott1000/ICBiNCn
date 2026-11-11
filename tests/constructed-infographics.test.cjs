@@ -24,7 +24,7 @@ test('eligible and ineligible sources use only entered summaries and correct rea
  const c=setup({researchType:'CanDo + Can’tDo',eligibleCases:'COURT A\n- 1: Eligible',multipleReasons:['Out of Network','Recent FTA','Repeat Attempt'],multipleOutOfNetwork:'network input',multipleRecentFta:'fta input',multipleRepeatAttempt:'repeat input'});
  const sources=c.textBuilderInfographicSources();
  assert.equal(sources.length,2);assert.equal(sources[0].sections[0].text,'COURT A\n- 1: Eligible');
- assert.equal(sources[1].sections.map(s=>s.title).join('|'),'Repeat Attempt|Recent FTA, Not a Warrant Yet|Not in TIC Network');
+ assert.equal(sources[1].sections.map(s=>s.title).join('|'),'Repeat Attempt|Recent FTA, Not a Warrant Yet|Out of TIC Network');
  assert.equal(sources[1].sections.map(s=>s.text).join('|'),'repeat input|fta input|network input');
  for(const reason of c.textBuilderInfographicReasons()){
   c.textBuilderState.data={researchType:reason.path,ineligibleCases:'raw input',privateAttorneyCases:'attorney input',remainingIneligibleCases:'remaining input'};
@@ -75,7 +75,7 @@ test('ineligible steps start with one field, reflow without overlaps, and retain
 });
 
 test('approved ineligible format has a title underline and only a wide next-step demarcation',()=>{
- const c=setup();const model=c.textBuilderInfographicModel({type:'ineligible',sections:[{title:'Repeat Attempt',text:'FLORISSANT MUNICIPAL\n- 123: Register Vehicle - warrant'},{title:'Not in TIC Network',text:'OTHER MUNICIPAL COURT\n- 234: Other charge - warrant'}]},measure);
+ const c=setup();const model=c.textBuilderInfographicModel({type:'ineligible',sections:[{title:'Repeat Attempt',text:'FLORISSANT MUNICIPAL\n- 123: Register Vehicle - warrant'},{title:'Out of TIC Network',text:'OTHER MUNICIPAL COURT\n- 234: Other charge - warrant'}]},measure);
  const title=model.boxes.find(b=>b.kind==='heading');
  assert.equal(title.size,44);assert.equal(model.boxes.find(b=>b.kind==='subheading').size,36);
  assert.ok(model.boxes.some(b=>b.kind==='court'));
@@ -162,4 +162,21 @@ test('upcoming dates retain full date/time/case text and repeat the location for
  const table=m.tables.find(t=>t.kind==='upcoming');assert.equal(table.boxes.slice(0,2).map(b=>b.text).join('|'),'Court Date|Location');assert.equal(table.rows.length,4);assert.equal(table.boxes[2].text,first);assert.equal(table.boxes[4].text,second);assert.equal(table.boxes[6].text,third);assert.ok(!table.boxes[2].singleLine);
  assert.equal(m.boxes.filter(b=>b.text==='Upcoming Court Dates').length,1);assert.equal(m.tables.find(t=>t.kind==='ineligible').rows.length,2);assert.ok(m.caseBottom>table.y+table.height);
  const only=c.textBuilderInfographicModel({type:'ineligible',sections:[{text:'Upcoming Court Dates:'}]},measure);assert.equal(only.tables[0].kind,'upcoming');
+});
+
+test('Fresh Start Friday uses its fixed two-line heading and keeps marker cases in the status table',()=>{
+ const c=setup();const marker='ST. LOUIS COUNTY MUNICIPAL - (314) 615-8760 | FRESH START FRIDAYS*';
+ const text=marker+'\n- 123: Charge one - warrant - hold placed on license\n- 456: Charge two - open (no warrant found)';
+ for(const researchType of ['Can’tDo: Fresh Start Friday',"Can'tDo: Multiple Reasons",'CanDo + Can’tDo']) {
+  c.textBuilderState.data={researchType,ineligibleCases:text,multipleReasons:['Fresh Start Friday','Out of Network'],multipleFreshStartFriday:text,multipleOutOfNetwork:'OTHER COURT\n- 789: Charge three - warrant'};
+  const source=c.textBuilderInfographicSources().find(s=>s.type==='ineligible');
+  const section=source.sections.find(s=>s.fixedCourtHeader);
+  assert.equal(section.title,'St. Louis County Municipal Court\n| Fresh Start Fridays - (314) 615-8760 |');
+  const m=c.textBuilderInfographicModel(source,measure);
+  assert.ok(m.boxes.some(b=>b.kind==='subheading' && b.text===section.title));
+  assert.ok(!m.boxes.some(b=>b.kind==='court' && b.text.includes('FRESH START FRIDAYS')));
+  assert.ok(!m.boxes.some(b=>b.kind==='tableCell' && b.text.includes('FRESH START FRIDAYS')));
+  const cases=m.tables[0].boxes.slice(3);assert.equal(cases[0].text,'123: Charge one');assert.equal(cases[1].text,'Yes');assert.equal(cases[2].text,'Yes');assert.equal(cases[3].text,'456: Charge two');assert.equal(cases[4].text,'No');assert.equal(cases[5].text,'No');
+  if(researchType!=='Can’tDo: Fresh Start Friday') {assert.ok(m.boxes.some(b=>b.text==='Out of TIC Network'));assert.ok(m.boxes.some(b=>b.kind==='court' && b.text==='OTHER COURT'));}
+ }
 });
