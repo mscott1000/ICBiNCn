@@ -35,8 +35,8 @@ const read=f=>fs.readFileSync(path.join(__dirname,'../src/tampermonkey',f),'utf8
  await action('confirmCourts');
  await page.locator('[data-tb-input="eligibleCases"]').fill(eligible);await action('confirmEligible');
  await action('toggleMultipleReason','Repeat Attempt');await action('toggleMultipleReason','Recent FTA');await action('confirmMultipleReasons');
- await page.locator('[data-tb-input="multipleRepeatAttempt"]').fill('- 300: Failed To Register Vehicle - warrant');await action('confirmMultipleReasonInput');
- await page.locator('[data-tb-input="multipleRecentFta"]').fill('- 400: Failure To Maintain Insurance - open (no warrant found)');await action('confirmMultipleReasonInput');
+ await page.locator('[data-tb-input="multipleRepeatAttempt"]').fill('FLORISSANT MUNICIPAL\n- 300: Failed To Register Vehicle - warrant - hold placed on license');await action('confirmMultipleReasonInput');
+ await page.locator('[data-tb-input="multipleRecentFta"]').fill('CITY OF ST. LOUIS MUNICIPAL\n- 400: Failure To Maintain Insurance - open (no warrant found)');await action('confirmMultipleReasonInput');
  // Hold the local font load to prove no fallback-font image is generated first.
  await page.evaluate(()=>{
    const NativeFontFace=window.FontFace;
@@ -61,6 +61,10 @@ const read=f=>fs.readFileSync(path.join(__dirname,'../src/tampermonkey',f),'utf8
  assert.equal(await page.locator('.moInfographicCard').count(),2);
  assert.ok((await page.locator('#moTextBuilderConstructed').innerText()).includes('Failed To Register Vehicle'));
  const eligibleCard=page.locator('[data-info-type="eligible"]');const ineligibleCard=page.locator('[data-info-type="ineligible"]');
+ for(const card of [eligibleCard,ineligibleCard]){assert.equal(await card.locator('[data-info-table]').count(),2);for(const title of ['Case Number','Warrant Found?','License Hold?'])assert.equal(await card.locator('svg text').evaluateAll((nodes,title)=>nodes.filter(node=>node.getAttribute('aria-label')===title).length,title),2);}
+ const tableData=await page.evaluate(()=>textBuilderState.data.infographicDrafts.ineligible.model.tables.map(t=>t.boxes.slice(3).map(b=>b.text)));
+ assert.equal(tableData[0][1],'Yes');assert.equal(tableData[0][2],'Yes');assert.equal(tableData[1][1],'No');assert.equal(tableData[1][2],'No');
+
  assert.equal(await page.locator('.moConstructedImages > h3').count(),0);
  assert.equal(await ineligibleCard.locator(':scope > h3').count(),0);
  assert.equal(await ineligibleCard.evaluate(el=>getComputedStyle(el).borderTopWidth),'0px');
@@ -82,9 +86,9 @@ const read=f=>fs.readFileSync(path.join(__dirname,'../src/tampermonkey',f),'utf8
  const title= ineligibleCard.locator('svg text').first();assert.equal(await title.getAttribute('text-anchor'),'middle');
  assert.equal(await ineligibleCard.locator('svg text').filter({hasText:'Next Steps for You'}).getAttribute('text-anchor'),'middle');
  const infoDownload=page.waitForEvent('download');await ineligibleCard.locator('[data-info-action="download"]').click();assert.equal((await infoDownload).suggestedFilename(),'constructed-infographic-ineligible.jpg');
- assert.ok((await ineligibleCard.locator('svg').textContent()).includes('Failed To Re. . .'));
- assert.ok(!(await ineligibleCard.locator('svg').textContent()).includes('Hello'));
- assert.ok((await eligibleCard.locator('svg').textContent()).includes('Failed To Register Vehicle'));
+ assert.ok((await ineligibleCard.locator('svg text').evaluateAll(nodes=>nodes.map(node=>node.getAttribute('aria-label')).join(' '))).includes('Failed To Register Vehicle'));
+ assert.ok(!(await ineligibleCard.locator('svg text').evaluateAll(nodes=>nodes.map(node=>node.getAttribute('aria-label')).join(' '))).includes('Hello'));
+ assert.ok((await eligibleCard.locator('svg text').evaluateAll(nodes=>nodes.map(node=>node.getAttribute('aria-label')).join(' '))).includes('Failed To Register Vehicle'));
  const geometry=await page.evaluate(()=>({text:document.querySelector('.moConstructedText').getBoundingClientRect().toJSON(),images:document.querySelector('.moConstructedImages').getBoundingClientRect().toJSON()}));
  assert.ok(geometry.text.right<geometry.images.x);
  assert.equal(await eligibleCard.locator(':scope > h3').count(),0);

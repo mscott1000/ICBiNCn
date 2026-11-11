@@ -45,21 +45,35 @@ function textBuilderInfographicSources() {
   }
   return sources;
 }
-function textBuilderInfographicTruncate(line) {
-  const colon = line.indexOf(':');
-  if (colon < 0) return line;
-  const tail = line.slice(colon + 1);
-  const status = /- (?:warrant|open \(no warrant found\))/i.exec(tail);
-  if (!status) return line;
-  const charge = tail.slice(0,status.index).trim();
-  const chars = Array.from(charge);
-  if (chars.length <= 12) return line;
-  return `${line.slice(0,colon + 1)} ${chars.slice(0,12).join('')}. . . ${tail.slice(status.index)}`;
-}
-function textBuilderInfographicRows(text,truncate) {
+function textBuilderInfographicRows(text) {
   return String(text || '').split(/\r?\n/).map(line => line.trim()).filter(line => line && !/^(?:-\s*){3,}$/.test(line))
-    .map(line => ({text:truncate ? textBuilderInfographicTruncate(line) : line,
-      court:!line.includes(':') && /(?:\bmunicipal\b|\bcircuit\b|\bcourt\b|\(\d{3}\)\s*\d{3}[- ]\d{4})/i.test(line)}));
+    .map(line => ({text:line,court:!line.includes(':') && /(?:\bmunicipal\b|\bcircuit\b|\bcourt\b|\(\d{3}\)\s*\d{3}[- ]\d{4})/i.test(line)}));
+}
+function textBuilderInfographicCaseEntry(line) {
+  const text = String(line || '').replace(/^\s*[-•]\s*/,'').trim();
+  if (!text.includes(':')) return null;
+  const open = /-\s*open\s*\(no warrant found\)/i.test(text);
+  const warrant = /-\s*warrant\b/i.test(text);
+  const status = /\s*-\s*(?:open\s*\(no warrant found\)|warrant\b)/i.exec(text);
+  let label = status ? text.slice(0,status.index) : text;
+  label = label.replace(/\s*(?:[-–—,;]\s*)?hold placed on license\b.*$/i,'').trim();
+  return {label,warrant:open ? 'No' : warrant ? 'Yes' : '—',license:/hold placed on license/i.test(text) ? 'Yes' : 'No'};
+}
+function textBuilderInfographicCourtGroups(text) {
+  const groups = [];
+  let current = null;
+  for (const row of textBuilderInfographicRows(text)) {
+    if (row.court) {
+      const court = row.text.toUpperCase();
+      current = groups.find(group => group.court === court);
+      if (!current) {current = {court,entries:[],notes:[]};groups.push(current);}
+    } else {
+      if (!current) {current = {court:'',entries:[],notes:[]};groups.push(current);}
+      const entry = textBuilderInfographicCaseEntry(row.text);
+      if (entry) current.entries.push(entry); else current.notes.push(row.text);
+    }
+  }
+  return groups;
 }
 // SVG presentation attributes lose to host-page CSS. Lock typography on text,
 // tspans and inline entry fields so preview measurements match Canvas exports.
@@ -92,7 +106,7 @@ function textBuilderInfographicLines(box,measure) {
 }
 function textBuilderInfographicBoxHeight(box,measure) {return Math.max(1,textBuilderInfographicLines(box,measure).length) * box.size * 1.4;}
 function textBuilderInfographicModel(source,measure) {
-  const model = {type:source.type,width:800,height:1000,caseBottom:620,boxes:[],sectionRules:[]};
+  const model = {type:source.type,width:800,height:1000,caseBottom:620,boxes:[],sectionRules:[],tables:[]};
   let y = 60;
   const add = (text,size,bold,kind='case') => {
     const width = kind === 'step' ? 712 : Math.min(712,Math.max(160,measure(text,size,bold)+8));
@@ -106,14 +120,16 @@ function textBuilderInfographicModel(source,measure) {
   for (const [index,section] of source.sections.entries()) {
     if (index > 0) {model.sectionRules.push(y);y += 44;}
     if (section.title) add(section.title,36,true,'subheading');
-    const rows = textBuilderInfographicRows(section.text,source.type === 'ineligible');
-    const showCourts = rows.filter(row => row.court).length > 1;
-    let courtCount = 0;
-    for (const row of rows) {
-      // A single court needs no subdivision; multiple courts keep their Summary headings.
-      if (row.court && !showCourts && source.type === 'eligible') continue;
-      if (source.type === 'eligible' && row.court && courtCount++ > 0) {model.sectionRules.push(y);y += 44;}
-      add(row.court ? row.text.toUpperCase() : row.text,row.court ? 22 : 28,row.court,row.court ? 'court' : 'case');
+    for (const [groupIndex,group] of textBuilderInfographicCourtGroups(section.text).entries()) {
+      if (groupIndex > 0) y += 24;
+      if (group.court) add(group.court,22,true,'court');
+      for (const note of group.notes) add(note,24,false);
+      if (group.entries.length) {
+        const table = textBuilderInfographicTable(group.entries,y,measure,model.boxes.length);
+        model.tables.push(table);
+        model.boxes.push(...table.boxes);
+        y += table.height + 24;
+      }
     }
     y += 16;
   }
@@ -123,6 +139,44 @@ function textBuilderInfographicModel(source,measure) {
   add('',23,false,'step');
   textBuilderInfographicReflow(model,measure);
   return model;
+}
+function textBuilderInfographicTable(entries,y,measure,idStart) {
+  const widths = [404,154,154];
+  const table = {x:44,y,width:712,height:0,rows:[],boxes:[],widths};
+  const rows = [['Case Number','Warrant Found?','License Hold?'],...entries.map(entry => [entry.label,entry.warrant,entry.license])];
+  let rowY = y;
+  for (const [index,values] of rows.entries()) {
+    const header = index === 0;
+    let x = 44;
+    const cells = values.map((text,column) => {
+      const box = {id:`box-${idStart+table.boxes.length+column}`,text,x:x+14,y:rowY+15,width:widths[column]-28,size:header ? 18 : 21,bold:header,kind:header ? 'tableHeader' : 'tableCell',center:column>0};
+      x += widths[column];return box;
+    });
+    const height = Math.max(header ? 60 : 64,...cells.map(box => textBuilderInfographicBoxHeight(box,measure)+30));
+    table.rows.push({y:rowY,height,header,index});table.boxes.push(...cells);rowY += height;
+  }
+  table.height = rowY-y;
+  return table;
+}
+function textBuilderInfographicTableSvg(model) {
+  return (model.tables || []).map(table => {
+    const rows = table.rows.map(row => `<rect x="${table.x}" y="${row.y}" width="${table.width}" height="${row.height}" fill="${row.header ? '#e5ebe8' : row.index%2 ? '#ffffff' : '#f8faf9'}"/><line x1="${table.x}" x2="${table.x+table.width}" y1="${row.y+row.height}" y2="${row.y+row.height}" stroke="#d1d9d5"/>`).join('');
+    let x = table.x;
+    const columns = table.widths.slice(0,-1).map(width => {x+=width;return `<line x1="${x}" x2="${x}" y1="${table.y}" y2="${table.y+table.height}" stroke="#d1d9d5"/>`;}).join('');
+    return `<g data-info-table="true" role="table" aria-label="Cases by court">${rows}${columns}<rect x="${table.x}" y="${table.y}" width="${table.width}" height="${table.height}" fill="none" stroke="#cbd5ce"/></g>`;
+  }).join('');
+}
+function textBuilderInfographicDrawTables(ctx,model) {
+  for (const table of model.tables || []) {
+    ctx.lineWidth=1;
+    for (const row of table.rows) {
+      ctx.fillStyle=row.header ? '#e5ebe8' : row.index%2 ? '#ffffff' : '#f8faf9';ctx.fillRect(table.x,row.y,table.width,row.height);
+      ctx.strokeStyle='#d1d9d5';ctx.beginPath();ctx.moveTo(table.x,row.y+row.height);ctx.lineTo(table.x+table.width,row.y+row.height);ctx.stroke();
+    }
+    let x=table.x;
+    for (const width of table.widths.slice(0,-1)) {x+=width;ctx.beginPath();ctx.moveTo(x,table.y);ctx.lineTo(x,table.y+table.height);ctx.stroke();}
+    ctx.strokeStyle='#cbd5ce';ctx.strokeRect(table.x,table.y,table.width,table.height);
+  }
 }
 function textBuilderInfographicReflow(model,measure) {
   let y = model.caseBottom + 148;
@@ -167,12 +221,13 @@ function textBuilderInfographicSvg(model,editing=true) {
       const fieldHeight = Math.max(80,height);
       return `<foreignObject x="${box.x}" y="${box.y}" width="${box.width}" height="${fieldHeight}"><textarea xmlns="http://www.w3.org/1999/xhtml" class="moInfographicStep" data-info-step="${esc(box.id)}" aria-label="Next step ${model.boxes.filter(b => b.kind === 'step').indexOf(box)+1}" placeholder="Enter next step" style="${textBuilderInfographicFontStyle(box.size,false)}">${esc(box.text)}</textarea></foreignObject>`;
     }
-    const centered = ['heading','stepsHeading'].includes(box.kind);
+    const centered = box.center || ['heading','stepsHeading'].includes(box.kind);
+    const centerX = box.center ? box.width/2 : model.width/2-box.x;
     const style = textBuilderInfographicFontStyle(box.size,box.bold);
     return `<g transform="translate(${box.x},${box.y})">
-      <text style="${style}" font-family="TICInfographicInter, sans-serif" font-size="${box.size}" font-weight="${box.bold ? '700' : '400'}" fill="${box.kind === 'court' ? '#73787c' : '#17212b'}" ${centered ? 'text-anchor="middle"' : ''} dominant-baseline="text-before-edge">${lines.map((line,i) => `<tspan style="${style}" x="${centered ? model.width/2-box.x : 0}" y="${i*box.size*1.4}">${esc(line)}</tspan>`).join('')}</text></g>`;
+      <text aria-label="${esc(box.text)}" style="${style}" font-family="TICInfographicInter, sans-serif" font-size="${box.size}" font-weight="${box.bold ? '700' : '400'}" fill="${box.kind === 'court' ? '#73787c' : '#17212b'}" ${centered ? 'text-anchor="middle"' : ''} dominant-baseline="text-before-edge">${lines.map((line,i) => `<tspan style="${style}" x="${centered ? centerX : 0}" y="${i*box.size*1.4}">${esc(line)}</tspan>`).join('')}</text></g>`;
   }).join('');
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${model.width} ${model.height}" class="moInfographicSvg" aria-label="${model.type === 'eligible' ? 'Eligible' : 'Ineligible'} Constructed Infographic"><rect width="800" height="${model.height}" fill="white"/>${panel(18,model.caseBottom-18,model.type === 'eligible' ? '#eff9ef' : '#fff4f4')}${panel(stepsY,model.height-stepsY-18,'#ffffff')}${rules}${boxes}</svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${model.width} ${model.height}" class="moInfographicSvg" aria-label="${model.type === 'eligible' ? 'Eligible' : 'Ineligible'} Constructed Infographic"><rect width="800" height="${model.height}" fill="white"/>${panel(18,model.caseBottom-18,model.type === 'eligible' ? '#eff9ef' : '#fff4f4')}${panel(stepsY,model.height-stepsY-18,'#ffffff')}${textBuilderInfographicTableSvg(model)}${rules}${boxes}</svg>`;
 }
 function textBuilderInfographicCard(source) {
   const draft = textBuilderInfographicDraft(source);
@@ -252,10 +307,11 @@ async function textBuilderInfographicBlob(model,mime) {
   const panel = (y,h,color) => {ctx.beginPath();ctx.roundRect(18,y,764,h,15);ctx.fillStyle=color;ctx.fill();ctx.strokeStyle='#cbd5ce';ctx.stroke();};
   panel(18,model.caseBottom-18,model.type==='eligible'?'#eff9ef':'#fff4f4');
   const stepsY=model.caseBottom+18;panel(stepsY,model.height-stepsY-18,'#ffffff');
+  textBuilderInfographicDrawTables(ctx,model);
   const measure=textBuilderInfographicMeasure();
   for(const line of textBuilderInfographicDecorations(model,measure)) {ctx.strokeStyle=line.color;ctx.beginPath();ctx.moveTo(line.x1,line.y);ctx.lineTo(line.x2,line.y);ctx.stroke();}
   ctx.textBaseline='top';ctx.fillStyle='#17212b';
-  for(const box of model.boxes) {ctx.font=textBuilderInfographicCanvasFont(box.size,box.bold);ctx.fillStyle=box.kind==='court'?'#73787c':'#17212b';ctx.textAlign=['heading','stepsHeading'].includes(box.kind)?'center':'left';textBuilderInfographicLines(box,measure).forEach((line,i)=>ctx.fillText(line,ctx.textAlign==='center'?model.width/2:box.x,box.y+i*box.size*1.4));}
+  for(const box of model.boxes) {ctx.font=textBuilderInfographicCanvasFont(box.size,box.bold);ctx.fillStyle=box.kind==='court'?'#73787c':'#17212b';ctx.textAlign=box.center || ['heading','stepsHeading'].includes(box.kind)?'center':'left';textBuilderInfographicLines(box,measure).forEach((line,i)=>ctx.fillText(line,ctx.textAlign==='center'?(box.center?box.x+box.width/2:model.width/2):box.x,box.y+i*box.size*1.4));}
   return new Promise((resolve,reject)=>canvas.toBlob(blob=>blob?resolve(blob):reject(new Error('Could not render image.')),mime,0.95));
 }
 async function textBuilderInfographicExport(model,action) {

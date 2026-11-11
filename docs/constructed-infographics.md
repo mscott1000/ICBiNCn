@@ -18,7 +18,9 @@ The eligible image contains “Cases we CAN request” and “Next Steps for TIC
 
 Both images have no surrounding editor headings or card frames, and both section headings are centered. Each case heading has a thin text-width underline. Each next-step heading has a full-width demarcation below it, without a direct text underline. Both layouts use larger bold headings, muted uppercase court labels, and fine separators between groups. The eligible case panel is pale green; the ineligible panel is pale blush.
 
-Images contain entered summaries rather than the message's added greeting, explanation, or closing. Only ineligible images shorten charges: charge text after the first colon and before `- warrant` or `- open (no warrant found)` is capped at 12 characters, followed by `. . .` if truncated. Case identifiers and status suffixes remain intact. The text message and entered summaries are not modified.
+Images contain entered summaries rather than the message's added greeting, explanation, or closing. Each court heading has its own table beneath it, including when there is only one court. Court groups retain first-appearance order from Summary; repeated headings within the same reason are merged into that court's table. Ineligible reason groups retain their existing order.
+
+The three table columns are **Case Number**, **Warrant Found?**, and **License Hold?**. Case Number contains the case number and charge text before the status suffix, without the bullet or license-hold annotation. Long text wraps, and row heights expand; the old 12-character charge cap no longer applies to either infographic. An entry containing `- open (no warrant found)` shows **No** for Warrant Found?, while `- warrant` shows **Yes**. An open marker takes precedence if both occur. A missing/unrecognized warrant status shows **—** rather than inventing a status. License Hold? shows **Yes** when `hold placed on license` occurs, otherwise **No**. Matching is case-insensitive. Unstructured notes without a case-number colon remain visible above the associated table. Original text-message summaries are not modified.
 
 ## Editing and exporting
 
@@ -30,7 +32,7 @@ Each image has an independent draft. Edits survive message rerendering, such as 
 
 ## Validation
 
-Run `node --test tests/*.test.cjs` for data routing, summary truncation, layout models, and existing behavior. Run `node tests/constructed-infographics.browser.cjs` with Playwright and Chromium installed for the mixed flow, direct next-step editing, fixed field positions, image encoding, download, clipboard, and panel checks. Set `INFOGRAPHIC_TEST_SCREENSHOT` to save an optional browser screenshot.
+Run `node --test tests/*.test.cjs` for data routing, table status parsing, court grouping, wrapping, layout models, and existing behavior. Run `node tests/constructed-infographics.browser.cjs` with Playwright and Chromium installed for the mixed flow, direct next-step editing, fixed field positions, image encoding, download, clipboard, and panel checks. Set `INFOGRAPHIC_TEST_SCREENSHOT` to save an optional browser screenshot.
 
 ## Bundled typeface
 
