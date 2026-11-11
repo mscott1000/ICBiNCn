@@ -5,14 +5,20 @@ const vm=require('node:vm');
 const file=fs.readFileSync(`${__dirname}/../src/tampermonkey/17a-constructed-infographics.js`,'utf8');
 function setup(data={}) {const c=vm.createContext({textBuilderState:{data},GM_addStyle:()=>{},escapeHtml:s=>s});vm.runInContext(file,c);return c;}
 const measure=(text,size)=>Array.from(text).length*size*0.55;
-test('charge truncation keeps case identifiers, status, phone numbers and short charges',()=>{
+test('table case entries extract full case text and explicit warrant/license statuses',()=>{
  const c=setup();
- for(const status of ['- warrant','- open (no warrant found)']){
-  assert.equal(c.textBuilderInfographicTruncate(`- 123: Failed To Register Vehicle ${status}`),`- 123: Failed To Re. . . ${status}`);
-  assert.equal(c.textBuilderInfographicTruncate(`- 123: Exactly12345 ${status}`),`- 123: Exactly12345 ${status}`);
+ const row=c.textBuilderInfographicCaseEntry('- 23SL-CR12345: Failed To Register Vehicle With Expired Plates - warrant - hold placed on license');
+ assert.equal(row.label,'23SL-CR12345: Failed To Register Vehicle With Expired Plates');assert.equal(row.warrant,'Yes');assert.equal(row.license,'Yes');
+ for(const input of ['- 123: Example - open (no warrant found)','- 123: Example - warrant - open (no warrant found)']) {
+  const row=c.textBuilderInfographicCaseEntry(input);assert.equal(row.warrant,'No');assert.equal(row.license,'No');
  }
- for(const line of ['FLORISSANT MUNICIPAL - (314) 921-3322','Notes: contact clerk','- 123: no matching status']) assert.equal(c.textBuilderInfographicTruncate(line),line);
- assert.equal(c.textBuilderInfographicTruncate('- 123: 😀😀😀😀😀😀😀😀😀😀😀😀😀 - warrant'),'- 123: 😀😀😀😀😀😀😀😀😀😀😀😀. . . - warrant');
+ assert.equal(c.textBuilderInfographicCaseEntry('- 123: Example - WARRANT - HOLD PLACED ON LICENSE').license,'Yes');
+ assert.equal(c.textBuilderInfographicCaseEntry('- 123: Example').warrant,'—');
+ assert.equal(c.textBuilderInfographicCaseEntry('Contact the clerk'),null);
+});
+test('court grouping preserves order, merges repeated headings, and keeps each case at its court',()=>{
+ const c=setup();const groups=c.textBuilderInfographicCourtGroups('FLORISSANT MUNICIPAL\n- 1: One - warrant\nCITY OF ST. LOUIS MUNICIPAL\n- 2: Two - open (no warrant found)\nFLORISSANT MUNICIPAL\n- 3: Three - warrant');
+ assert.equal(groups.length,2);assert.equal(groups[0].court,'FLORISSANT MUNICIPAL');assert.equal(groups[0].entries.map(row=>row.label).join('|'),'1: One|3: Three');assert.equal(groups[1].entries[0].label,'2: Two');
 });
 test('eligible and ineligible sources use only entered summaries and correct reason titles',()=>{
  const c=setup({researchType:'CanDo + Can’tDo',eligibleCases:'COURT A\n- 1: Eligible',multipleReasons:['Out of Network','Recent FTA','Repeat Attempt'],multipleOutOfNetwork:'network input',multipleRecentFta:'fta input',multipleRepeatAttempt:'repeat input'});
@@ -38,7 +44,8 @@ test('models group courts, grow for long input, and generate one empty next-step
  assert.equal(eligible.boxes.filter(b=>b.kind==='step').length,1);
  assert.equal(eligible.boxes.find(b=>b.kind==='stepsHeading').text,'Next Steps for TIC');
  const ineligible=c.textBuilderInfographicModel({type:'ineligible',sections:[{title:'Repeat Attempt',text}]},measure);
- assert.ok(ineligible.boxes.some(b=>b.text.includes('Failed To Re. . .')));
+ assert.ok(ineligible.boxes.some(b=>b.text.includes('Failed To Register Vehicle')));
+ assert.equal(ineligible.tables.length,2);
  assert.equal(ineligible.boxes.find(b=>b.kind==='stepsHeading').text,'Next Steps for You');
  const long=c.textBuilderInfographicModel({type:'ineligible',sections:[{title:'Repeat Attempt',text:Array(100).fill('- 123: Failed To Register Vehicle - warrant').join('\n')}]},measure);
  assert.ok(long.height>5000);
@@ -91,10 +98,10 @@ test('eligible layout shares the approved headings, rules and fixed steps withou
  assert.equal(model.boxes.filter(b=>b.kind==='step').length,1);
  assert.equal(model.boxes.filter(b=>b.kind==='court').length,2);
  assert.ok(model.boxes.some(b=>b.text.includes('Register Vehicle Without Valid Plates')));
- assert.equal(model.sectionRules.length,1);
+ assert.equal(model.tables.length,2);
  const rules=c.textBuilderInfographicDecorations(model,measure);
  assert.ok(rules.some(line=>line.y===model.caseBottom+122));
- assert.equal(rules.length,3);
+ assert.equal(rules.length,2);
  const locked=JSON.stringify(model.boxes.filter(b=>b.kind!=='step'));
  model.boxes.find(b=>b.kind==='step').text='Send request';
  c.textBuilderInfographicReflow(model,measure);
@@ -112,4 +119,15 @@ test('bundled Inter is the font used by preview and export, and failed loads can
  assert.equal(c.textBuilderInfographicCanvasFont(44,true),'700 44px TICInfographicInter, sans-serif');
  await assert.rejects(c.textBuilderLoadInfographicFont(),/font load failed/);
  assert.throws(()=>c.textBuilderInfographicMeasure(),/not finished loading/);
+});
+
+test('table geometry wraps long case text and leaves next steps below the case tables',()=>{
+ const c=setup();for(const type of ['eligible','ineligible']){
+ const source={type,sections:[{title:type==='ineligible'?'Repeat Attempt':undefined,text:'FLORISSANT MUNICIPAL\n- 123: '+('A long charge description '.repeat(15))+'- warrant - hold placed on license'}]};
+ const model=c.textBuilderInfographicModel(source,measure);assert.equal(model.tables.length,1);
+ const table=model.tables[0];assert.equal(table.boxes.slice(0,3).map(b=>b.text).join('|'),'Case Number|Warrant Found?|License Hold?');assert.ok(table.rows[1].height>64);
+ assert.ok(model.caseBottom>table.y+table.height);
+ for(const row of table.rows)for(const cell of table.boxes.filter(b=>b.y===row.y+15))assert.ok(c.textBuilderInfographicBoxHeight(cell,measure)+30<=row.height);
+ assert.equal(table.boxes[4].text,'Yes');assert.equal(table.boxes[5].text,'Yes');
+ }
 });
