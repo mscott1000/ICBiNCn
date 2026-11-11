@@ -32,7 +32,7 @@ test('selection requires a reason, supports toggling, and visits all selected fi
   }
   assert.equal(c.textBuilderState.screen,'message');
   const order=['Repeat Attempt','Initial Warrant','Private Attorney','Fresh Start Friday','Recent FTA','Out of Network'];
-  assert.equal(c.textBuilderBuildMessage(),['Hello, this is Casey from the Tap In Center. We were unable to find cases that are eligible for our service. Here is a summary and explanation of what we found:',...order.map(label=>`Summary: ${label}`),'If you feel we have missed something, please share the case number(s).'].join('\n\n'));
+  assert.equal(c.textBuilderBuildMessage(),['Hello, this is Casey from the Tap In Center. We were unable to find cases that are eligible for our service. Here is a summary and explanation of what we found:',...order.map(label=>label === 'Fresh Start Friday' ? c.textBuilderFreshStartFridaysMessage() : `Summary: ${label}`),'If you feel we have missed something, please share the case number(s).'].join('\n\n'));
   c.textBuilderBack();
   assert.ok(c.textBuilderScreenTitle().endsWith('Recent FTA'));
   assert.equal(c.textBuilderState.data.multipleRecentFta,'Summary: Recent FTA');
@@ -47,7 +47,8 @@ test('every single reason works; blank and deselected summaries are omitted',()=
     c.textBuilderState.data[reason.key]='Case 123\nExplanation';
     c.textBuilderMultipleReasonAction('confirmMultipleReasonInput');
     assert.equal(c.textBuilderState.screen,'message');
-    assert.match(c.textBuilderBuildMessage(),/found:\n\nCase 123\nExplanation\n\nIf you feel/);
+    if (label === 'Fresh Start Friday') assert.ok(c.textBuilderBuildMessage().includes(c.textBuilderFreshStartFridaysMessage()));
+    else assert.match(c.textBuilderBuildMessage(),/found:\n\nCase 123\nExplanation\n\nIf you feel/);
     c.textBuilderState.data[reason.key]='  ';
     assert.match(c.textBuilderBuildMessage(),/found:\n\nIf you feel/);
     c.textBuilderBack();c.textBuilderBack();
@@ -67,4 +68,11 @@ test('both UI entry points route the new actions and render distinct fields safe
   c.textBuilderState.data.multiplePrivateAttorney='<case>';
   assert.match(c.textBuilderTextarea('Private Attorney','summary','confirmMultipleReasonInput','multiplePrivateAttorney'),/&lt;case>/);
   assert.equal(c.textBuilderMultipleReasonAction('confirmIneligible'),false);
+});
+
+test('standalone Fresh Start Fridays uses exact wording and line breaks',()=>{
+  const c=setup();
+  c.textBuilderState.data.researchType='Can’tDo: Fresh Start Friday';
+  c.textBuilderState.data.ineligibleCases='Entered case summary';
+  assert.equal(c.textBuilderBuildMessage(),"This is Casey from the Tap In Center, thank you for filling out the intake!\n\nI saw you mentioned St. Louis County. We found a warrant in the St. Louis County MUNICIPAL Court, which has their own warrant program called 'Fresh Start Fridays'.\n\nFSF is a virtual court, allowing those with warrants in the St. Louis County Municipal Court to log in and request a recall and a new court date without fear of arrest. The judge holds this virtual docket at 10:00 AM every Friday, except holidays. This link will take you to the virtual courtroom:\nhttps://mocourts.webex.com/meet/courtney.whiteside");
 });

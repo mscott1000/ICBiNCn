@@ -4331,6 +4331,16 @@ const TEXT_BUILDER_MULTIPLE_REASONS = [
   {label:'Recent FTA',key:'multipleRecentFta',placeholder:'Enter summary of cases with a recent Failure to Appear'}
 ];
 const TEXT_BUILDER_MULTIPLE_OUTPUT_ORDER = ['Repeat Attempt','Initial Warrant','Private Attorney','Fresh Start Friday','Recent FTA','Out of Network'];
+function textBuilderFreshStartFridaysMessage() {return `This is ${textBuilderState.data.staff} from the Tap In Center, thank you for filling out the intake!
+
+I saw you mentioned St. Louis County. We found a warrant in the St. Louis County MUNICIPAL Court, which has their own warrant program called 'Fresh Start Fridays'.
+
+FSF is a virtual court, allowing those with warrants in the St. Louis County Municipal Court to log in and request a recall and a new court date without fear of arrest. The judge holds this virtual docket at 10:00 AM every Friday, except holidays. This link will take you to the virtual courtroom:
+https://mocourts.webex.com/meet/courtney.whiteside`;}
+function textBuilderMultipleReasonText(reason) {
+  const text = String(textBuilderState.data[reason.key] || '');
+  return text.trim() && reason.label === 'Fresh Start Friday' ? textBuilderFreshStartFridaysMessage() : text;
+}
 function textBuilderSelectedReasons() {
   return TEXT_BUILDER_MULTIPLE_REASONS.filter(reason => (textBuilderState.data.multipleReasons || []).includes(reason.label));
 }
@@ -4358,7 +4368,7 @@ function textBuilderMultipleReasonAction(action,value) {
     else if (textBuilderState.data.researchType === 'CanDo + Can’tDo') {
       const selected = textBuilderSelectedReasons();
       const summaries = TEXT_BUILDER_MULTIPLE_OUTPUT_ORDER.map(label => selected.find(reason => reason.label === label))
-        .filter(Boolean).map(reason => textBuilderState.data[reason.key] || '').filter(text => text.trim());
+        .filter(Boolean).map(textBuilderMultipleReasonText).filter(text => text.trim());
       textBuilderSet('address',{multipleReasonIndex:index,ineligibleCases:summaries.join('\n\n')});
     } else textBuilderSet('message',{multipleReasonIndex:index});
     return true;
@@ -4369,7 +4379,7 @@ function textBuilderMultipleReasonsMessage() {
   const d = textBuilderState.data;
   const selected = textBuilderSelectedReasons();
   const sections = TEXT_BUILDER_MULTIPLE_OUTPUT_ORDER.map(label => selected.find(reason => reason.label === label))
-    .filter(Boolean).map(reason => String(d[reason.key] || '')).filter(text => text.trim());
+    .filter(Boolean).map(textBuilderMultipleReasonText).filter(text => text.trim());
   return [`Hello, this is ${d.staff} from the Tap In Center. We were unable to find cases that are eligible for our service. Here is a summary and explanation of what we found:`,
     ...sections,'If you feel we have missed something, please share the case number(s).'].join('\n\n');
 }
@@ -4459,17 +4469,7 @@ When a judge decides to issue this type of warrant at the same time as the case 
 If you have not done so already, we recommend filling out the application for a Missouri Public Defender here: https://publicdefender.mo.gov/client-application/
 
 You may also seek private defense, though we cannot give advice for this. If you feel we have missed something, please share the case number for your cases and we will take a look.`;
-                                    if (d.researchType === 'Can’tDo: Fresh Start Friday') return `This is ${d.staff} from the Tap In Center, thank you for filling out our intake form!
-
-I saw that you mentioned St. Louis County, and would like to clear up how to address your cases there. We found a warrant in the St. Louis County MUNICIPAL Court, which has their own warrant program called 'Fresh Start Fridays'. Here is a summary of the cases we found:
-
-- - -
-
-${d.ineligibleCases || ''}
-
-- - -
-
-If you feel we have missed something, please share the case number(s).`;
+                                    if (d.researchType === 'Can’tDo: Fresh Start Friday') return textBuilderFreshStartFridaysMessage();
                                     if (d.researchType === 'Can’tDo: Private Attorney') return `This is ${d.staff} with the Tap In Center, thank you for submitting an intake form. After researching your public record, there appears to be a private attorney entered as counsel here:${textBuilderOptionalBlock(d.privateAttorneyCases,(cases) => `\n\n${cases}`)}\n\nWhen a private attorney is entered, no other party - including us - can affect anything on that case. We recommend getting in contact with them, regardless of how long it has been since you last spoke.${textBuilderOptionalBlock(d.remainingIneligibleCases,(cases) => `\n\n\nHere is a summary of the cases we found under your information that we CANNOT assist with. We have listed the phone number for each Court clerk - we recommend calling before appearing anywhere in person, and they are the best source of information for cases in their Court:\n\n${cases}`)}`;
                                     let msg = `${textBuilderEligibleIntro()}${textBuilderOptionalBlock(d.eligibleCases,(cases) => `\n\n${cases}`)}\n\nThe Judge makes their decision, and the Court updates us one to two weeks after the Wednesday morning we submit.\n\n${textBuilderOptionalBlock(d.seatbeltViolations,(violations) => `AFTER we hear back, we suggest handling this:\n\n${violations}\n\nSeatbelt charges carry a mandatory $10.00 fine, payable in-person or by phone. Once paid, the warrant is recalled and the case is closed. Do this AFTER we contact you.\n\n`)}`;
                                     if (d.researchType === 'CanDo + Can’tDo') msg += `${textBuilderOptionalBlock(d.ineligibleCases,(cases) => `
