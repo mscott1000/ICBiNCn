@@ -40,8 +40,8 @@ test('models group courts, grow for long input, and generate the correct startin
  const eligible=c.textBuilderInfographicModel({type:'eligible',sections:[{text}]},measure);
  assert.equal(eligible.boxes.filter(b=>b.text.includes('MUNICIPAL')).length,2);
  assert.ok(eligible.boxes.some(b=>String(b.fullText || b.text).includes('Failed To Register Vehicle')));
- assert.equal(eligible.boxes.filter(b=>b.kind==='step').map(b=>b.text).join('|'),'Request a recall from the Court|When we hear back, we will text you');
- assert.equal(eligible.boxes.filter(b=>b.kind==='step').length,2);
+ assert.equal(eligible.boxes.filter(b=>b.kind==='step').map(b=>b.text).join('|'),'Update you after Court decision');
+ assert.equal(eligible.boxes.filter(b=>b.kind==='step').length,1);
  assert.equal(eligible.boxes.find(b=>b.kind==='stepsHeading').text,'Next Steps for TIC');
  const ineligible=c.textBuilderInfographicModel({type:'ineligible',sections:[{title:'Repeat Attempt',text}]},measure);
  assert.ok(ineligible.boxes.some(b=>String(b.fullText || b.text).includes('Failed To Register Vehicle')));
@@ -95,13 +95,13 @@ test('eligible layout preserves full source data and uses the approved headings 
  assert.equal(model.boxes.find(b=>b.kind==='heading').size,44);
  assert.equal(model.boxes.find(b=>b.kind==='stepsHeading').text,'Next Steps for TIC');
  assert.equal(model.boxes.find(b=>b.kind==='stepsHeading').size,38);
- assert.equal(model.boxes.filter(b=>b.kind==='step').length,2);
+ assert.equal(model.boxes.filter(b=>b.kind==='step').length,1);
  assert.equal(model.boxes.filter(b=>b.kind==='court').length,2);
  assert.ok(model.boxes.some(b=>String(b.fullText || b.text).includes('Register Vehicle Without Valid Plates')));
  assert.equal(model.tables.length,2);
  const rules=c.textBuilderInfographicDecorations(model,measure);
  assert.ok(rules.some(line=>line.y===model.caseBottom+122));
- assert.equal(rules.length,3);
+ assert.equal(rules.length,2);
  const locked=JSON.stringify(model.boxes.filter(b=>b.kind!=='step'));
  model.boxes.find(b=>b.kind==='step').text='Send request';
  c.textBuilderInfographicReflow(model,measure);
