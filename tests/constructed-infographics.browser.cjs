@@ -62,6 +62,13 @@ const read=f=>fs.readFileSync(path.join(__dirname,'../src/tampermonkey',f),'utf8
  assert.ok((await page.locator('#moTextBuilderConstructed').innerText()).includes('Failed To Register Vehicle'));
  const eligibleCard=page.locator('[data-info-type="eligible"]');const ineligibleCard=page.locator('[data-info-type="ineligible"]');
  for(const card of [eligibleCard,ineligibleCard]){assert.equal(await card.locator('[data-info-table]').count(),2);for(const title of ['Case Number','Warrant Found?','License Hold?'])assert.equal(await card.locator('svg text').evaluateAll((nodes,title)=>nodes.filter(node=>node.getAttribute('aria-label')===title).length,title),2);}
+ const headersFit=await page.evaluate(()=>Object.values(textBuilderState.data.infographicDrafts).every(draft=>draft.model.tables.every(table=>table.boxes.slice(0,3).every(cell=>textBuilderInfographicLines(cell,textBuilderInfographicMeasure()).length===1 && Math.abs(cell.y-(table.y+(table.rows[0].height-textBuilderInfographicBoxHeight(cell,textBuilderInfographicMeasure()))/2))<0.01))));
+ assert.ok(headersFit);
+ for(const card of [eligibleCard,ineligibleCard]){
+  const fills=await card.locator('[data-info-table] rect').evaluateAll(nodes=>nodes.map(node=>node.getAttribute('fill')));assert.ok(fills.every(fill=>fill==='#ffffff'||fill==='none'));
+  assert.equal(await card.locator('text[aria-label="Case Number"]').first().getAttribute('text-anchor'),null);
+  for(const title of ['Warrant Found?','License Hold?'])assert.equal(await card.locator('text').evaluateAll((nodes,title)=>nodes.find(node=>node.getAttribute('aria-label')===title).getAttribute('text-anchor'),title),'middle');
+ }
  const tableData=await page.evaluate(()=>textBuilderState.data.infographicDrafts.ineligible.model.tables.map(t=>t.boxes.slice(3).map(b=>b.text)));
  assert.equal(tableData[0][1],'Yes');assert.equal(tableData[0][2],'Yes');assert.equal(tableData[1][1],'No');assert.equal(tableData[1][2],'No');
 

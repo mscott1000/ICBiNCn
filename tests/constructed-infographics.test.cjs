@@ -131,3 +131,13 @@ test('table geometry wraps long case text and leaves next steps below the case t
  assert.equal(table.boxes[4].text,'Yes');assert.equal(table.boxes[5].text,'Yes');
  }
 });
+
+test('table headers are vertically centered, keep the case label left aligned, and fit status labels on one line',()=>{
+ const c=setup();const table=c.textBuilderInfographicTable([{label:'123: Charge',warrant:'Yes',license:'No'}],100,measure,0);
+ const header=table.rows[0];const cells=table.boxes.slice(0,3);
+ assert.equal(cells[0].center,false);assert.equal(cells[1].center,true);assert.equal(cells[2].center,true);
+ for(const box of cells) {assert.equal(c.textBuilderInfographicLines(box,measure).length,1);assert.equal(box.y,header.y+(header.height-c.textBuilderInfographicBoxHeight(box,measure))/2);}
+ const model={tables:[table]};assert.ok(!c.textBuilderInfographicTableSvg(model).includes('#e5ebe8'));assert.ok(!c.textBuilderInfographicTableSvg(model).includes('#f8faf9'));
+ const fills=[];const ctx={beginPath(){},moveTo(){},lineTo(){},stroke(){},strokeRect(){},fillRect(){fills.push(this.fillStyle);}};
+ c.textBuilderInfographicDrawTables(ctx,model);assert.equal(fills.join(','),'#ffffff,#ffffff');
+});
