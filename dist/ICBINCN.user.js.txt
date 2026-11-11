@@ -3144,7 +3144,6 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
                                                                         if (judgeKey && shouldIncludeJudgeDetails(jurisdiction)) return `${key} - Judge ${formatJudgeDisplayName(judgeKey)}`;
                                                                         return pool[0].displayWithJudge || pool[0].display;}
 
-  const FRESH_START_FRIDAY_TEXT = "* The virtual court program 'Fresh Start Fridays' allows those with active warrants in the St. Louis County Municipal Court to ask for the warrant to be recalled and for a new court date to be set without fear of arrest. The judge holds this virtual docket at 10am every Friday, except for those that fall on a county, state or federal holiday. This link will take you to the virtual courtroom:\nhttps://mocourts.webex.com/meet/courtney.whiteside";
 
   function getCaseNumberForSummary(e) {const fromTitle = norm(String(e?.caseTitle || '').split('–')[0]);
                                       if (e?._source === 'municourt') {const muniNo = getMuniPrimaryCaseNumber(e) || fromTitle;
@@ -3405,7 +3404,6 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
                                                                                                                                                                                                                                                                        const charge = norm(e?.chargeDescription || '') || 'No Charges Found';
                                                                                                                                                                                                                                                                        const lineStatus = e?._source === 'municourt' ? getMunicourtSummaryLineStatus(e) : getSummaryLineStatus(e);
                                                                                                                                                                                                                                                                        sections.push(formatSummaryCaseLine(caseNo,charge,lineStatus));}}
-                                                                                                                                                                                if (isFreshStartFridayHeader(header)) sections.push(FRESH_START_FRIDAY_TEXT);
                                                                                                                                                                                 sections.push('');}}
                                                                   return {sections};}
 
