@@ -109,14 +109,13 @@ const read=f=>fs.readFileSync(path.join(__dirname,'../src/tampermonkey',f),'utf8
  assert.equal(await eligibleCard.evaluate(el=>getComputedStyle(el).borderTopWidth),'0px');
  assert.equal(await eligibleCard.locator('[data-info-edit], [data-info-box]').count(),0);
  assert.deepEqual(await eligibleCard.locator('button').allTextContents(),['Add next step','Copy Image','Download for Email']);
- assert.equal(await eligibleCard.locator('[data-info-step]').count(),2);
- assert.equal(await eligibleCard.locator('[data-info-step]').first().inputValue(),'Request a recall from the Court');
- assert.equal(await eligibleCard.locator('[data-info-step]').nth(1).inputValue(),'When we hear back, we will text you');
+ assert.equal(await eligibleCard.locator('[data-info-step]').count(),1);
+ assert.equal(await eligibleCard.locator('[data-info-step]').first().inputValue(),'Update you after Court decision');
  for(const heading of ['Cases we CAN request','Next Steps for TIC']) assert.equal(await eligibleCard.locator('svg text').filter({hasText:heading}).getAttribute('text-anchor'),'middle');
  const lockedEligible=await page.evaluate(()=>JSON.stringify(textBuilderState.data.infographicDrafts.eligible.model.boxes.filter(b=>b.kind!=='step')));
  await eligibleCard.locator('[data-info-step]').first().fill('Call the court on Tuesday');
  await eligibleCard.locator('[data-info-action="addStep"]').click();
- await eligibleCard.locator('[data-info-step]').nth(2).fill('Send the request');
+ await eligibleCard.locator('[data-info-step]').nth(1).fill('Send the request');
  const fixedEligible=await page.evaluate(()=>textBuilderState.data.infographicDrafts.eligible.model.boxes.filter(b=>b.kind==='step').map(b=>({x:b.x,y:b.y})));
  await eligibleCard.locator('[data-info-step]').first().scrollIntoViewIfNeeded();const eligibleBounds=await eligibleCard.locator('[data-info-step]').first().boundingBox();
  await page.mouse.move(eligibleBounds.x+10,eligibleBounds.y+10);await page.mouse.down();await page.mouse.move(eligibleBounds.x+40,eligibleBounds.y+40);await page.mouse.up();
@@ -124,8 +123,7 @@ const read=f=>fs.readFileSync(path.join(__dirname,'../src/tampermonkey',f),'utf8
  assert.equal(await page.evaluate(()=>JSON.stringify(textBuilderState.data.infographicDrafts.eligible.model.boxes.filter(b=>b.kind!=='step'))),lockedEligible);
  await action('toggleCaseData');
  assert.equal(await eligibleCard.locator('[data-info-step]').first().inputValue(),'Call the court on Tuesday');
- assert.equal(await eligibleCard.locator('[data-info-step]').nth(1).inputValue(),'When we hear back, we will text you');
- assert.equal(await eligibleCard.locator('[data-info-step]').nth(2).inputValue(),'Send the request');
+ assert.equal(await eligibleCard.locator('[data-info-step]').nth(1).inputValue(),'Send the request');
  // Both real encoders produce their requested MIME and magic bytes, with editable text retained.
  const encodings=await page.evaluate(async()=>{
  const m=textBuilderState.data.infographicDrafts.eligible.model;

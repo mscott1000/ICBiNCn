@@ -4921,8 +4921,7 @@ function textBuilderInfographicModel(source,measure) {
   y = model.caseBottom + 54;
   add(source.type === 'eligible' ? 'Next Steps for TIC' : 'Next Steps for You',38,true,'stepsHeading');
   if (source.type === 'eligible') {
-    add('Request a recall from the Court',23,false,'step');
-    add('When we hear back, we will text you',23,false,'step');
+    add('Update you after Court decision',23,false,'step');
   } else add('',23,false,'step');
   textBuilderInfographicReflow(model,measure);
   return model;
