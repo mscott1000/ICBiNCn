@@ -730,6 +730,7 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
   function isEligibleSummaryJurisdiction(jurisdiction) {const key = municipalityMatchKey(jurisdiction);
                                                         if (!key) return false;
                                                         if (key.includes('ST LOUIS COUNTY MUNICIPAL')) return false;
+                                                        if (key.includes('BRIDGETON MUNICIPAL') || key.includes('LAKESHIRE MUNICIPAL')) return true;
                                                         if (key.includes('CLAYTON MUNICIPAL')) return true;
                                                         if (key.includes('FLORISSANT')) return true;
                                                         if (key.includes('UNIVERSITY CITY')) return true;

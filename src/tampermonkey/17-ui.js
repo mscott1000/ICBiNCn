@@ -594,7 +594,8 @@ GM_addStyle(`:root{ --mo-ui-scale: 1.2;         /* uniformly enlarge the complet
                                   background:#fff;
                                   color:#0f172a;
                                   min-height:180px;
-                                  font-size:13px;
+                                  font-family:inherit;font-size:13px;
+                                  width:100%;resize:none;
                                   line-height:1.35;}
             /* Reserve space for controls; only message text may scroll. */
             #moJsonContent.moTextBuilderMessageContent{overflow:hidden;}
@@ -763,7 +764,7 @@ textBuilderPanel.innerHTML = `
 (document.body || document.documentElement).appendChild(textBuilderPanel);
 const textBuilderBody = textBuilderPanel.querySelector('#moJsonTextBuilderBody');
 const TEXT_BUILDER_STAFF = ['Anna','Dylan','Kyle','Mason','Miranda','Tanya'];
-const TEXT_BUILDER_COURTS = ['City of St. Louis Circuit','City of St. Louis Municipal','Clayton','Florissant','Kirkwood','Manchester','Richmond Heights','St. Louis County Circuit','University City','Webster Groves'];
+const TEXT_BUILDER_COURTS = ['Bridgeton','City of St. Louis Circuit','City of St. Louis Municipal','Clayton','Florissant','Kirkwood','Lakeshire','Manchester','Richmond Heights','St. Louis County Circuit','University City','Webster Groves'];
 const TEXT_BUILDER_LIMIT_NOTICE = '**GOOGLE VOICE LIMIT - SEPARATE INTO MULTIPLE TEXTS HERE OR EARLIER**';
 let textBuilderState = {screen:'root',history:[],data:{courts:[]}};
 const TEXT_BUILDER_LEGAL_AID_MESSAGES = {
@@ -813,23 +814,81 @@ const TEXT_BUILDER_MULTIPLE_REASONS = [
   {label:'Repeat Attempt',key:'multipleRepeatAttempt',placeholder:'Enter summary of ineligible cases - make sure to identify which cases are repeats'},
   {label:'Fresh Start Friday',key:'multipleFreshStartFriday',placeholder:'Enter summary of Fresh Start Friday cases'},
   {label:'Initial Warrant',key:'multipleInitialWarrant',placeholder:"Enter summary of case(s) in 'initial warrant' status"},
-  {label:'Recent FTA',key:'multipleRecentFta',placeholder:'Enter summary of cases with a recent Failure to Appear'}
+  {label:'Recent FTA',key:'multipleRecentFta',placeholder:'Enter summary of cases with a recent Failure to Appear'},
+  {label:'Florissant Seatbelt',key:'multipleFlorissantSeatbelt',placeholder:'Enter case summary for the Florissant seatbelt charge(s)'}
 ];
-const TEXT_BUILDER_MULTIPLE_OUTPUT_ORDER = ['Repeat Attempt','Initial Warrant','Private Attorney','Fresh Start Friday','Recent FTA','Out of Network'];
-function textBuilderFreshStartFridaysMessage() {return `This is ${textBuilderState.data.staff} from the Tap In Center, thank you for filling out the intake!
+const TEXT_BUILDER_MULTIPLE_OUTPUT_ORDER = ['Repeat Attempt','Initial Warrant','Private Attorney','Fresh Start Friday','Recent FTA','Out of Network','Florissant Seatbelt'];
+function textBuilderFreshStartFridaysBody() {return `I saw you mentioned St. Louis County. We found a warrant in the St. Louis County MUNICIPAL Court, which has their own warrant program called 'Fresh Start Fridays'. We attached case details, and here is how the program works:
 
-I saw you mentioned St. Louis County. We found a warrant in the St. Louis County MUNICIPAL Court, which has their own warrant program called 'Fresh Start Fridays'.
-
-FSF is a virtual court, allowing those with warrants in the St. Louis County Municipal Court to log in and request a recall and a new court date without fear of arrest. The judge holds this virtual docket at 10:00 AM every Friday, except holidays. This link will take you to the virtual courtroom:
+FSF is a virtual court hearing, allowing those with warrants in the St. Louis County Municipal Court to log in and request a recall and a new court date without fear of arrest. The judge holds this virtual docket at 10:00 AM every Friday, except holidays. This link will take you to the virtual courtroom:
 https://mocourts.webex.com/meet/courtney.whiteside`;}
+function textBuilderFreshStartFridaysMessage() {return `This is ${textBuilderState.data.staff} from the Tap In Center, thank you for filling out the intake!\n\n${textBuilderFreshStartFridaysBody()}`;}
 function textBuilderMultipleReasonText(reason) {
-  const text = String(textBuilderState.data[reason.key] || '');
-  return text.trim() && reason.label === 'Fresh Start Friday' ? textBuilderFreshStartFridaysMessage() : text;
+  if (!String(textBuilderState.data[reason.key] || '').trim()) return '';
+  if (reason.label === 'Fresh Start Friday') return textBuilderFreshStartFridaysBody();
+  if (reason.label === 'Florissant Seatbelt') return textBuilderSeatbeltExplanation();
+  return '';
+}
+function textBuilderPopulatedReasons() {return textBuilderSelectedReasons().filter(reason => String(textBuilderState.data[reason.key] || '').trim());}
+function textBuilderReasonExplanations() {
+  return TEXT_BUILDER_MULTIPLE_OUTPUT_ORDER.map(label => textBuilderPopulatedReasons().find(reason => reason.label === label)).filter(Boolean).map(textBuilderMultipleReasonText).filter(Boolean).join('\n\n');
+}
+function textBuilderHasEligible() {return String(textBuilderState.data.eligibleCases || '').trim().length > 0;}
+function textBuilderHasIneligible() {return textBuilderPopulatedReasons().length > 0;}
+function textBuilderSeatbeltExplanation() {
+  return textBuilderHasEligible() && (textBuilderState.data.researchType === 'CanDo + Can’tDo' || textBuilderState.data.workflow === 'walkInDropIn')
+    ? 'You also have a Florissant seatbelt case, which must be handled separately. Please see the attached image for details.\n\nThe Court will not recall seatbelt charges, but they can be handled independently after we hear back on the cases we submit.'
+    : 'You have a Florissant seatbelt case, which must be handled separately. Please see the attached image for details.\n\nThe Court will not recall seatbelt charges through our program. Contact the Florissant clerk for information about handling them independently.';
 }
 function textBuilderSelectedReasons() {
   return TEXT_BUILDER_MULTIPLE_REASONS.filter(reason => (textBuilderState.data.multipleReasons || []).includes(reason.label));
 }
+function textBuilderMessageDraft(key,base) {
+  const drafts = textBuilderState.data.messageDrafts || (textBuilderState.data.messageDrafts = {});
+  if (!drafts[key] || drafts[key].text === drafts[key].base) drafts[key] = {text:base,base};
+  return drafts[key];
+}
+function textBuilderMessageEditor(key,base,id) {
+  base = textBuilderLimitMessage(base);
+  const draft = textBuilderMessageDraft(key,base);
+  return `<textarea class="moTextBuilderMessage" id="${id}" data-tb-message="${key}" aria-label="Constructed ${key === 'main' ? '' : key+' '}message">${escapeHtml(draft.text)}</textarea><div class="moTextBuilderActions"><button class="moBtn" data-tb-action="copyEditedMessage" data-tb-value="${key}">Copy Message</button><button class="moBtn" data-tb-action="resetMessage" data-tb-value="${key}">Reset message</button></div>`;
+}
+function textBuilderOutputAction(action,value) {
+  const d = textBuilderState.data;
+  const fail = message => {uiStatus(message);return true;};
+  if (['copyMessage','copyIneligibleMessage','copyEligibleMessage'].includes(action)) {
+    const key = {copyMessage:'main',copyIneligibleMessage:'ineligible',copyEligibleMessage:'eligible'}[action];
+    const base = key === 'main' ? textBuilderBuildMessage() : key === 'eligible' ? textBuilderDropInEligibleMessage(false) : textBuilderDropInIneligibleMessage();
+    GM_setClipboard(textBuilderMessageDraft(key,textBuilderLimitMessage(base)).text,'text');uiStatus('Text Builder message copied to clipboard');return true;
+  }
+  if (action === 'copyEditedMessage') {GM_setClipboard(d.messageDrafts?.[value]?.text || '','text');uiStatus('Text Builder message copied to clipboard');return true;}
+  if (action === 'resetMessage') {if (d.messageDrafts) delete d.messageDrafts[value];renderTextBuilder();return true;}
+  if (action === 'editCaseInformation') {
+    if (d.workflow === 'walkInDropIn' || ['CanDo: Everything','CanDo + Can’tDo'].includes(d.researchType)) textBuilderSet('eligibleDropin');
+    else if (d.researchType === TEXT_BUILDER_MULTIPLE_REASONS_PATH) textBuilderSet('multipleReasons');
+    else textBuilderSet(d.researchType === 'Can’tDo: Private Attorney' ? 'privateAttorneyDropin' : 'ineligibleDropin');
+    return true;
+  }
+  if (action === 'confirmEligible') {
+    if (d.workflow === 'walkInDropIn') textBuilderSet('multipleReasons',{multipleReasons:d.multipleReasons || []});
+    else if (!textBuilderHasEligible()) return fail('Enter the eligible case summary.');
+    else textBuilderSet(d.researchType === 'CanDo + Can’tDo' ? 'multipleReasons' : 'address',{multipleReasons:d.multipleReasons || []});
+    return true;
+  }
+  if (action === 'confirmPrivateAttorney') {
+    if (!String(d.privateAttorneyCases || '').trim()) return fail('Enter the private attorney case summary.');
+    textBuilderSet('message');return true;
+  }
+  if (action === 'confirmIneligible' && !String(d.ineligibleCases || '').trim()) return fail('Enter the case summary.');
+  if (action === 'confirmCourts' && !(d.courts || []).length) return fail('Select at least one Court.');
+  if (['confirmNewCourtDate','confirmFtaDate','confirmAddress'].includes(action)) {
+    const key = {confirmNewCourtDate:'newCourtDate',confirmFtaDate:'ftaDate',confirmAddress:'address'}[action];
+    if (!String(d[key] || '').trim()) return fail('Enter the requested information.');
+  }
+  return false;
+}
 function textBuilderMultipleReasonAction(action,value) {
+  if (textBuilderOutputAction(action,value)) return true;
   if (action === 'chooseResearchType' && value === TEXT_BUILDER_MULTIPLE_REASONS_PATH) {
     textBuilderSet('multipleReasons',{researchType:value,multipleReasons:[]});
     return true;
@@ -843,35 +902,31 @@ function textBuilderMultipleReasonAction(action,value) {
     return true;
   }
   if (action === 'confirmMultipleReasons') {
-    if (!textBuilderSelectedReasons().length) {uiStatus('Select at least one reason.'); return true;}
+    if (!textBuilderSelectedReasons().length) {
+      if (textBuilderState.data.workflow === 'walkInDropIn' && textBuilderHasEligible()) textBuilderSet('message');
+      else uiStatus('Select at least one reason.');
+      return true;
+    }
     textBuilderSet('multipleReasonInput',{multipleReasonIndex:0});
     return true;
   }
   if (action === 'confirmMultipleReasonInput') {
     const index = textBuilderState.data.multipleReasonIndex + 1;
     if (index < textBuilderSelectedReasons().length) textBuilderSet('multipleReasonInput',{multipleReasonIndex:index});
-    else if (textBuilderState.data.researchType === 'CanDo + Can’tDo') {
-      const selected = textBuilderSelectedReasons();
-      const summaries = TEXT_BUILDER_MULTIPLE_OUTPUT_ORDER.map(label => selected.find(reason => reason.label === label))
-        .filter(Boolean).map(textBuilderMultipleReasonText).filter(text => text.trim());
-      textBuilderSet('address',{multipleReasonIndex:index,ineligibleCases:summaries.join('\n\n')});
-    } else textBuilderSet('message',{multipleReasonIndex:index});
+    else if (textBuilderState.data.researchType === 'CanDo + Can’tDo' && textBuilderState.data.workflow !== 'walkInDropIn') textBuilderSet('address',{multipleReasonIndex:index});
+    else textBuilderSet('message',{multipleReasonIndex:index});
     return true;
   }
   return false;
 }
 function textBuilderMultipleReasonsMessage() {
-  const d = textBuilderState.data;
-  const selected = textBuilderSelectedReasons();
-  const sections = TEXT_BUILDER_MULTIPLE_OUTPUT_ORDER.map(label => selected.find(reason => reason.label === label))
-    .filter(Boolean).map(textBuilderMultipleReasonText).filter(text => text.trim());
-  return [`Hello, this is ${d.staff} from the Tap In Center. We were unable to find cases that are eligible for our service. Here is a summary and explanation of what we found:`,
-    ...sections,'If you feel we have missed something, please share the case number(s).'].join('\n\n');
+  const intro = `Hello, this is ${textBuilderState.data.staff} from the Tap In Center. We were unable to find cases that are eligible for our service.`;
+  return [intro+(textBuilderHasIneligible() ? ' The attached image is a summary and explanation of what we found.' : ''),textBuilderReasonExplanations(),'If you feel we have missed something, please share the case number(s).'].filter(Boolean).join('\n\n');
 }
 
 function textBuilderInitialState() {return {screen:'root',history:[],data:{courts:[]}};}
 function resetTextBuilder() {textBuilderState = textBuilderInitialState();}
-function textBuilderCourtLabel(court) {const map = {'Clayton':'Clayton Municipal','Florissant':'Florissant Municipal','University City':'University City Municipal','Kirkwood':'Kirkwood Municipal','Manchester':'Manchester Municipal','Richmond Heights':'Richmond Heights Municipal','Webster Groves':'Webster Groves Municipal'};
+function textBuilderCourtLabel(court) {const map = {'Bridgeton':'Bridgeton Municipal','Lakeshire':'Lakeshire Municipal','Clayton':'Clayton Municipal','Florissant':'Florissant Municipal','University City':'University City Municipal','Kirkwood':'Kirkwood Municipal','Manchester':'Manchester Municipal','Richmond Heights':'Richmond Heights Municipal','Webster Groves':'Webster Groves Municipal'};
                                       return map[court] || court;}
 function textBuilderList(items) {if (items.length <= 1) return items[0] || '';
                                  if (items.length === 2) return `${items[0]} and ${items[1]}`;
@@ -889,13 +944,13 @@ function textBuilderBack() {const prev = textBuilderState.history.pop();
                             else {textBuilderState.screen = prev.screen;
                                   textBuilderState.data = prev.data;}
                             renderTextBuilder();}
-function textBuilderScreenTitle() {const map = {multipleReasons:TEXT_BUILDER_MULTIPLE_REASONS_PATH,multipleReasonInput:`${TEXT_BUILDER_MULTIPLE_REASONS_PATH} - ${textBuilderSelectedReasons()[textBuilderState.data.multipleReasonIndex]?.label || ''}`,staff:'Tap In Staff',researchType:'Post-Research Reply',eligibleDropin:'Eligible Cases Drop-In',ineligibleDropin:'Ineligible Cases Drop-In',privateAttorneyDropin:'Ineligible Cases Drop-In',remainingIneligibleDropin:'Ineligible Cases Drop-In',courts:'Court Options (select all Courts in which a case was found)',seatbeltViolations:'Seatbelt Violations?',ftaDateInput:'FTA Date',address:'Address',addressInput:'Address',followUp:'Follow-Up',followUpReadyDay:'Ready to Submit',newCourtDateInput:'New Court Date',newCourtDateSeatbelt:'New Court Date, Seatbelt?',newCourtDateSeatbeltInput:'Seatbelt',legalAidResources:'Legal Aid Resources',legalAidResourceOptions:textBuilderState.data.legalAidCategory,legalAidMessage:'Constructed Message',message:'Constructed Message'};
+function textBuilderScreenTitle() {const map = {multipleReasons:"Can'tDo Reason(s)",multipleReasonInput:`${TEXT_BUILDER_MULTIPLE_REASONS_PATH} - ${textBuilderSelectedReasons()[textBuilderState.data.multipleReasonIndex]?.label || ''}`,staff:'Tap In Staff',researchType:'Post-Research Reply',eligibleDropin:'Eligible Cases Drop-In',ineligibleDropin:'Ineligible Cases Drop-In',privateAttorneyDropin:'Ineligible Cases Drop-In',courts:'Court Options (select all Courts in which a case was found)',ftaDateInput:'FTA Date',address:'Address',addressInput:'Address',followUp:'Follow-Up',followUpReadyDay:'Ready to Submit',newCourtDateInput:'New Court Date',newCourtDateSeatbelt:'New Court Date, Seatbelt?',newCourtDateSeatbeltInput:'Seatbelt',legalAidResources:'Legal Aid Resources',legalAidResourceOptions:textBuilderState.data.legalAidCategory,legalAidMessage:'Constructed Message',message:'Constructed Message'};
                                   const suffix = map[textBuilderState.screen];
                                   return suffix ? `Text Builder - ${suffix}` : 'Text Builder';}
 function textBuilderOptionBlockClass(title,centered) {if (centered) return ' moTextBuilderRootBlock';
                                                      if (title === 'Tap In Staff') return ' moTextBuilderStaffBlock';
                                                      if (title === 'Post-Research Reply') return ' moTextBuilderResearchBlock';
-                                                     if (title === TEXT_BUILDER_MULTIPLE_REASONS_PATH || (title && title.startsWith('Court Options'))) return ' moTextBuilderCourtsBlock';
+                                                     if (title === "Can'tDo Reason(s)" || (title && title.startsWith('Court Options'))) return ' moTextBuilderCourtsBlock';
                                                      return '';}
 function textBuilderOptions(title,options,action,multi,centered,tall) {const optionsClass = `moTextBuilderOptions${centered ? ' moCentered' : ''}`;
                                                           const blockClass = `moBlock moTextBuilderOptionBlock${tall ? ' moTextBuilderTall' : ''}${textBuilderOptionBlockClass(title,centered)}`;
@@ -910,18 +965,25 @@ function textBuilderFormatCaseData(message,key) {if (textBuilderCaseDataVisible(
                                                 return String(message || '').split('\n').map((line) => /^- \d/.test(line) && line.length > 24 ? `${line.slice(0,24)}…` : line).join('\n');}
 function textBuilderCaseDataToggle(key) {const on = textBuilderCaseDataVisible(key);
                                         return `<button class="moBtn moCaseDataToggle${on ? '' : ' moCaseDataOff'}" data-tb-action="toggleCaseData" data-tb-value="${escapeHtml(key)}" type="button" title="Toggle Case Data" aria-pressed="${on ? 'true' : 'false'}">Toggle Case Data: ${on ? 'On' : 'Off'}</button>`;}
-function textBuilderNeedsSeatbeltViolations() {return textBuilderState.data.researchType === 'CanDo: Everything' && (textBuilderState.data.courts || []).includes('Florissant');}
+function textBuilderNeedsSeatbeltViolations() {return false;}
 function textBuilderAddressLine(canDoPhrase) {if (textBuilderState.data.addressMode === 'Have Address') return canDoPhrase ? `To proceed${canDoPhrase}, can you confirm that ${textBuilderState.data.address || ''} is the best place for the Court to send physical mail?` : `To proceed, confirm that ${textBuilderState.data.address || ''} is the best place for the Court to send mail.`;
                                              return `To proceed${canDoPhrase}, what address is best for the Court to send physical mail?`;}
-function textBuilderEligibleIntro() {const labels = (textBuilderState.data.courts || []).map(textBuilderCourtLabel);
-                                     const mixed = textBuilderState.data.researchType === 'CanDo + Can’tDo';
-                                     if (labels.length <= 1) return `This is ${textBuilderState.data.staff} with the Tap In Center, thank you for submitting an intake form! We found a warrant in the ${labels[0] || ''} Court. ${mixed ? 'We CAN help with:' : 'This court is partnered with us, so we can submit a request to recall:'}`;
-                                     return `This is ${textBuilderState.data.staff} with the Tap In Center, thank you for submitting an intake form! ${mixed ? 'We were able to find' : 'We found'} warrants in the ${textBuilderList(labels)} Courts. ${mixed ? 'We CAN help with:' : 'These Courts are partnered with us, so we can submit a request to recall:'}`;}
-function textBuilderDropInIneligibleMessage() {const d = textBuilderState.data;
-                                           return `This is ${d.staff} from Tap In, thank you for speaking with me today. Here is a summary of the cases we found and the phone number for the court clerk - they are the best source of information in their municipality.\n\n${d.ineligibleCases || ''}\n\nThese Courts do not work with the Tap In program, and we recommend contacting them for information.`;}
-function textBuilderDropInEligibleMessage(includeStaffIntro) {const d = textBuilderState.data;
-                                         const intro = includeStaffIntro ? `This is ${d.staff}, thank you for speaking with me today. We are requesting a recall for:` : 'Here is what we discussed today - we are requesting a recall for:';
-                                         return `${intro}\n\n${d.eligibleCases || ''}\n\nWe submit tomorrow morning, then the Judge makes their decision. This typically takes one to two weeks.\n\nThe Court will send mail to the address provided, and we will update you from this phone number when we hear from the clerk. Feel free to text back with questions!`;}
+function textBuilderEligibleIntro() {
+  const d = textBuilderState.data, labels = (d.courts || []).map(textBuilderCourtLabel);
+  if (!textBuilderHasEligible()) return `Hello, this is ${d.staff} with the Tap In Center, thank you for submitting an intake form!`;
+  if (!labels.length) return `Hello, this is ${d.staff} with the Tap In Center, thank you for submitting an intake form! We CAN request a recall for the cases listed in the attached image.`;
+  return labels.length === 1
+    ? `Hello, this is ${d.staff} with the Tap In Center, thank you for submitting an intake form! We found a warrant in the ${labels[0]} Court. This court is partnered with us, so we CAN request a recall for the case(s) listed in the attached image.`
+    : `Hello, this is ${d.staff} with the Tap In Center, thank you for submitting an intake form! We found warrants in the ${textBuilderList(labels)} Courts. These Courts are partnered with us, so we CAN request a recall for the cases listed in the attached image.`;
+}
+function textBuilderDropInIneligibleMessage() {
+  const intro = `This is ${textBuilderState.data.staff} from Tap In, thank you for speaking with me today.`;
+  return [intro+(textBuilderHasIneligible() ? ' The attached image is a summary of what we found.' : ''),textBuilderReasonExplanations(),'If you have questions about the summary, feel free to text/call us.'].filter(Boolean).join('\n\n');
+}
+function textBuilderDropInEligibleMessage(includeStaffIntro) {
+  const intro = includeStaffIntro ? `This is ${textBuilderState.data.staff}, thank you for speaking with me today. The attached image is a summary of the request we are submitting on your behalf.` : 'The attached image contains a summary of the request we are submitting on your behalf.';
+  return `${intro}\n\n${includeStaffIntro ? 'We are awaiting the Judge’s decision, which typically takes one to two weeks.' : 'We submit tomorrow morning, then the Judge makes their decision. This typically takes one to two weeks.'}\n\nThe Court will send mail to the address provided, and we will update you from this phone number when we hear from the clerk. Feel free to text back with questions!`;
+}
 function textBuilderFollowUpNewCourtDateMessage() {const d = textBuilderState.data;
                                                    const labels = (d.courts || []).map(textBuilderCourtLabel);
                                                    const courtText = labels.length <= 1 ? `The ${labels[0] || ''} Court has agreed to recall the warrant` : `The ${textBuilderList(labels)} Courts have agreed to recall the warrants`;
@@ -933,34 +995,58 @@ function textBuilderBuildMessage() {const d = textBuilderState.data;
                                     if (d.workflow === 'followUpReady' && d.followUpDay === 'Today is Wed-Sun') return `Thank you, we should have everything we need. You do NOT need to come in-person to the Tap In Center program Tuesday evening - though you are always welcome.\n\nWe will be in touch when we hear from our Court partners. If the request is granted the Court will mail you a new summons with your court date information.`;
                                     if (d.workflow === 'followUpNewCourtDate') return textBuilderFollowUpNewCourtDateMessage();
                                     if (d.workflow === 'legalAidResources') return TEXT_BUILDER_LEGAL_AID_MESSAGES[d.legalAidResource] || '';
-                                    if (d.workflow === 'walkInDropIn') {const hasEligible = String(d.eligibleCases || '').trim();
-                                                                       const hasIneligible = String(d.ineligibleCases || '').trim();
-                                                                       if (hasEligible && !hasIneligible) return textBuilderDropInEligibleMessage(true);
-                                                                       if (hasIneligible) return textBuilderDropInIneligibleMessage();
-                                                                       return textBuilderDropInEligibleMessage(true);}
-                                    if (d.workflow === 'initial') return `Hi this is ${d.staff}, thank you for contacting the Tap In Center. We assist in recalling warrants for missing a court date in these Courts only:\n\nSt. Louis County Circuit (felony/misdemeanor cases)\nCity of St. Louis Circuit (felony/misdemeanor cases)\nCity of St. Louis Municipal \nClayton\nFlorissant\nKirkwood\nManchester\nRichmond Heights\nUniversity City\nWebster Groves\n\nTo get started, complete our intake form:\nhttps://www.slcl.org/library-services/tap-in-center/intake-form\n\nThe Tap In Center operates every Tuesday from 6-8 pm at the Florissant Valley Library Branch (195 S New Florissant Rd). Anyone is welcome to walk in during these hours, text (314) 669-6185, or email TapInSTL@gmail.com for assistance.`;
+                                    if (d.workflow === 'walkInDropIn') {
+                                      if (textBuilderHasIneligible()) return textBuilderDropInIneligibleMessage();
+                                      if (textBuilderHasEligible()) return textBuilderDropInEligibleMessage(true);
+                                      return `This is ${d.staff} from Tap In, thank you for speaking with me today. No case information has been entered.`;
+                                    }
+                                    if (d.workflow === 'initial') return `Hi this is ${d.staff}, thank you for contacting the Tap In Center. We assist in recalling warrants for missing a court date in these Courts only:
+St. Louis County Circuit (felony/misdemeanor cases)
+City of St. Louis Circuit (felony/misdemeanor cases)
+Bridgeton
+City of St. Louis Municipal
+Clayton
+Florissant
+Kirkwood
+Lakeshire
+Manchester
+Richmond Heights
+University City
+Webster Groves
+To get started, complete our intake form:
+https://www.slcl.org/library-services/tap-in-center/intake-form
+We operate in-person every Tuesday 6-8 pm at the Florissant Valley Library Branch (195 S New Florissant Rd). Anyone is welcome to walk in during these hours.`;
                                     if (d.researchType === 'Nothing Found') return `Hello, this is ${d.staff} with the Tap In Center. We were unable to find any court records under the information provided. If you feel this is a mistake, please double check this information for accuracy/typos:`;
-                                    if (d.researchType === 'Can’tDo: Recent FTA, Not a Warrant Yet') return `Hello this is ${d.staff} from Tap In - thank you for filling out our intake form! After researching your record, I was able to find a recent court date of ${d.ftaDate || ''}.\n\nThese cases are NOT in warrant status yet.\n\nIf the court issues a warrant for a Failure to Appear, we can prepare a request to recall it and set a new court date, but we cannot submit this proactively. We are prohibited from requesting any cases without a current warrant.\n\nWe recommend keeping an eye on CaseNet, using this link to search by case number:\n\nhttps://www.courts.mo.gov/casenet/caseNoSearch.do\n\n${d.ineligibleCases || ''}\n\nIf you feel we have missed something, please share the case number(s) and we will take a look.`;
-                                    if (d.researchType === 'Can’tDo: Out of Network') return `This is ${d.staff} from the Tap In Center, thank you for filling out our intake form. We can only request a recall for warrants from missing a court date in Courts where the Judge has agreed to work with us. These are the Courts:\n\nSt. Louis County Circuit (felony/misdemeanor cases only)\nCity of St. Louis Circuit/Municipal (felony/misdemeanor/ordinance)\nClayton\nFlorissant\nKirkwood\nManchester\nRichmond Heights\nUniversity City\nWebster Groves\n\nWe were unable to find any warrants in these Courts under your information.${textBuilderOptionalBlock(d.ineligibleCases,(cases) => `\n\nHere are the cases we CANNOT assist with. We have listed the Court clerk’s phone number - we recommend calling before appearing anywhere in-person.\n\n${cases}`)}\n\nIf you feel we have missed something, please share the case number for your case(s).`;
-                                    if (d.researchType === 'Can’tDo: Repeat Attempt') return `This is ${d.staff} from Tap In.${textBuilderOptionalBlock(d.ineligibleCases,(cases) => ` After researching your public record, here is what we found:\n\n${cases}`)}\n\nWe are allowed by the Judge no more than one recall on each case, meaning we CANNOT submit another request. We recommend calling the Court clerk for information.`;
-                                    if (d.researchType === 'Can’tDo: Initial Warrant') return `Hello, this is ${d.staff} with the Tap In Center - thank you for submitting an intake form! After researching your record, we found a warrant in the ${textBuilderList((d.courts || []).map(textBuilderCourtLabel))} Court.
-
-${d.ineligibleCases || ''}
-
+                                    if (d.researchType === 'Can’tDo: Recent FTA, Not a Warrant Yet') return `Hello this is ${d.staff} from Tap In - thank you for filling out our intake form! After researching your record, I was able to find a recent court date of ${d.ftaDate || ''}.
+This has NOT resulted in a warrant yet.
+If the court issues a warrant for a Failure to Appear, we can prepare a request to recall it and set a new court date, but we cannot submit this proactively. We are prohibited from requesting any cases without a current warrant.
+We recommend keeping an eye on CaseNet, using this link to search by case number:
+https://www.courts.mo.gov/casenet/caseNoSearch.do
+If you feel we have missed something, please share the case number(s).`;
+                                    if (d.researchType === 'Can’tDo: Out of Network') return `This is ${d.staff} from the Tap In Center, thank you for filling out our intake form. We can only request a recall in Courts where the Judge has agreed to work with us. These are the Courts:
+St. Louis County Circuit (felony/misdemeanor cases)
+City of St. Louis Circuit (felony/misdemeanor cases)
+Bridgeton
+City of St. Louis Municipal
+Clayton
+Florissant
+Kirkwood
+Lakeshire
+Manchester
+Richmond Heights
+University City
+Webster Groves
+We were unable to find any warrants in these Courts under your information.`+textBuilderOptionalBlock(d.ineligibleCases,()=>`\n\nWe have attached an image with a summary of what we found that we CANNOT assist with. We have listed the phone number for each Court clerk - we recommend calling them for information on cases in their Court.`)+`\n\nIf you feel we have missed something, please share the case number(s).`;
+                                    if (d.researchType === 'Can’tDo: Repeat Attempt') return `This is ${d.staff} from Tap In.${textBuilderOptionalBlock(d.ineligibleCases,()=>` We researched your public record, and the summary of what we found is in the attached image.`)}\n\nWe are allowed by the Judge no more than one recall on each case, meaning we CANNOT submit another request. We recommend calling the Court clerk for information.\n\nIf you feel we have missed something, please share the case number(s).`;
+                                    if (d.researchType === 'Can’tDo: Initial Warrant') return `Hello, this is ${d.staff} with the Tap In Center - thank you for submitting an intake form! After researching your record, we found a warrant in the ${textBuilderList((d.courts || []).map(textBuilderCourtLabel))} Court, and listed details in the attached image.
 This is a unique type of warrant we call an 'initial warrant', and we CANNOT submit a request to recall it.
-
 When a judge decides to issue this type of warrant at the same time as the case is charged, it means the defendant must appear in court, and no party (including us) can prevent them from appearing.
-
 If you have not done so already, we recommend filling out the application for a Missouri Public Defender here: https://publicdefender.mo.gov/client-application/
-
-You may also seek private defense, though we cannot give advice for this. If you feel we have missed something, please share the case number for your cases and we will take a look.`;
+You may also seek private defense, though we cannot give advice for this. If you feel we have missed something, please share the case number(s).`;
                                     if (d.researchType === 'Can’tDo: Fresh Start Friday') return textBuilderFreshStartFridaysMessage();
-                                    if (d.researchType === 'Can’tDo: Private Attorney') return `This is ${d.staff} with the Tap In Center, thank you for submitting an intake form. After researching your public record, there appears to be a private attorney entered as counsel here:${textBuilderOptionalBlock(d.privateAttorneyCases,(cases) => `\n\n${cases}`)}\n\nWhen a private attorney is entered, no other party - including us - can affect anything on that case. We recommend getting in contact with them, regardless of how long it has been since you last spoke.${textBuilderOptionalBlock(d.remainingIneligibleCases,(cases) => `\n\n\nHere is a summary of the cases we found under your information that we CANNOT assist with. We have listed the phone number for each Court clerk - we recommend calling before appearing anywhere in person, and they are the best source of information for cases in their Court:\n\n${cases}`)}`;
-                                    let msg = `${textBuilderEligibleIntro()}${textBuilderOptionalBlock(d.eligibleCases,(cases) => `\n\n${cases}`)}\n\nThe Judge makes their decision, and the Court updates us one to two weeks after the Wednesday morning we submit.\n\n${textBuilderOptionalBlock(d.seatbeltViolations,(violations) => `AFTER we hear back, we suggest handling this:\n\n${violations}\n\nSeatbelt charges carry a mandatory $10.00 fine, payable in-person or by phone. Once paid, the warrant is recalled and the case is closed. Do this AFTER we contact you.\n\n`)}`;
-                                    if (d.researchType === 'CanDo + Can’tDo') msg += `${textBuilderOptionalBlock(d.ineligibleCases,(cases) => `
-We CANNOT assist with:\n\n${cases}\n\n`)}${textBuilderAddressLine(' with the cases that we CAN do')}`;
-                                    else msg += textBuilderAddressLine('');
-                                    return msg;}
+                                    if (d.researchType === 'Can’tDo: Private Attorney') return `This is ${d.staff} with the Tap In Center, thank you for submitting an intake form. After researching your public record, there appears to be a private attorney entered as counsel. Please see the attached image for details.
+When a private attorney is entered, no other party - including us - can affect anything on that case. We recommend getting in contact with them, regardless of how long it has been since you last spoke.`;
+                                    return [textBuilderEligibleIntro(),textBuilderHasEligible() ? 'The Judge makes their decision, and the Court updates us one to two weeks after the Wednesday morning we submit.' : '',d.researchType === 'CanDo + Can’tDo' && textBuilderHasIneligible() ? 'We have also provided a summary of what we CANNOT assist with.' : '',d.researchType === 'CanDo + Can’tDo' ? textBuilderReasonExplanations() : '',textBuilderAddressLine(d.researchType === 'CanDo + Can’tDo' ? ' with the cases that we CAN do' : '')].filter(Boolean).join('\n\n');}
 function renderTextBuilder() {const dockTitle = dock.querySelector('#moJsonTitle');
                               if (dockTitle && appView === 'text') dockTitle.textContent = textBuilderScreenTitle();
                               let html = '';
@@ -968,14 +1054,12 @@ function renderTextBuilder() {const dockTitle = dock.querySelector('#moJsonTitle
                               if (s === 'root') html = textBuilderOptions('', ['Initial Text','Post-Research Reply','Follow-Up','Walk-In Client','Legal Aid Resources'],'chooseRoot',false,true);
                               else if (s === 'staff') html = textBuilderOptions('Tap In Staff',TEXT_BUILDER_STAFF,'chooseStaff',false) + textBuilderActions();
                               else if (s === 'researchType') html = textBuilderOptions('Post-Research Reply',['CanDo: Everything','CanDo + Can’tDo',TEXT_BUILDER_MULTIPLE_REASONS_PATH,'Can’tDo: Private Attorney','Can’tDo: Out of Network','Can’tDo: Repeat Attempt','Can’tDo: Fresh Start Friday','Can’tDo: Initial Warrant','Can’tDo: Recent FTA, Not a Warrant Yet','Nothing Found'],'chooseResearchType',false,false,true) + textBuilderActions();
-                              else if (s === 'multipleReasons') html = textBuilderOptions(TEXT_BUILDER_MULTIPLE_REASONS_PATH,TEXT_BUILDER_MULTIPLE_REASONS.map(reason => reason.label),'toggleMultipleReason',true,false,true) + textBuilderActions('confirmMultipleReasons');
+                              else if (s === 'multipleReasons') html = textBuilderOptions("Can'tDo Reason(s)",TEXT_BUILDER_MULTIPLE_REASONS.map(reason => reason.label),'toggleMultipleReason',true,false,true) + textBuilderActions('confirmMultipleReasons');
                               else if (s === 'multipleReasonInput') {const reason = textBuilderSelectedReasons()[textBuilderState.data.multipleReasonIndex];
                                 html = `<div class="moBlock moTextBuilderReasonHeader"><h3>${escapeHtml(reason.label)}</h3></div>` + textBuilderTextarea(reason.label,reason.placeholder,'confirmMultipleReasonInput',reason.key);}
                               else if (s === 'eligibleDropin') html = textBuilderTextarea('Eligible Cases Drop-In','Enter summary of eligible cases','confirmEligible','eligibleCases');
-                              else if (s === 'seatbeltViolations') html = textBuilderTextarea('Seatbelt Violations?','Enter Florissant seatbelt violation summary, if any.','confirmSeatbeltViolations','seatbeltViolations');
                               else if (s === 'ineligibleDropin') html = textBuilderTextarea('Ineligible Cases Drop-In',textBuilderState.data.ineligiblePlaceholder || 'Enter summary of ineligible cases','confirmIneligible','ineligibleCases');
                               else if (s === 'privateAttorneyDropin') html = textBuilderTextarea('Ineligible Cases Drop-In','Enter summary of cases in eligible courts, with private attorney','confirmPrivateAttorney','privateAttorneyCases');
-                              else if (s === 'remainingIneligibleDropin') html = textBuilderTextarea('Ineligible Cases Drop-In','Enter summary of remaining ineligible cases (Optional)','confirmRemainingIneligible','remainingIneligibleCases');
                               else if (s === 'courts') html = textBuilderOptions('Court Options (select all Courts in which a case was found)',TEXT_BUILDER_COURTS,'toggleCourt',true,false,true) + textBuilderActions('confirmCourts');
                               else if (s === 'ftaDateInput') html = textBuilderTextarea('FTA Date','Enter the date of the recent Failure to Appear','confirmFtaDate','ftaDate');
                               else if (s === 'address') html = textBuilderOptions('Address',['Have Address','Need Address'],'chooseAddress',false) + textBuilderActions();
@@ -987,25 +1071,25 @@ function renderTextBuilder() {const dockTitle = dock.querySelector('#moJsonTitle
                               else if (s === 'newCourtDateSeatbelt') html = `<div class="moBlock">Do we need to remind them of a Florissant seatbelt charge?</div>` + textBuilderOptions('New Court Date, Seatbelt?',['Yes','No'],'chooseNewCourtDateSeatbelt',false) + textBuilderActions();
                               else if (s === 'newCourtDateSeatbeltInput') html = textBuilderTextarea('Seatbelt','Enter case summary for the Florissant seatbelt charge(s)','confirmNewCourtDateSeatbelt','newCourtDateSeatbeltSummary');
                               else if (s === 'newCourtDateInput') html = textBuilderTextarea('New Court Date','Enter new court date information','confirmNewCourtDate','newCourtDate');
-                              else if (s === 'message' || s === 'legalAidMessage') {if (textBuilderState.data.workflow === 'walkInDropIn') {const hasEligible = String(textBuilderState.data.eligibleCases || '').trim();
-                                                                                           const hasIneligible = String(textBuilderState.data.ineligibleCases || '').trim();
-                                                                                           if (hasEligible && hasIneligible) {const ineligibleMsg = textBuilderLimitMessage(textBuilderFormatCaseData(textBuilderDropInIneligibleMessage(),'ineligibleCaseDataVisible'));
-                                                                                                                             const eligibleMsg = textBuilderLimitMessage(textBuilderFormatCaseData(textBuilderDropInEligibleMessage(false),'eligibleCaseDataVisible'));
-                                                                                                                             html = `<div class="moBlock"><div class="moTextBuilderDual"><div class="moTextBuilderPane"><h3>Ineligible Cases</h3><div class="moTextBuilderMessage" id="moTextBuilderConstructedIneligible">${escapeHtml(ineligibleMsg)}</div>${textBuilderCaseDataToggle('ineligibleCaseDataVisible')}<button class="moBtn" data-tb-action="copyIneligibleMessage">Copy Message</button></div><div class="moTextBuilderPane"><h3>Eligible Cases</h3><div class="moTextBuilderMessage" id="moTextBuilderConstructedEligible">${escapeHtml(eligibleMsg)}</div>${textBuilderCaseDataToggle('eligibleCaseDataVisible')}<button class="moBtn" data-tb-action="copyEligibleMessage">Copy Message</button></div></div></div><div class="moTextBuilderActions"><button class="moBtn" data-tb-action="back">Back</button></div>`;}
-                                                                                           else {const toggleKey = hasEligible ? 'eligibleCaseDataVisible' : 'ineligibleCaseDataVisible';
-                                                                                                 const msg = textBuilderLimitMessage(textBuilderFormatCaseData(textBuilderBuildMessage(),toggleKey));
-                                                                                                 const title = hasEligible ? 'Eligible Cases' : 'Ineligible Cases';
-                                                                                                 html = `<div class="moBlock"><div class="moTextBuilderPane"><h3>${escapeHtml(title)}</h3><div class="moTextBuilderMessage" id="moTextBuilderConstructed">${escapeHtml(msg)}</div>${textBuilderCaseDataToggle(toggleKey)}</div></div><div class="moTextBuilderActions"><button class="moBtn" data-tb-action="back">Back</button><button class="moBtn" data-tb-action="copyMessage">Copy Message</button></div>`;}}
-                                                         else {const hasCaseData = textBuilderHasCaseData(['eligibleCases','ineligibleCases','privateAttorneyCases','remainingIneligibleCases',...textBuilderSelectedReasons().map(reason => reason.key)]);
-                                                               const msg = textBuilderLimitMessage(textBuilderFormatCaseData(textBuilderBuildMessage(),'caseDataVisible'));
-                                                               html = `<div class="moBlock"><div class="moTextBuilderPane"><div class="moTextBuilderMessage" id="moTextBuilderConstructed">${escapeHtml(msg)}</div>${hasCaseData ? textBuilderCaseDataToggle('caseDataVisible') : ''}</div></div><div class="moTextBuilderActions"><button class="moBtn" data-tb-action="back">Back</button><button class="moBtn" data-tb-action="copyMessage">Copy Message</button></div>`;}}
+                              else if (s === 'message' || s === 'legalAidMessage') {
+                                const dual = textBuilderState.data.workflow === 'walkInDropIn' && textBuilderHasEligible() && textBuilderHasIneligible();
+                                const content = dual
+                                  ? `<div class="moTextBuilderDual"><div class="moTextBuilderPane"><h3>Ineligible Cases</h3>${textBuilderMessageEditor('ineligible',textBuilderDropInIneligibleMessage(),'moTextBuilderConstructedIneligible')}</div><div class="moTextBuilderPane"><h3>Eligible Cases</h3>${textBuilderMessageEditor('eligible',textBuilderDropInEligibleMessage(false),'moTextBuilderConstructedEligible')}</div></div>`
+                                  : `<div class="moTextBuilderPane">${textBuilderMessageEditor('main',textBuilderBuildMessage(),'moTextBuilderConstructed')}</div>`;
+                                html = `<div class="moBlock">${content}</div>${textBuilderActions()}${textBuilderInfographicSources().length ? '<button class="moBtn" data-tb-action="editCaseInformation">Edit case information</button>' : ''}`;
+                              }
                               const target = appView === 'text' ? $content : textBuilderBody;
                               const isMessage = s === 'message' || s === 'legalAidMessage';
                               $content.classList.toggle('moTextBuilderMessageContent',appView === 'text' && isMessage);
                               textBuilderBody.classList.toggle('moTextBuilderMessageContent',appView !== 'text' && isMessage);
                               textBuilderPanel.classList.toggle('moTextBuilderMessagePanel',appView !== 'text' && isMessage);
                               target.innerHTML = html;
-                              if (isMessage) textBuilderAttachInfographics(target);}
+                              if (isMessage) {
+                                target.querySelectorAll('[data-tb-message]').forEach(field => field.addEventListener('input',()=> {
+                                  textBuilderState.data.messageDrafts[field.dataset.tbMessage].text = field.value;
+                                }));
+                                textBuilderAttachInfographics(target);
+                              }}
 function positionTextBuilderPanel() {const rect = dock.getBoundingClientRect();
                                      const right = Math.max(8,window.innerWidth - rect.left + 10);
                                      const bottom = Math.max(8,window.innerHeight - rect.bottom);
@@ -1023,7 +1107,7 @@ textBuilderPanel.addEventListener('click',(e) => {const action = e?.target?.data
                                                  if (textBuilderMultipleReasonAction(action,value)) return;
                                                  if (action === 'back') return textBuilderBack();
                                                  if (action === 'toggleCaseData') {textBuilderState.data[value] = !textBuilderCaseDataVisible(value); return renderTextBuilder();}
-                                                 if (action === 'chooseRoot') {if (value === 'Initial Text') return textBuilderSet('staff',{workflow:'initial'});
+                                                 if (action === 'chooseRoot') {textBuilderState.data = {courts:[]};if (value === 'Initial Text') return textBuilderSet('staff',{workflow:'initial'});
                                                                                if (value === 'Post-Research Reply') return textBuilderSet('staff',{workflow:'postResearch'});
                                                                                if (value === 'Walk-In Client') return textBuilderSet('staff',{workflow:'walkInDropIn',researchType:'Walk-In Client'});
                                                                                if (value === 'Legal Aid Resources') return textBuilderSet('legalAidResources',{workflow:'legalAidResources'});
@@ -1041,17 +1125,11 @@ textBuilderPanel.addEventListener('click',(e) => {const action = e?.target?.data
                                                                                       if (value === 'Can’tDo: Fresh Start Friday') return textBuilderSet('ineligibleDropin',{researchType:value,ineligiblePlaceholder:'Enter summary of Fresh Start Friday cases'});
                                                                                       if (value === 'Can’tDo: Initial Warrant') return textBuilderSet('ineligibleDropin',{researchType:value,ineligiblePlaceholder:"Enter summary of case(s) in 'initial warrant' status"});
                                                                                       if (value === 'Can’tDo: Recent FTA, Not a Warrant Yet') return textBuilderSet('ineligibleDropin',{researchType:value,ineligiblePlaceholder:'Enter summary of cases with a recent Failure to Appear'});}
-                                                 if (action === 'confirmEligible') {if (textBuilderState.data.workflow === 'walkInDropIn') return textBuilderSet('ineligibleDropin',{ineligiblePlaceholder:'Enter summary of ineligible cases'});
-                                                                                   if (textBuilderState.data.researchType === 'CanDo + Can’tDo') return textBuilderSet('multipleReasons',{multipleReasons:[]});
-                                                                                   return textBuilderSet(textBuilderNeedsSeatbeltViolations() ? 'seatbeltViolations' : 'address');}
-                                                 if (action === 'confirmSeatbeltViolations') return textBuilderSet('address');
                                                  if (action === 'confirmIneligible') {if (textBuilderState.data.workflow === 'walkInDropIn') return textBuilderSet('message');
                                                                                     if (['Can’tDo: Initial Warrant','Can’tDo: Recent FTA, Not a Warrant Yet'].includes(textBuilderState.data.researchType)) return textBuilderSet('courts',{courts:[]});
                                                                                     if (['Can’tDo: Out of Network','Can’tDo: Repeat Attempt','Can’tDo: Fresh Start Friday'].includes(textBuilderState.data.researchType)) return textBuilderSet('message');
                                                                                     if (textBuilderState.data.researchType === 'CanDo + Can’tDo') return textBuilderSet('address');
                                                                                     return textBuilderSet('courts',{courts:[]});}
-                                                 if (action === 'confirmPrivateAttorney') return textBuilderSet('remainingIneligibleDropin');
-                                                 if (action === 'confirmRemainingIneligible') return textBuilderSet('courts',{courts:[]});
                                                  if (action === 'toggleCourt') {const courts = new Set(textBuilderState.data.courts || []);
                                                                                courts.has(value) ? courts.delete(value) : courts.add(value);
                                                                                textBuilderState.data.courts = [...courts];

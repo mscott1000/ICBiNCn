@@ -45,3 +45,12 @@ test('Text Builder uses short option names and municipal labels in constructed m
   data.workflow = 'followUpNewCourtDate';
   assert.match(c.textBuilderBuildMessage(),/The Clayton Municipal Court has agreed to recall the warrant/);
 });
+
+test('Bridgeton and Lakeshire use existing clerk contacts and join eligible summary groups',()=>{
+ const c=setup();c.getWarrantLabelForSummary=()=> 'warrant';
+ for(const [name,phone] of [['Bridgeton','(314) 739-1145'],['Lakeshire','(314) 631-6222']]){
+  const court=name+' Municipal';assert.equal(c.isEligibleSummaryJurisdiction(court),true);
+  assert.ok(c.getMunicipalityHeaderForSummary(court).includes(phone));
+  const row={location:court,charge:'Example',caseNumber:'123'};assert.equal(c.buildOrderedJurisdictionGroups([row]).eligibleJurisdictions[0].entries[0],row);
+ }
+});

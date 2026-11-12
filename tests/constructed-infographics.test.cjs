@@ -26,10 +26,10 @@ test('eligible and ineligible sources use only entered summaries and correct rea
  assert.equal(sources.length,2);assert.equal(sources[0].sections[0].text,'COURT A\n- 1: Eligible');
  assert.equal(sources[1].sections.map(s=>s.title).join('|'),'Repeat Attempt|Recent FTA, Not a Warrant Yet|Out of TIC Network');
  assert.equal(sources[1].sections.map(s=>s.text).join('|'),'repeat input|fta input|network input');
- for(const reason of c.textBuilderInfographicReasons()){
+ for(const reason of c.textBuilderInfographicReasons().filter(r=>r.path)){
   c.textBuilderState.data={researchType:reason.path,ineligibleCases:'raw input',privateAttorneyCases:'attorney input',remainingIneligibleCases:'remaining input'};
   const s=c.textBuilderInfographicSources()[0];assert.equal(s.type,'ineligible');assert.equal(s.sections[0].title,reason.title);
-  assert.equal(s.sections[0].text,reason.label==='Private Attorney'?'attorney input\n\nremaining input':'raw input');
+  assert.equal(s.sections[0].text,reason.label==='Private Attorney'?'attorney input':'raw input');
  }
  c.textBuilderState.data={researchType:'Nothing Found'};assert.equal(c.textBuilderInfographicSources().length,0);
  c.textBuilderState.data={researchType:'CanDo: Everything',eligibleCases:'eligible only'};assert.equal(c.textBuilderInfographicSources()[0].type,'eligible');
@@ -51,12 +51,12 @@ test('models group courts, grow for long input, and generate the correct startin
  assert.ok(long.height>5000);
  for(const b of long.boxes) assert.ok(b.y+c.textBuilderInfographicBoxHeight(b,measure)<long.height);
 });
-test('mixed summaries finish at Address and populate the existing constructed message input',()=>{
+test('mixed summaries finish at Address and retain their separate reason inputs',()=>{
  const ui=fs.readFileSync(`${__dirname}/../src/tampermonkey/17-ui.js`,'utf8');
  const c=vm.createContext({textBuilderState:{screen:'multipleReasonInput',data:{researchType:'CanDo + Can’tDo',multipleReasons:['Out of Network','Repeat Attempt'],multipleReasonIndex:1,multipleRepeatAttempt:'repeat',multipleOutOfNetwork:'network'}},textBuilderSet:(screen,patch)=>{c.textBuilderState.screen=screen;Object.assign(c.textBuilderState.data,patch);}});
  vm.runInContext(ui.slice(ui.indexOf('const TEXT_BUILDER_MULTIPLE_REASONS_PATH'),ui.indexOf('function textBuilderInitialState')),c);
  c.textBuilderMultipleReasonAction('confirmMultipleReasonInput');
- assert.equal(c.textBuilderState.screen,'address');assert.equal(c.textBuilderState.data.ineligibleCases,'repeat\n\nnetwork');
+ assert.equal(c.textBuilderState.screen,'address');assert.equal(c.textBuilderState.data.multipleRepeatAttempt,'repeat');assert.equal(c.textBuilderState.data.multipleOutOfNetwork,'network');assert.equal(c.textBuilderState.data.ineligibleCases,undefined);
 });
 
 test('ineligible steps start with one field, reflow without overlaps, and retain locked case content',()=>{

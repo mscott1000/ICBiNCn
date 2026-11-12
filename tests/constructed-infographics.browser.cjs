@@ -59,7 +59,9 @@ const read=f=>fs.readFileSync(path.join(__dirname,'../src/tampermonkey',f),'utf8
   assert.match(fieldStyle.family,/TICInfographicInter/);assert.equal(fieldStyle.size,'23px');assert.equal(fieldStyle.weight,'400');
  }
  assert.equal(await page.locator('.moInfographicCard').count(),2);
- assert.ok((await page.locator('#moTextBuilderConstructed').innerText()).includes('Failed To Register Vehicle'));
+ assert.ok(!(await page.locator('#moTextBuilderConstructed').inputValue()).includes('Failed To Register Vehicle'));
+ await page.locator('#moTextBuilderConstructed').fill('Edited message for client');
+ await action('copyEditedMessage','main');assert.equal(await page.evaluate(()=>window.copiedText),'Edited message for client');
  const eligibleCard=page.locator('[data-info-type="eligible"]');const ineligibleCard=page.locator('[data-info-type="ineligible"]');
  for(const [card,headers,count] of [[eligibleCard,['Case Number'],2],[ineligibleCard,['Case Number','Warrant Found?','License Hold?'],3]]){assert.equal(await card.locator('[data-info-table]').count(),count);for(const title of headers)assert.equal(await card.locator('svg text').evaluateAll((nodes,title)=>nodes.filter(node=>node.getAttribute('aria-label')===title).length,title),2);}
  assert.equal(await eligibleCard.locator('text[aria-label="Warrant Found?"]').count(),0);
@@ -121,7 +123,8 @@ const read=f=>fs.readFileSync(path.join(__dirname,'../src/tampermonkey',f),'utf8
  await page.mouse.move(eligibleBounds.x+10,eligibleBounds.y+10);await page.mouse.down();await page.mouse.move(eligibleBounds.x+40,eligibleBounds.y+40);await page.mouse.up();
  assert.deepEqual(await page.evaluate(()=>textBuilderState.data.infographicDrafts.eligible.model.boxes.filter(b=>b.kind==='step').map(b=>({x:b.x,y:b.y}))),fixedEligible);
  assert.equal(await page.evaluate(()=>JSON.stringify(textBuilderState.data.infographicDrafts.eligible.model.boxes.filter(b=>b.kind!=='step'))),lockedEligible);
- await action('toggleCaseData');
+ await page.evaluate(()=>renderTextBuilder());
+ assert.equal(await page.locator('#moTextBuilderConstructed').inputValue(),'Edited message for client');
  assert.equal(await eligibleCard.locator('[data-info-step]').first().inputValue(),'Call the court on Tuesday');
  assert.equal(await eligibleCard.locator('[data-info-step]').nth(1).inputValue(),'Send the request');
  // Both real encoders produce their requested MIME and magic bytes, with editable text retained.
@@ -153,6 +156,34 @@ const read=f=>fs.readFileSync(path.join(__dirname,'../src/tampermonkey',f),'utf8
  assert.equal(await fsf.locator('text').evaluateAll(nodes=>nodes.filter(node=>(node.getAttribute('aria-label')||'').includes('FRESH START FRIDAYS*')).length),0);
  await page.evaluate(()=>{textBuilderState.data.researchType='Can’tDo: Out of Network';renderTextBuilder();});
  assert.equal(await page.locator('#moJsonTextBuilderBody text[aria-label="Out of TIC Network"]').count(),1);
+ // Edit source summaries without losing manually entered Next Steps or prose.
+ await page.evaluate(()=>{appView='text';textBuilderBody.innerHTML='';textBuilderState={screen:'message',history:[],data:{workflow:'postResearch',researchType:'CanDo: Everything',staff:'Casey',courts:['Florissant'],eligibleCases:'FLORISSANT MUNICIPAL\\n- 123: Example - warrant'}};renderTextBuilder();});
+ await page.locator('[data-info-step]').fill('Keep my next step');
+ await page.locator('[data-tb-message="main"]').fill('Keep my message');
+ await action('editCaseInformation');await page.locator('[data-tb-input="eligibleCases"]').fill('FLORISSANT MUNICIPAL\n- 456: Updated case - warrant');await action('confirmEligible');
+ assert.equal(await page.locator('[data-tb-action="chooseAddress"]').count(),2); // no automatic seatbelt screen
+ await action('chooseAddress','Need Address');
+ assert.equal(await page.locator('[data-info-step]').inputValue(),'Keep my next step');
+ assert.equal(await page.locator('[data-tb-message="main"]').inputValue(),'Keep my message');
+ assert.ok((await page.locator('[data-info-type="eligible"] svg').textContent()).includes('456: Updated case'));
+ await action('resetMessage','main');assert.ok(!(await page.locator('[data-tb-message="main"]').inputValue()).includes('Keep my message'));
+ // The root action clears previous workflow data and both Walk-In outputs share the reason selector.
+ await page.evaluate(()=>{textBuilderState.screen='root';renderTextBuilder();});await action('chooseRoot','Walk-In Client');await action('chooseStaff','Casey');
+ await page.locator('[data-tb-input="eligibleCases"]').fill('FLORISSANT MUNICIPAL\n- 100: Eligible case - warrant');await action('confirmEligible');
+ assert.ok((await page.locator('#moJsonTitle').textContent()).includes("Can'tDo Reason(s)"));
+ await action('toggleMultipleReason','Florissant Seatbelt');await action('toggleMultipleReason','Fresh Start Friday');await action('confirmMultipleReasons');
+ await page.locator('[data-tb-input="multipleFreshStartFriday"]').fill('ST. LOUIS COUNTY MUNICIPAL - (314) 615-8760 | FRESH START FRIDAYS*\n- 200: Other case - warrant');await action('confirmMultipleReasonInput');
+ await page.locator('[data-tb-input="multipleFlorissantSeatbelt"]').fill('FLORISSANT MUNICIPAL\n- 300: Seatbelt - warrant');await action('confirmMultipleReasonInput');
+ assert.equal(await page.locator('.moInfographicCard').count(),2);
+ assert.equal(await page.locator('[data-tb-message]').count(),2);
+ assert.ok((await page.locator('[data-tb-message="ineligible"]').inputValue()).includes('virtual court hearing'));
+ assert.ok(!(await page.locator('[data-tb-message="ineligible"]').inputValue()).includes('300: Seatbelt'));
+ await page.locator('[data-tb-message="ineligible"]').fill('Edited walk-in ineligible message');await action('copyEditedMessage','ineligible');assert.equal(await page.evaluate(()=>window.copiedText),'Edited walk-in ineligible message');
+ await page.locator('[data-tb-message="eligible"]').fill('Edited walk-in eligible message');await action('copyEditedMessage','eligible');assert.equal(await page.evaluate(()=>window.copiedText),'Edited walk-in eligible message');
+ await page.evaluate(()=>{textBuilderState.screen='root';renderTextBuilder();});await action('chooseRoot','Walk-In Client');await action('chooseStaff','Casey');await action('confirmEligible');await action('toggleMultipleReason','Out of Network');await action('confirmMultipleReasons');
+ await page.locator('[data-tb-input="multipleOutOfNetwork"]').fill('OTHER MUNICIPAL COURT\n- 777: Other case - warrant');await action('confirmMultipleReasonInput');
+ assert.equal(await page.locator('.moInfographicCard').count(),1);
+ assert.equal(await page.locator('[data-tb-message="main"]').inputValue(),'This is Casey from Tap In, thank you for speaking with me today. The attached image is a summary of what we found.\n\nIf you have questions about the summary, feel free to text/call us.');
  assert.deepEqual(errors,[]);
  console.log('Browser checks passed: embedded Inter loading, font isolation, mixed flow, grouped previews, direct step editing, fixed positions, retained drafts, JPEG/PNG encoding, JPG download, clipboard success/failure, adding steps and panel rendering.');
  } finally {await browser.close();}
