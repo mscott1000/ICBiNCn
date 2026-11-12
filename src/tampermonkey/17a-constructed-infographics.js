@@ -139,10 +139,10 @@ function textBuilderInfographicLines(box,measure) {
 }
 function textBuilderInfographicBoxHeight(box,measure) {return Math.max(1,textBuilderInfographicLines(box,measure).length) * box.size * 1.4;}
 function textBuilderInfographicModel(source,measure) {
-  const model = {type:source.type,width:800,height:1000,caseBottom:620,boxes:[],sectionRules:[],tables:[]};
+  const model = {type:source.type,width:960,height:1000,caseBottom:620,boxes:[],sectionRules:[],tables:[]};
   let y = 60;
   const add = (text,size,bold,kind='case') => {
-    const width = kind === 'step' ? 712 : Math.min(712,Math.max(160,measure(text,size,bold)+8));
+    const width = kind === 'step' ? 872 : Math.min(872,Math.max(160,measure(text,size,bold)+8));
     const box = {id:`box-${model.boxes.length}`,text,x:44,y,width,size,bold,kind};
     model.boxes.push(box);
     y += textBuilderInfographicBoxHeight(box,measure) + 18;
@@ -164,7 +164,7 @@ function textBuilderInfographicModel(source,measure) {
         if (group.court) add(group.court,22,true,'court');
         for (const detail of group.details) add(detail,20,false,'courtDetail');
       }
-      for (const note of group.notes) add(note,24,false);
+      for (const note of group.notes) add(note,18,false);
       if (group.entries.length) {
         const table = textBuilderInfographicTable(group.entries,y,measure,model.boxes.length,source.type);
         model.tables.push(table);
@@ -193,8 +193,8 @@ function textBuilderInfographicModel(source,measure) {
 function textBuilderInfographicTable(entries,y,measure,idStart,kind='ineligible') {
   const warrantWidth = Math.max(184,Math.ceil(measure('Warrant Found?',18,true))+28);
   const licenseWidth = Math.max(168,Math.ceil(measure('License Hold?',18,true))+28);
-  const widths = kind === 'eligible' ? [712] : kind === 'upcoming' ? [400,312] : [712-warrantWidth-licenseWidth,warrantWidth,licenseWidth];
-  const table = {kind,x:44,y,width:712,height:0,rows:[],boxes:[],widths};
+  const widths = kind === 'eligible' ? [872] : kind === 'upcoming' ? [560,312] : [872-warrantWidth-licenseWidth,warrantWidth,licenseWidth];
+  const table = {kind,x:44,y,width:872,height:0,rows:[],boxes:[],widths};
   const headers = kind === 'eligible' ? ['Case Number'] : kind === 'upcoming' ? ['Court Date','Location'] : ['Case Number','Warrant Found?','License Hold?'];
   const rows = [headers,...entries.map(entry => kind === 'eligible' ? [entry.label] : kind === 'upcoming' ? [entry.date,entry.location] : [entry.label,entry.warrant,entry.license])];
   let rowY = y;
@@ -202,7 +202,7 @@ function textBuilderInfographicTable(entries,y,measure,idStart,kind='ineligible'
     const header = index === 0;
     let x = 44;
     const cells = values.map((text,column) => {
-      const box = {id:`box-${idStart+table.boxes.length+column}`,text,x:x+14,y:rowY+15,width:widths[column]-28,size:header ? 18 : 21,bold:header,kind:header ? 'tableHeader' : 'tableCell',center:kind !== 'upcoming' && column>0};
+      const box = {id:`box-${idStart+table.boxes.length+column}`,text,x:x+14,y:rowY+15,width:widths[column]-28,size:18,bold:header,kind:header ? 'tableHeader' : 'tableCell',center:kind !== 'upcoming' && column>0};
       if (!header && column === 0 && kind !== 'upcoming') {box.fullText = text;box.singleLine = true;box.text = textBuilderInfographicFitLine(text,box.width,box.size,box.bold,measure);}
       x += widths[column];return box;
     });
@@ -236,7 +236,7 @@ function textBuilderInfographicDrawTables(ctx,model) {
 function textBuilderInfographicReflow(model,measure) {
   let y = model.caseBottom + 148;
   for (const box of model.boxes.filter(box => box.kind === 'step')) {
-    box.x = 44; box.y = y; box.width = 712;
+    box.x = 44; box.y = y; box.width = 872;
     y += Math.max(80,textBuilderInfographicBoxHeight(box,measure)) + 28;
   }
   model.height = Math.max(700,y + 18);
@@ -245,13 +245,13 @@ function textBuilderInfographicRules(model) {
   return model.boxes.filter(box => box.kind === 'step').slice(1).map(box => box.y-14);
 }
 function textBuilderInfographicDecorations(model,measure) {
-  const lines = textBuilderInfographicRules(model).map(y => ({x1:44,x2:756,y,color:'#d1d5db'}));
+  const lines = textBuilderInfographicRules(model).map(y => ({x1:44,x2:916,y,color:'#d1d5db'}));
   const title = model.boxes.find(box => box.kind === 'heading');
-  const width = Math.min(712,Math.max(...textBuilderInfographicLines(title,measure).map(text => measure(text,title.size,true))));
-  lines.push({x1:400-width/2,x2:400+width/2,y:title.y+textBuilderInfographicBoxHeight(title,measure)+5,color:'#858b91'});
+  const width = Math.min(872,Math.max(...textBuilderInfographicLines(title,measure).map(text => measure(text,title.size,true))));
+  lines.push({x1:480-width/2,x2:480+width/2,y:title.y+textBuilderInfographicBoxHeight(title,measure)+5,color:'#858b91'});
   // Full-width demarcation beneath the next-step heading; no text-width underline.
-  lines.push({x1:44,x2:756,y:model.caseBottom+122,color:'#d1d5db'});
-  for (const y of model.sectionRules || []) lines.push({x1:44,x2:756,y,color:'#ddd5d7'});
+  lines.push({x1:44,x2:916,y:model.caseBottom+122,color:'#d1d5db'});
+  for (const y of model.sectionRules || []) lines.push({x1:44,x2:916,y,color:'#ddd5d7'});
   return lines;
 }
 function textBuilderInfographicDraft(source) {
@@ -266,7 +266,7 @@ function textBuilderInfographicDraft(source) {
 function textBuilderInfographicSvg(model,editing=true) {
   const esc = escapeHtml;
   const measure = textBuilderInfographicMeasure();
-  const panel = (y,height,fill) => `<rect x="18" y="${y}" width="764" height="${height}" rx="15" fill="${fill}" stroke="#cbd5ce"/>`;
+  const panel = (y,height,fill) => `<rect x="18" y="${y}" width="924" height="${height}" rx="15" fill="${fill}" stroke="#cbd5ce"/>`;
   const stepsY = model.caseBottom + 18;
   const rules = textBuilderInfographicDecorations(model,measure).map(line => `<line x1="${line.x1}" x2="${line.x2}" y1="${line.y}" y2="${line.y}" stroke="${line.color}"/>`).join('');
   const boxes = model.boxes.map(box => {
@@ -282,7 +282,7 @@ function textBuilderInfographicSvg(model,editing=true) {
     return `<g transform="translate(${box.x},${box.y})">
       <text aria-label="${esc(box.text)}" style="${style}" font-family="TICInfographicInter, sans-serif" font-size="${box.size}" font-weight="${box.bold ? '700' : '400'}" fill="${['court','courtDetail'].includes(box.kind) ? '#73787c' : '#17212b'}" ${centered ? 'text-anchor="middle"' : ''} dominant-baseline="text-before-edge">${lines.map((line,i) => `<tspan style="${style}" x="${centered ? centerX : 0}" y="${i*box.size*1.4}">${esc(line)}</tspan>`).join('')}</text></g>`;
   }).join('');
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${model.width} ${model.height}" class="moInfographicSvg" aria-label="${model.type === 'eligible' ? 'Eligible' : 'Ineligible'} Constructed Infographic"><rect width="800" height="${model.height}" fill="white"/>${panel(18,model.caseBottom-18,model.type === 'eligible' ? '#eff9ef' : '#fff4f4')}${panel(stepsY,model.height-stepsY-18,'#ffffff')}${textBuilderInfographicTableSvg(model)}${rules}${boxes}</svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${model.width} ${model.height}" class="moInfographicSvg" aria-label="${model.type === 'eligible' ? 'Eligible' : 'Ineligible'} Constructed Infographic"><rect width="${model.width}" height="${model.height}" fill="white"/>${panel(18,model.caseBottom-18,model.type === 'eligible' ? '#eff9ef' : '#f3f4f5')}${panel(stepsY,model.height-stepsY-18,'#ffffff')}${textBuilderInfographicTableSvg(model)}${rules}${boxes}</svg>`;
 }
 function textBuilderInfographicCard(source) {
   const draft = textBuilderInfographicDraft(source);
@@ -344,7 +344,7 @@ function textBuilderBindInfographic(card,source) {
     const action = event.target.closest('[data-info-action]')?.dataset.infoAction;
     if (action === 'addStep') {
       const id = `step-${draft.model.boxes.length}`;
-      draft.model.boxes.push({id,text:'',x:44,y:0,width:712,size:23,bold:false,kind:'step'});
+      draft.model.boxes.push({id,text:'',x:44,y:0,width:872,size:23,bold:false,kind:'step'});
       textBuilderInfographicReflow(draft.model,textBuilderInfographicMeasure()); redraw();
       const field = preview.querySelector(`[data-info-step="${id}"]`); field.focus(); field.scrollIntoView({block:'nearest'});
     } else if (action === 'copy' || action === 'download') {
@@ -359,8 +359,8 @@ async function textBuilderInfographicBlob(model,mime) {
   const canvas = document.createElement('canvas'); canvas.width=model.width*2; canvas.height=model.height*2;
   const ctx = canvas.getContext('2d'); if (!ctx) return Promise.reject(new Error('Image export is unavailable.'));
   ctx.scale(2,2);ctx.fillStyle='#ffffff';ctx.fillRect(0,0,model.width,model.height);
-  const panel = (y,h,color) => {ctx.beginPath();ctx.roundRect(18,y,764,h,15);ctx.fillStyle=color;ctx.fill();ctx.strokeStyle='#cbd5ce';ctx.stroke();};
-  panel(18,model.caseBottom-18,model.type==='eligible'?'#eff9ef':'#fff4f4');
+  const panel = (y,h,color) => {ctx.beginPath();ctx.roundRect(18,y,model.width-36,h,15);ctx.fillStyle=color;ctx.fill();ctx.strokeStyle='#cbd5ce';ctx.stroke();};
+  panel(18,model.caseBottom-18,model.type==='eligible'?'#eff9ef':'#f3f4f5');
   const stepsY=model.caseBottom+18;panel(stepsY,model.height-stepsY-18,'#ffffff');
   textBuilderInfographicDrawTables(ctx,model);
   const measure=textBuilderInfographicMeasure();

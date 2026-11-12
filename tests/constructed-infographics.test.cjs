@@ -82,7 +82,7 @@ test('approved ineligible format has a title underline and only a wide next-step
  const lines=c.textBuilderInfographicDecorations(model,measure);
  assert.equal(lines.length,3); // case-title underline, section separator, next-step demarcation
  const demarcation=lines.find(line=>line.y===model.caseBottom+122);
- assert.equal(demarcation.x1,44);assert.equal(demarcation.x2,756);
+ assert.equal(demarcation.x1,44);assert.equal(demarcation.x2,916);
  const stepsTitle=model.boxes.find(b=>b.kind==='stepsHeading');
  assert.ok(!lines.some(line=>line.y===stepsTitle.y+c.textBuilderInfographicBoxHeight(stepsTitle,measure)+5));
  assert.ok(lines.some(line=>line.y===title.y+c.textBuilderInfographicBoxHeight(title,measure)+5));
@@ -178,5 +178,20 @@ test('Fresh Start Friday uses its fixed two-line heading and keeps marker cases 
   assert.ok(!m.boxes.some(b=>b.kind==='tableCell' && b.text.includes('FRESH START FRIDAYS')));
   const cases=m.tables[0].boxes.slice(3);assert.equal(cases[0].text,'123: Charge one');assert.equal(cases[1].text,'Yes');assert.equal(cases[2].text,'Yes');assert.equal(cases[3].text,'456: Charge two');assert.equal(cases[4].text,'No');assert.equal(cases[5].text,'No');
   if(researchType!=='Can’tDo: Fresh Start Friday') {assert.ok(m.boxes.some(b=>b.text==='Out of TIC Network'));assert.ok(m.boxes.some(b=>b.kind==='court' && b.text==='OTHER COURT'));}
+ }
+});
+
+test('wider images preserve status-column widths and use smaller case text with a grey ineligible panel',()=>{
+ const c=setup();
+ for (const type of ['eligible','ineligible']) {
+  const model=c.textBuilderInfographicModel({type,sections:[{text:'COURT A\n- 123: Example charge - warrant - hold placed on license'}]},measure);
+  assert.equal(model.width,800*1.2);
+  const table=model.tables[0];assert.equal(table.width,872);
+  if(type==='eligible') assert.deepEqual(Array.from(table.widths),[872]);
+  else assert.deepEqual(Array.from(table.widths),[520,184,168]);
+  assert.ok(table.boxes.filter(b=>b.kind==='tableCell').every(b=>b.size===18));
+  c.textBuilderInfographicMeasure=()=>measure;
+  const svg=c.textBuilderInfographicSvg(model,false);
+  assert.ok(svg.includes('width="924"'));assert.ok(svg.includes(type==='eligible'?'#eff9ef':'#f3f4f5'));
  }
 });
