@@ -134,7 +134,7 @@ function updateJotformStatusDisplayLabels() {const statusColumnId = findJotformC
 
 const JOTFORM_TAB_DROPDOWN_GROUPS = [
   {key:'phases',title:'Phases',labels:['Phase 1','Phase 2','Phase 3','Phase 4','Phase 5']},
-  {key:'courtsReady',title:'Courts - Ready to Submit',labels:['Phase 3 - Clayton','Phase 3 - Florissant','Phase 3 - Kirkwood','Phase 3 - Manchester','Phase 3 - STL City Circuit Court','Phase 3 - STL City Municipal Court','Phase 3 - STL County Circuit Court','Phase 3 - University City','Phase 3 - Webster Groves']},
+  {key:'courtsReady',title:'Courts - Ready to Submit',labels:['Phase 3 - Bridgeton','Phase 3 - Clayton','Phase 3 - Florissant','Phase 3 - Kirkwood','Phase 3 - Lakeshire','Phase 3 - Manchester','Phase 3 - STL City Circuit Court','Phase 3 - STL City Municipal Court','Phase 3 - STL County Circuit Court','Phase 3 - University City','Phase 3 - Webster Groves']},
 ];
 
 function jotformTabText(tab) {return norm(tab?.querySelector?.('.tab-text')?.textContent || tab?.textContent || '');}

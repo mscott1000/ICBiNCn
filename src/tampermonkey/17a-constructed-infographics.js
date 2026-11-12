@@ -23,24 +23,27 @@ function textBuilderInfographicReasons() {
     {label:'Private Attorney',title:'Private Attorney',path:'Can’tDo: Private Attorney',key:'multiplePrivateAttorney'},
     {label:'Fresh Start Friday',title:'St. Louis County Municipal Court\n| Fresh Start Fridays - (314) 615-8760 |',fixedCourtHeader:true,path:'Can’tDo: Fresh Start Friday',key:'multipleFreshStartFriday'},
     {label:'Recent FTA',title:'Recent FTA, Not a Warrant Yet',path:'Can’tDo: Recent FTA, Not a Warrant Yet',key:'multipleRecentFta'},
-    {label:'Out of Network',title:'Out of TIC Network',path:'Can’tDo: Out of Network',key:'multipleOutOfNetwork'}
+    {label:'Out of Network',title:'Out of TIC Network',path:'Can’tDo: Out of Network',key:'multipleOutOfNetwork'},
+    {label:'Florissant Seatbelt',title:'Florissant Seatbelt',key:'multipleFlorissantSeatbelt'}
   ];
 }
 function textBuilderInfographicSources() {
   const d = textBuilderState.data;
+  if (['followUpNewCourtDate','followUpReady','initial','legalAidResources'].includes(d.workflow)) return [];
+  const walkIn = d.workflow === 'walkInDropIn';
   const mixed = d.researchType === 'CanDo + Can’tDo';
-  const multiple = d.researchType === "Can'tDo: Multiple Reasons" || mixed;
+  const multiple = d.researchType === "Can'tDo: Multiple Reasons" || mixed || walkIn;
   const sources = [];
-  if (mixed || d.researchType === 'CanDo: Everything') sources.push({type:'eligible',sections:[{text:d.eligibleCases || ''}]});
+  if ((mixed || walkIn || d.researchType === 'CanDo: Everything') && String(d.eligibleCases || '').trim()) sources.push({type:'eligible',sections:[{text:d.eligibleCases}]});
   const reasons = textBuilderInfographicReasons();
   if (multiple) {
-    const sections = reasons.filter(r => (d.multipleReasons || []).includes(r.label)).map(r => ({title:r.title,text:d[r.key] || '',fixedCourtHeader:Boolean(r.fixedCourtHeader)}));
+    const sections = reasons.filter(r => (d.multipleReasons || []).includes(r.label) && String(d[r.key] || '').trim()).map(r => ({title:r.title,text:d[r.key],fixedCourtHeader:Boolean(r.fixedCourtHeader)}));
     if (sections.length) sources.push({type:'ineligible',sections});
   } else {
-    const reason = reasons.find(r => r.path === d.researchType);
+    const reason = reasons.find(r => r.path && r.path === d.researchType);
     if (reason) {
-      const text = reason.label === 'Private Attorney' ? [d.privateAttorneyCases,d.remainingIneligibleCases].filter(Boolean).join('\n\n') : d.ineligibleCases;
-      sources.push({type:'ineligible',sections:[{title:reason.title,text:text || '',fixedCourtHeader:Boolean(reason.fixedCourtHeader)}]});
+      const text = reason.label === 'Private Attorney' ? d.privateAttorneyCases : d.ineligibleCases;
+      if (String(text || '').trim()) sources.push({type:'ineligible',sections:[{title:reason.title,text,fixedCourtHeader:Boolean(reason.fixedCourtHeader)}]});
     }
   }
   return sources;
@@ -258,7 +261,14 @@ function textBuilderInfographicDraft(source) {
   const fingerprint = JSON.stringify(source);
   const drafts = d.infographicDrafts || (d.infographicDrafts = {});
   if (!drafts[source.type] || drafts[source.type].fingerprint !== fingerprint) {
-    drafts[source.type] = {fingerprint,model:textBuilderInfographicModel(source,textBuilderInfographicMeasure())};
+    const previousSteps = drafts[source.type]?.model.boxes.filter(box => box.kind === 'step');
+    const model = textBuilderInfographicModel(source,textBuilderInfographicMeasure());
+    if (previousSteps) {
+      model.boxes = model.boxes.filter(box => box.kind !== 'step');
+      previousSteps.forEach((box,index) => model.boxes.push({...box,id:`step-retained-${index}`}));
+      textBuilderInfographicReflow(model,textBuilderInfographicMeasure());
+    }
+    drafts[source.type] = {fingerprint,model};
   }
   return drafts[source.type];
 }
