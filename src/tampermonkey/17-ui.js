@@ -818,11 +818,11 @@ const TEXT_BUILDER_MULTIPLE_REASONS = [
   {label:'Florissant Seatbelt',key:'multipleFlorissantSeatbelt',placeholder:'Enter case summary for the Florissant seatbelt charge(s)'}
 ];
 const TEXT_BUILDER_MULTIPLE_OUTPUT_ORDER = ['Repeat Attempt','Initial Warrant','Private Attorney','Fresh Start Friday','Recent FTA','Out of Network','Florissant Seatbelt'];
-function textBuilderFreshStartFridaysBody() {return `I saw you mentioned St. Louis County. We found a warrant in the St. Louis County MUNICIPAL Court, which has their own warrant program called 'Fresh Start Fridays'. We attached case details, and here is how the program works:
-
-FSF is a virtual court hearing, allowing those with warrants in the St. Louis County Municipal Court to log in and request a recall and a new court date without fear of arrest. The judge holds this virtual docket at 10:00 AM every Friday, except holidays. This link will take you to the virtual courtroom:
-https://mocourts.webex.com/meet/courtney.whiteside`;}
-function textBuilderFreshStartFridaysMessage() {return `This is ${textBuilderState.data.staff} from the Tap In Center, thank you for filling out the intake!\n\n${textBuilderFreshStartFridaysBody()}`;}
+function textBuilderFreshStartFridaysBody() {return `I saw you mentioned St. Louis County. We found a warrant in the St. Louis County MUNICIPAL Court, which has their own warrant program called 'Fresh Start Friday':
+Fresh Start Friday is a virtual court hearing, allowing those with warrants in the St. Louis County Municipal Court to log in and request a recall and a new court date without fear of arrest. The judge holds this virtual docket at 10:00 AM every Friday, except holidays. This link will take you to the virtual courtroom:
+https://mocourts.webex.com/meet/courtney.whiteside
+You can call the St. Louis County Municipal Court at (314) 615-8760.`;}
+function textBuilderFreshStartFridaysMessage() {return `Hello, this is ${textBuilderState.data.staff} with the Tap In Center, thank you for filling out the intake!\n\n${textBuilderFreshStartFridaysBody()}`;}
 function textBuilderMultipleReasonText(reason) {
   if (!String(textBuilderState.data[reason.key] || '').trim()) return '';
   if (reason.label === 'Fresh Start Friday') return textBuilderFreshStartFridaysBody();
@@ -920,7 +920,7 @@ function textBuilderMultipleReasonAction(action,value) {
   return false;
 }
 function textBuilderMultipleReasonsMessage() {
-  const intro = `Hello, this is ${textBuilderState.data.staff} from the Tap In Center. We were unable to find cases that are eligible for our service.`;
+  const intro = `Hello, this is ${textBuilderState.data.staff} with the Tap In Center. We were unable to find cases that are eligible for our service under the information you provided.`;
   return [intro+(textBuilderHasIneligible() ? ' The attached image is a summary and explanation of what we found.' : ''),textBuilderReasonExplanations(),'If you feel we have missed something, please share the case number(s).'].filter(Boolean).join('\n\n');
 }
 
@@ -966,10 +966,40 @@ function textBuilderFormatCaseData(message,key) {if (textBuilderCaseDataVisible(
 function textBuilderCaseDataToggle(key) {const on = textBuilderCaseDataVisible(key);
                                         return `<button class="moBtn moCaseDataToggle${on ? '' : ' moCaseDataOff'}" data-tb-action="toggleCaseData" data-tb-value="${escapeHtml(key)}" type="button" title="Toggle Case Data" aria-pressed="${on ? 'true' : 'false'}">Toggle Case Data: ${on ? 'On' : 'Off'}</button>`;}
 function textBuilderNeedsSeatbeltViolations() {return false;}
-function textBuilderAddressLine(canDoPhrase) {if (textBuilderState.data.addressMode === 'Have Address') return canDoPhrase ? `To proceed${canDoPhrase}, can you confirm that ${textBuilderState.data.address || ''} is the best place for the Court to send physical mail?` : `To proceed, confirm that ${textBuilderState.data.address || ''} is the best place for the Court to send mail.`;
-                                             return `To proceed${canDoPhrase}, what address is best for the Court to send physical mail?`;}
+function textBuilderCourtNamesFromSummary(summary) {
+  const names = [];
+  for (const group of textBuilderInfographicCourtGroups(summary)) {
+    let name = group.court.replace(/,?\s*(?:[-–—|]\s*)?(?:DIV(?:ISION)?\.?\s*\d|JUDGE\b).*$/i,'')
+      .replace(/\s*[-–—|]\s*(?:\(?\d|COURT CLERK\b).*$/i,'').trim();
+    if (!name || !/\b(?:municipal|circuit|court)\b/i.test(name)) continue;
+    const known = TEXT_BUILDER_COURTS.map(textBuilderCourtLabel).find(label => label.toUpperCase() === name.toUpperCase().replace(/\s+COURT$/i,''));
+    if (known) name = known;
+    else if (name === name.toUpperCase()) name = name.toLowerCase().replace(/\b[a-z]/g,char=>char.toUpperCase()).replace(/\bOf\b/g,'of').replace(/\bSt\.?(?=\s)/g,'St.');
+    if (!/\bCourt$/i.test(name)) name += ' Court';
+    if (!names.some(existing=>existing.toLowerCase()===name.toLowerCase())) names.push(name);
+  }
+  return names;
+}
+function textBuilderEligibleCourtNames() {
+  const names = textBuilderCourtNamesFromSummary(textBuilderState.data.eligibleCases || '');
+  return names.length ? names : (textBuilderState.data.courts || []).map(textBuilderCourtLabel).map(name=>/\bCourt$/i.test(name) ? name : name+' Court');
+}
+function textBuilderAddressLine(canDoPhrase) {
+  const d = textBuilderState.data;
+  const courts = canDoPhrase ? textBuilderEligibleCourtNames() : [];
+  const phrase = canDoPhrase ? ` with the cases that we CAN do${courts.length ? ' in '+textBuilderList(courts) : ''}` : '';
+  if (d.addressMode === 'Have Address') return phrase
+    ? `To proceed${phrase}, please confirm that ${d.address || ''} is the best place for the Court to send physical mail.`
+    : `To proceed, please confirm that ${d.address || ''} is the best place for the Court to send mail.`;
+  return `To proceed${phrase}, what address is best for the Court to send physical mail?`;
+}
+function textBuilderRepeatAttemptMessage() {
+  const d = textBuilderState.data, courts = textBuilderCourtNamesFromSummary(d.ineligibleCases || '');
+  const location = courts.length ? 'in '+textBuilderList(courts) : 'shown in the attached image';
+  return `Hello, this is ${d.staff} with the Tap In Center.${textBuilderOptionalBlock(d.ineligibleCases,()=>`\n\nPlease see the attached image containing a summary of the cases we found in the public record.`)}\n\nUnfortunately we will not be able to assist in recalling the warrants ${location}. The Court only allows us to submit one request per case through our program. We CANNOT submit another request.\n\nWe recommend calling the Court clerk for information.\n\nIf you feel we have missed something, please share the case number(s).`;
+}
 function textBuilderEligibleIntro() {
-  const d = textBuilderState.data, labels = (d.courts || []).map(textBuilderCourtLabel);
+  const d = textBuilderState.data, labels = textBuilderEligibleCourtNames().map(name=>name.replace(/\s+Court$/i,''));
   if (!textBuilderHasEligible()) return `Hello, this is ${d.staff} with the Tap In Center, thank you for submitting an intake form!`;
   if (!labels.length) return `Hello, this is ${d.staff} with the Tap In Center, thank you for submitting an intake form! We CAN request a recall for the cases listed in the attached image.`;
   return labels.length === 1
@@ -978,21 +1008,21 @@ function textBuilderEligibleIntro() {
 }
 function textBuilderDropInIneligibleMessage() {
   const intro = `This is ${textBuilderState.data.staff} from Tap In, thank you for speaking with me today.`;
-  return [intro+(textBuilderHasIneligible() ? ' The attached image is a summary of what we found.' : ''),textBuilderReasonExplanations(),'If you have questions about the summary, feel free to text/call us.'].filter(Boolean).join('\n\n');
+  return [intro+(textBuilderHasIneligible() ? (textBuilderHasEligible() ? ' The attached image is a summary of the cases we found.' : ' The attached image is a summary of what we found.') : ''),textBuilderReasonExplanations(),'If you have questions about the summary, feel free to text/call us.'].filter(Boolean).join('\n\n');
 }
 function textBuilderDropInEligibleMessage(includeStaffIntro) {
   const intro = includeStaffIntro ? `This is ${textBuilderState.data.staff}, thank you for speaking with me today. The attached image is a summary of the request we are submitting on your behalf.` : 'The attached image contains a summary of the request we are submitting on your behalf.';
-  return `${intro}\n\n${includeStaffIntro ? 'We are awaiting the Judge’s decision, which typically takes one to two weeks.' : 'We submit tomorrow morning, then the Judge makes their decision. This typically takes one to two weeks.'}\n\nThe Court will send mail to the address provided, and we will update you from this phone number when we hear from the clerk. Feel free to text back with questions!`;
+  return `${intro}${includeStaffIntro ? '\n\nWe are awaiting the Judge’s decision, which typically takes one to two weeks.' : ''}\n\nThe Court will send mail to the address provided, and we will update you from this phone number when we hear from the clerk. Feel free to text back with questions!`;
 }
 function textBuilderFollowUpNewCourtDateMessage() {const d = textBuilderState.data;
                                                    const labels = (d.courts || []).map(textBuilderCourtLabel);
                                                    const courtText = labels.length <= 1 ? `The ${labels[0] || ''} Court has agreed to recall the warrant` : `The ${textBuilderList(labels)} Courts have agreed to recall the warrants`;
-                                                   return `This is ${d.staff} from the Tap In Center - good news! ${courtText} and you have a NEW COURT DATE:\n\n${d.newCourtDate || ''}\n\nYou MUST appear in-person or a warrant will be issued. The Tap In Center is only able to request this recall ONCE PER CASE.${(d.courts || []).includes('Florissant') ? textBuilderOptionalBlock(d.newCourtDateSeatbeltSummary,(summary) => `\n\nAs a reminder, the seatbelt case is still active:\n\n${summary}\n\nYou can address this by phone or in-person with the Florissant clerk. It is now the only remaining warrant in Florissant, and they can provide options for you.`) : ''}`;}
+                                                   return `Hello, this is ${d.staff} with the Tap In Center - good news! ${courtText} and you have a NEW COURT DATE:\n\n${d.newCourtDate || ''}\n\nYou MUST appear in-person or a warrant will be issued. The Tap In Center is only able to request this recall ONCE PER CASE.${(d.courts || []).includes('Florissant') ? textBuilderOptionalBlock(d.newCourtDateSeatbeltSummary,(summary) => `\n\nAs a reminder, the seatbelt case is still active:\n\n${summary}\n\nYou can address this by phone or in-person with the Florissant clerk. It is now the only remaining warrant in Florissant, and they can provide options for you.`) : ''}`;}
 function textBuilderBuildMessage() {const d = textBuilderState.data;
                                     if (d.researchType === TEXT_BUILDER_MULTIPLE_REASONS_PATH) return textBuilderMultipleReasonsMessage();
-                                    if (d.workflow === 'followUpReady' && d.followUpDay === 'Today is Monday') return `Thank you, we should have everything we need. You do NOT need to come in-person to the Tap In Center program tomorrow evening - though you are always welcome.\n\nWe will be in touch when we hear from our Court partners, and if the request is granted the Court will mail you a new summons with your court date information.`;
-                                    if (d.workflow === 'followUpReady' && d.followUpDay === 'Today is Tuesday') return `Thank you, we should have everything we need. You do NOT need to come in-person to the Tap In Center program this evening - though you are always welcome.\n\nWe will be in touch when we hear from our Court partners, and if the request is granted the Court will mail you a new summons with your court date information.`;
-                                    if (d.workflow === 'followUpReady' && d.followUpDay === 'Today is Wed-Sun') return `Thank you, we should have everything we need. You do NOT need to come in-person to the Tap In Center program Tuesday evening - though you are always welcome.\n\nWe will be in touch when we hear from our Court partners. If the request is granted the Court will mail you a new summons with your court date information.`;
+                                    if (d.workflow === 'followUpReady' && d.followUpDay === 'Today is Monday') return `Thank you, we should have everything we need. You do NOT need to come in-person to the Tap In Center program tomorrow evening - though you are always welcome.\n\nWe will be in touch when we hear from our Court partners, and if the request is granted the Court will mail you a new summons with your court date information. It usually takes the Court one to two weeks to process our requests.`;
+                                    if (d.workflow === 'followUpReady' && d.followUpDay === 'Today is Tuesday') return `Thank you, we should have everything we need. You do NOT need to come in-person to the Tap In Center program this evening - though you are always welcome.\n\nWe will be in touch when we hear from our Court partners, and if the request is granted the Court will mail you a new summons with your court date information. It usually takes the Court one to two weeks to process our requests.`;
+                                    if (d.workflow === 'followUpReady' && d.followUpDay === 'Today is Wed-Sun') return `Thank you, we should have everything we need. You do NOT need to come in-person to the Tap In Center program Tuesday evening - though you are always welcome.\n\nWe will be in touch when we hear from our Court partners. If the request is granted the Court will mail you a new summons with your court date information. It usually takes the Court one to two weeks to process our requests.`;
                                     if (d.workflow === 'followUpNewCourtDate') return textBuilderFollowUpNewCourtDateMessage();
                                     if (d.workflow === 'legalAidResources') return TEXT_BUILDER_LEGAL_AID_MESSAGES[d.legalAidResource] || '';
                                     if (d.workflow === 'walkInDropIn') {
@@ -1000,7 +1030,7 @@ function textBuilderBuildMessage() {const d = textBuilderState.data;
                                       if (textBuilderHasEligible()) return textBuilderDropInEligibleMessage(true);
                                       return `This is ${d.staff} from Tap In, thank you for speaking with me today. No case information has been entered.`;
                                     }
-                                    if (d.workflow === 'initial') return `Hi this is ${d.staff}, thank you for contacting the Tap In Center. We assist in recalling warrants for missing a court date in these Courts only:
+                                    if (d.workflow === 'initial') return `Hi, this is ${d.staff}, thank you for contacting the Tap In Center. We assist in recalling warrants for missing a court date in these Courts only:
 St. Louis County Circuit (felony/misdemeanor cases)
 City of St. Louis Circuit (felony/misdemeanor cases)
 Bridgeton
@@ -1016,14 +1046,13 @@ Webster Groves
 To get started, complete our intake form:
 https://www.slcl.org/library-services/tap-in-center/intake-form
 We operate in-person every Tuesday 6-8 pm at the Florissant Valley Library Branch (195 S New Florissant Rd). Anyone is welcome to walk in during these hours.`;
-                                    if (d.researchType === 'Nothing Found') return `Hello, this is ${d.staff} with the Tap In Center. We were unable to find any court records under the information provided. If you feel this is a mistake, please double check this information for accuracy/typos:`;
-                                    if (d.researchType === 'Can’tDo: Recent FTA, Not a Warrant Yet') return `Hello this is ${d.staff} from Tap In - thank you for filling out our intake form! After researching your record, I was able to find a recent court date of ${d.ftaDate || ''}.
+                                    if (d.researchType === 'Nothing Found') return `Hello, this is ${d.staff} with the Tap In Center. We were unable to find any criminal or ordinance violation cases in warrant status under the information provided. If you feel this is a mistake, please double check this information for accuracy/typos:`;
+                                    if (d.researchType === 'Can’tDo: Recent FTA, Not a Warrant Yet') return `Hello, this is ${d.staff} from the Tap In Center - thank you for filling out our intake form! After researching your record, I was able to find a recent court date of ${d.ftaDate || ''}.
 This has NOT resulted in a warrant yet.
-If the court issues a warrant for a Failure to Appear, we can prepare a request to recall it and set a new court date, but we cannot submit this proactively. We are prohibited from requesting any cases without a current warrant.
-We recommend keeping an eye on CaseNet, using this link to search by case number:
+If the court issues a warrant for a Failure to Appear, we can prepare a request to recall it and set a new court date, but we cannot submit it at this time. We’re not able to assist with the case if it is not currently in warrant status. We recommend keeping an eye on CaseNet, using this link to search by case number:
 https://www.courts.mo.gov/casenet/caseNoSearch.do
 If you feel we have missed something, please share the case number(s).`;
-                                    if (d.researchType === 'Can’tDo: Out of Network') return `This is ${d.staff} from the Tap In Center, thank you for filling out our intake form. We can only request a recall in Courts where the Judge has agreed to work with us. These are the Courts:
+                                    if (d.researchType === 'Can’tDo: Out of Network') return `Hello, this is ${d.staff} with the Tap In Center, thank you for filling out our intake form. We can only request a warrant recall in Courts that have agreed to work with us. This includes:
 St. Louis County Circuit (felony/misdemeanor cases)
 City of St. Louis Circuit (felony/misdemeanor cases)
 Bridgeton
@@ -1037,16 +1066,16 @@ Richmond Heights
 University City
 Webster Groves
 We were unable to find any warrants in these Courts under your information.`+textBuilderOptionalBlock(d.ineligibleCases,()=>`\n\nWe have attached an image with a summary of what we found that we CANNOT assist with. We have listed the phone number for each Court clerk - we recommend calling them for information on cases in their Court.`)+`\n\nIf you feel we have missed something, please share the case number(s).`;
-                                    if (d.researchType === 'Can’tDo: Repeat Attempt') return `This is ${d.staff} from Tap In.${textBuilderOptionalBlock(d.ineligibleCases,()=>` We researched your public record, and the summary of what we found is in the attached image.`)}\n\nWe are allowed by the Judge no more than one recall on each case, meaning we CANNOT submit another request. We recommend calling the Court clerk for information.\n\nIf you feel we have missed something, please share the case number(s).`;
-                                    if (d.researchType === 'Can’tDo: Initial Warrant') return `Hello, this is ${d.staff} with the Tap In Center - thank you for submitting an intake form! After researching your record, we found a warrant in the ${textBuilderList((d.courts || []).map(textBuilderCourtLabel))} Court, and listed details in the attached image.
-This is a unique type of warrant we call an 'initial warrant', and we CANNOT submit a request to recall it.
-When a judge decides to issue this type of warrant at the same time as the case is charged, it means the defendant must appear in court, and no party (including us) can prevent them from appearing.
+                                    if (d.researchType === 'Can’tDo: Repeat Attempt') return textBuilderRepeatAttemptMessage();
+                                    if (d.researchType === 'Can’tDo: Initial Warrant') return `Hello, this is ${d.staff} with the Tap In Center - thank you for submitting an intake form. After researching your record, we found ${d.courts?.length > 1 ? 'warrants' : 'a warrant'} in the ${textBuilderList((d.courts || []).map(textBuilderCourtLabel))} ${d.courts?.length > 1 ? 'Courts' : 'Court'}, and listed details in the attached image.
+Unfortunately we are not able to assist with this type of warrant through our program as it is an initial arrest warrant issued at the beginning of a case. We are only able to assist with bench warrants issued due to missing a court date.
 If you have not done so already, we recommend filling out the application for a Missouri Public Defender here: https://publicdefender.mo.gov/client-application/
-You may also seek private defense, though we cannot give advice for this. If you feel we have missed something, please share the case number(s).`;
+You may also seek private defense, though we cannot give advice for this.
+If you feel we have missed something, please share the case number(s).`;
                                     if (d.researchType === 'Can’tDo: Fresh Start Friday') return textBuilderFreshStartFridaysMessage();
-                                    if (d.researchType === 'Can’tDo: Private Attorney') return `This is ${d.staff} with the Tap In Center, thank you for submitting an intake form. After researching your public record, there appears to be a private attorney entered as counsel. Please see the attached image for details.
-When a private attorney is entered, no other party - including us - can affect anything on that case. We recommend getting in contact with them, regardless of how long it has been since you last spoke.`;
-                                    return [textBuilderEligibleIntro(),textBuilderHasEligible() ? 'The Judge makes their decision, and the Court updates us one to two weeks after the Wednesday morning we submit.' : '',d.researchType === 'CanDo + Can’tDo' && textBuilderHasIneligible() ? 'We have also provided a summary of what we CANNOT assist with.' : '',d.researchType === 'CanDo + Can’tDo' ? textBuilderReasonExplanations() : '',textBuilderAddressLine(d.researchType === 'CanDo + Can’tDo' ? ' with the cases that we CAN do' : '')].filter(Boolean).join('\n\n');}
+                                    if (d.researchType === 'Can’tDo: Private Attorney') return `Hello, this is ${d.staff} with the Tap In Center, thank you for submitting an intake form. After researching your public record, there appears to be a private attorney entered as counsel for you. Please see the attached image for details.
+When a private attorney is entered, no other party - including us - can affect anything in that case. We recommend getting in contact with them, regardless of how long it has been since you last spoke.`;
+                                    return [textBuilderEligibleIntro(),textBuilderHasEligible() ? 'We will submit the request to the Court on Wednesday. The Court will update us after the Judge makes their decision. It usually takes one to two weeks for the Court to process our requests.' : '',d.researchType === 'CanDo + Can’tDo' && textBuilderHasIneligible() ? 'We also found cases that we CANNOT assist with. The attached image displays what we found.' : '',d.researchType === 'CanDo + Can’tDo' ? textBuilderReasonExplanations() : '',textBuilderAddressLine(d.researchType === 'CanDo + Can’tDo' ? ' with the cases that we CAN do' : '')].filter(Boolean).join('\n\n');}
 function renderTextBuilder() {const dockTitle = dock.querySelector('#moJsonTitle');
                               if (dockTitle && appView === 'text') dockTitle.textContent = textBuilderScreenTitle();
                               let html = '';
