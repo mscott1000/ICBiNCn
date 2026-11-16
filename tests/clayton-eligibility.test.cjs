@@ -54,3 +54,10 @@ test('Bridgeton and Lakeshire use existing clerk contacts and join eligible summ
   const row={location:court,charge:'Example',caseNumber:'123'};assert.equal(c.buildOrderedJurisdictionGroups([row]).eligibleJurisdictions[0].entries[0],row);
  }
 });
+
+test('CaseNet O Fallon spelling resolves to the existing O’Fallon contact',()=>{
+  const c=setup();
+  for(const name of ['O Fallon Municipal',"O'Fallon Municipal",'O’Fallon Municipal','O Fallon']) {
+    assert.equal(c.getMunicipalityHeaderForSummary(name),"O'FALLON MUNICIPAL - (636) 240-8766");
+  }
+});
