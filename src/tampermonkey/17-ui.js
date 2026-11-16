@@ -764,7 +764,7 @@ textBuilderPanel.innerHTML = `
 (document.body || document.documentElement).appendChild(textBuilderPanel);
 const textBuilderBody = textBuilderPanel.querySelector('#moJsonTextBuilderBody');
 const TEXT_BUILDER_STAFF = ['Anna','Dylan','Kyle','Mason','Miranda','Tanya'];
-const TEXT_BUILDER_COURTS = ['Bridgeton','City of St. Louis Circuit','City of St. Louis Municipal','Clayton','Florissant','Kirkwood','Lakeshire','Manchester','Richmond Heights','St. Louis County Circuit','University City','Webster Groves'];
+const TEXT_BUILDER_COURTS = ['St. Louis County Circuit','City of St. Louis Circuit','Bridgeton','City of St. Louis Municipal','Clayton','Florissant','Kirkwood','Lakeshire','Manchester','Richmond Heights','University City','Webster Groves'];
 const TEXT_BUILDER_LIMIT_NOTICE = '**GOOGLE VOICE LIMIT - SEPARATE INTO MULTIPLE TEXTS HERE OR EARLIER**';
 let textBuilderState = {screen:'root',history:[],data:{courts:[]}};
 const TEXT_BUILDER_LEGAL_AID_MESSAGES = {
@@ -818,9 +818,11 @@ const TEXT_BUILDER_MULTIPLE_REASONS = [
   {label:'Florissant Seatbelt',key:'multipleFlorissantSeatbelt',placeholder:'Enter case summary for the Florissant seatbelt charge(s)'}
 ];
 const TEXT_BUILDER_MULTIPLE_OUTPUT_ORDER = ['Repeat Attempt','Initial Warrant','Private Attorney','Fresh Start Friday','Recent FTA','Out of Network','Florissant Seatbelt'];
-function textBuilderFreshStartFridaysBody() {return `I saw you mentioned St. Louis County. We found a warrant in the St. Louis County MUNICIPAL Court, which has their own warrant program called 'Fresh Start Friday':
-Fresh Start Friday is a virtual court hearing, allowing those with warrants in the St. Louis County Municipal Court to log in and request a recall and a new court date without fear of arrest. The judge holds this virtual docket at 10:00 AM every Friday, except holidays. This link will take you to the virtual courtroom:
+function textBuilderFreshStartFridaysBody() {return `I saw you mentioned St. Louis County. We found a warrant in the St. Louis County MUNICIPAL Court, which has a warrant program called 'Fresh Start Friday':
+
+Fresh Start Friday is a virtual court hearing, allowing those with warrants in the St. Louis County Municipal Court to log in and request a recall and a new court date without fear of arrest. This virtual docket is at 10:00 AM every Friday, except holidays. This link will take you to the virtual courtroom:
 https://mocourts.webex.com/meet/courtney.whiteside
+
 You can call the St. Louis County Municipal Court at (314) 615-8760.`;}
 function textBuilderFreshStartFridaysMessage() {return `Hello, this is ${textBuilderState.data.staff} with the Tap In Center, thank you for filling out the intake!\n\n${textBuilderFreshStartFridaysBody()}`;}
 function textBuilderMultipleReasonText(reason) {
@@ -920,8 +922,8 @@ function textBuilderMultipleReasonAction(action,value) {
   return false;
 }
 function textBuilderMultipleReasonsMessage() {
-  const intro = `Hello, this is ${textBuilderState.data.staff} with the Tap In Center. We were unable to find cases that are eligible for our service under the information you provided.`;
-  return [intro+(textBuilderHasIneligible() ? ' The attached image is a summary and explanation of what we found.' : ''),textBuilderReasonExplanations(),'If you feel we have missed something, please share the case number(s).'].filter(Boolean).join('\n\n');
+  const intro = `Hello, this is ${textBuilderState.data.staff} with the Tap In Center. We were unable to find cases eligible for our service under the information you provided.`;
+  return [intro+(textBuilderHasIneligible() ? ' The attached image is an explanation of what we found.' : ''),textBuilderReasonExplanations(),'If you feel we have missed something, please share the case number(s).'].filter(Boolean).join('\n\n');
 }
 
 function textBuilderInitialState() {return {screen:'root',history:[],data:{courts:[]}};}
@@ -1105,7 +1107,7 @@ function renderTextBuilder() {const dockTitle = dock.querySelector('#moJsonTitle
                                 const content = dual
                                   ? `<div class="moTextBuilderDual"><div class="moTextBuilderPane"><h3>Ineligible Cases</h3>${textBuilderMessageEditor('ineligible',textBuilderDropInIneligibleMessage(),'moTextBuilderConstructedIneligible')}</div><div class="moTextBuilderPane"><h3>Eligible Cases</h3>${textBuilderMessageEditor('eligible',textBuilderDropInEligibleMessage(false),'moTextBuilderConstructedEligible')}</div></div>`
                                   : `<div class="moTextBuilderPane">${textBuilderMessageEditor('main',textBuilderBuildMessage(),'moTextBuilderConstructed')}</div>`;
-                                html = `<div class="moBlock">${content}</div>${textBuilderActions()}${textBuilderInfographicSources().length ? '<button class="moBtn" data-tb-action="editCaseInformation">Edit case information</button>' : ''}`;
+                                html = `<div class="moBlock">${content}</div>${textBuilderActions()}`;
                               }
                               const target = appView === 'text' ? $content : textBuilderBody;
                               const isMessage = s === 'message' || s === 'legalAidMessage';

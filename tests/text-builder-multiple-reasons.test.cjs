@@ -32,7 +32,7 @@ test('selection requires a reason, supports toggling, and visits all selected fi
   }
   assert.equal(c.textBuilderState.screen,'message');
   const message=c.textBuilderBuildMessage();
-  assert.match(message,/The attached image is a summary and explanation/);
+  assert.match(message,/We were unable to find cases eligible for our service under the information you provided\. The attached image is an explanation of what we found\./);
   assert.ok(!message.includes('Summary:'));
   assert.ok(message.includes('Fresh Start Friday is a virtual court hearing'));
   assert.ok(message.includes('https://mocourts.webex.com/meet/courtney.whiteside'));
@@ -79,6 +79,7 @@ test('both UI entry points route the new actions and render distinct fields safe
 test('standalone Fresh Start Fridays retains the standalone greeting and shared program explanation',()=>{
  const c=setup();
  assert.ok(c.textBuilderFreshStartFridaysMessage().startsWith('Hello, this is Casey with the Tap In Center, thank you for filling out the intake!'));
- assert.ok(c.textBuilderFreshStartFridaysMessage().includes("which has their own warrant program called 'Fresh Start Friday':"));
- assert.ok(c.textBuilderFreshStartFridaysMessage().includes('Fresh Start Friday is a virtual court hearing'));
+ assert.ok(c.textBuilderFreshStartFridaysMessage().includes("which has a warrant program called 'Fresh Start Friday':\n\n"));
+ assert.ok(c.textBuilderFreshStartFridaysMessage().includes('This virtual docket is at 10:00 AM every Friday, except holidays.'));
+ assert.ok(c.textBuilderFreshStartFridaysMessage().includes('https://mocourts.webex.com/meet/courtney.whiteside\n\nYou can call the St. Louis County Municipal Court at (314) 615-8760.'));
 });
