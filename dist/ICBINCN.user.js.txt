@@ -2990,7 +2990,7 @@ SYCAMORE HILLS (OPERATES IN ST. JOHN MUNICIPAL) - (314) 427-8700 EXT. 6`;
 
   function municipalityLooseKey(v) {return municipalityKey(v).replace(/\([^)]*\)/g,' ').replace(/[.,]/g,' ').replace(/\s+/g,' ').trim();}
 
-  function municipalityMatchKey(v) {const loose = municipalityLooseKey(v);
+  function municipalityMatchKey(v) {const loose = municipalityLooseKey(v).replace(/\bO['’]\s*FALLON\b/g,'O FALLON');
                                     if (!loose) return '';
                                     const tokens = loose.split(' ').filter(Boolean).map((tok) => {if (tok === 'CO') return 'COUNTY';
                                                                                                    if (tok === 'MUNI' || tok === 'MUN') return 'MUNICIPAL';
