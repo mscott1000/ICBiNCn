@@ -34,7 +34,7 @@ test('selection requires a reason, supports toggling, and visits all selected fi
   const message=c.textBuilderBuildMessage();
   assert.match(message,/The attached image is a summary and explanation/);
   assert.ok(!message.includes('Summary:'));
-  assert.ok(message.includes('FSF is a virtual court hearing'));
+  assert.ok(message.includes('Fresh Start Friday is a virtual court hearing'));
   assert.ok(message.includes('https://mocourts.webex.com/meet/courtney.whiteside'));
   assert.ok(message.includes('The Court will not recall seatbelt charges through our program'));
   assert.equal((message.match(/Hello, this is Casey/g)||[]).length,1);
@@ -78,7 +78,7 @@ test('both UI entry points route the new actions and render distinct fields safe
 
 test('standalone Fresh Start Fridays retains the standalone greeting and shared program explanation',()=>{
  const c=setup();
- assert.ok(c.textBuilderFreshStartFridaysMessage().startsWith('This is Casey from the Tap In Center, thank you for filling out the intake!'));
- assert.ok(c.textBuilderFreshStartFridaysMessage().includes('We attached case details, and here is how the program works:'));
- assert.ok(c.textBuilderFreshStartFridaysMessage().includes('FSF is a virtual court hearing'));
+ assert.ok(c.textBuilderFreshStartFridaysMessage().startsWith('Hello, this is Casey with the Tap In Center, thank you for filling out the intake!'));
+ assert.ok(c.textBuilderFreshStartFridaysMessage().includes("which has their own warrant program called 'Fresh Start Friday':"));
+ assert.ok(c.textBuilderFreshStartFridaysMessage().includes('Fresh Start Friday is a virtual court hearing'));
 });

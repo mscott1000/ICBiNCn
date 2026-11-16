@@ -72,3 +72,48 @@ test('new Courts are selectable and blank inputs do not advance into fabricated 
  c.textBuilderState.screen='eligibleDropin';c.textBuilderState.data.researchType='CanDo: Everything';c.textBuilderOutputAction('confirmEligible');assert.equal(c.textBuilderState.screen,'eligibleDropin');
  c.textBuilderState.screen='privateAttorneyDropin';c.textBuilderState.data.privateAttorneyCases=entry;c.textBuilderOutputAction('confirmPrivateAttorney');assert.equal(c.textBuilderState.screen,'message');
 });
+test('Repeat Attempt names only the summary Courts, stripping phones and division/judge details',()=>{
+ const cases=[
+  ['FLORISSANT MUNICIPAL - (314) 921-3322\n- 1: Charge - warrant','in Florissant Municipal Court.'],
+  ['FLORISSANT MUNICIPAL - (314) 921-3322\n- 1: Charge - warrant\nST. LOUIS COUNTY CIRCUIT, DIV 39 - Judge KELLY SNYDER\n| Court Clerk: (314) 615-1539 |\n- 2: Other - warrant','in Florissant Municipal Court and St. Louis County Circuit Court.'],
+  ['- 1: Charge - warrant','shown in the attached image.']
+ ];
+ for(const [summary,expected] of cases){
+  const c=setup({researchType:'Can’tDo: Repeat Attempt',ineligibleCases:summary,courts:['Bridgeton']});
+  const message=c.textBuilderBuildMessage();assert.ok(message.includes('warrants '+expected),message);
+  for(const excluded of ['Bridgeton','KELLY SNYDER','615-1539','921-3322','DIV 39','1: Charge'])assert.ok(!message.includes(excluded));
+ }
+ const c=setup();
+ assert.deepEqual(Array.from(c.textBuilderCourtNamesFromSummary('FLORISSANT MUNICIPAL\n- 1: Charge\nFLORISSANT MUNICIPAL COURT\n- 2: Charge')),['Florissant Municipal Court']);
+});
+test('mixed message uses exact approved sentence and eligible Court names in both address endings',()=>{
+ const c=setup({researchType:'CanDo + Can’tDo',courts:['Florissant','Bridgeton'],eligibleCases:entry,multipleReasons:['Private Attorney'],multiplePrivateAttorney:'BRIDGETON MUNICIPAL\n- 2: Example - warrant',addressMode:'Have Address',address:'123 Test St'});
+ let message=c.textBuilderBuildMessage();
+ assert.ok(message.includes('We also found cases that we CANNOT assist with. The attached image displays what we found.'));
+ assert.ok(!message.includes('these courts do not work with our program'));
+ assert.ok(message.includes('To proceed with the cases that we CAN do in Florissant Municipal Court, please confirm that 123 Test St'));
+ assert.ok(!message.includes('Bridgeton'));
+ assert.ok(message.includes('We will submit the request to the Court on Wednesday.'));
+ c.textBuilderState.data.addressMode='Need Address';message=c.textBuilderBuildMessage();assert.ok(message.includes('CAN do in Florissant Municipal Court, what address'));
+ c.textBuilderState.data.multiplePrivateAttorney=' ';assert.ok(!c.textBuilderBuildMessage().includes('We also found cases'));
+});
+test('approved library preserves warrant-status meaning, Initial Warrant pluralization and all readiness day variants',()=>{
+ const c=setup({researchType:'Nothing Found'});assert.match(c.textBuilderBuildMessage(),/criminal or ordinance violation cases in warrant status/);
+ c.textBuilderState.data.researchType='Can’tDo: Initial Warrant';c.textBuilderState.data.courts=['Florissant','Bridgeton'];
+ assert.match(c.textBuilderBuildMessage(),/found warrants in the Florissant Municipal and Bridgeton Municipal Courts/);
+ assert.match(c.textBuilderBuildMessage(),/initial arrest warrant issued at the beginning of a case/);
+ c.textBuilderState.data.courts=['Florissant'];assert.match(c.textBuilderBuildMessage(),/found a warrant in the Florissant Municipal Court/);
+ c.textBuilderState.data.workflow='followUpReady';
+ for(const [day,phrase] of [['Today is Monday','tomorrow evening'],['Today is Tuesday','this evening'],['Today is Wed-Sun','Tuesday evening']]){
+  c.textBuilderState.data.followUpDay=day;const text=c.textBuilderBuildMessage();assert.ok(text.includes(phrase));assert.ok(text.includes('It usually takes the Court one to two weeks to process our requests.'));
+ }
+});
+test('updated Fresh Start Friday body is shared and Walk-In mixed timing is removed without changing eligible-only wording',()=>{
+ const c=setup({researchType:"Can'tDo: Multiple Reasons",multipleReasons:['Fresh Start Friday'],multipleFreshStartFriday:entry});
+ const text=c.textBuilderBuildMessage();assert.ok(text.includes('Fresh Start Friday is a virtual court hearing'));assert.ok(text.includes('You can call the St. Louis County Municipal Court at (314) 615-8760.'));assert.equal((text.match(/Hello, this is/g)||[]).length,1);
+ c.textBuilderState.data.workflow='walkInDropIn';c.textBuilderState.data.eligibleCases=entry;
+ assert.ok(c.textBuilderDropInIneligibleMessage().includes('summary of the cases we found.'));
+ assert.ok(!c.textBuilderDropInEligibleMessage(false).includes('tomorrow morning'));assert.ok(!c.textBuilderDropInEligibleMessage(false).includes('one to two weeks'));
+ assert.ok(c.textBuilderDropInEligibleMessage(true).includes('We are awaiting the Judge’s decision'));
+ c.textBuilderState.data.eligibleCases='';assert.ok(c.textBuilderDropInIneligibleMessage().includes('summary of what we found.'));
+});
