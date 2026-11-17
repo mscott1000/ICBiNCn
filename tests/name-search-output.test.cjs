@@ -28,6 +28,7 @@ function setup(storage = {state:{active:true,passes:[],params:{},casenetAddedTot
   vm.runInContext(read('02a-name-search-edit-history.js'),context);
   vm.runInContext(read('04-name-search-two-pass-state-machine.js'),context);
   context.setIcbincnTabTitleText = () => {};
+  vm.runInContext(read('18d-case-number-override.js'),context);
   vm.runInContext(read('19-buttons.js'),context);
   return {context,storage,handlers,classes,nodes,clock};
 }

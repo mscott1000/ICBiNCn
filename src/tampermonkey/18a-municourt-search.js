@@ -319,7 +319,9 @@
                                                      if (task?.claimedAt && now - Number(task.claimedAt || 0) < 30000) {scheduleMuniRemoteTabClose('claimed_task_fallback',MUNI_REMOTE_CLOSE_FALLBACK_MS);
                                                                                                                         return;}
                                                      await gmSetValueSafe(MUNI_REMOTE_TASK_KEY,{...task,claimedAt: now,claimedUrl: location.href});
-                                                     try {const candidates = await searchMuniViaSubmitByName(task?.params || {},{allowBrowserRecaptcha: true});
+                                                     try {const candidates = task?.params?.caseNumber
+                                                            ? await searchMuniViaSubmitByCase(task.params)
+                                                            : await searchMuniViaSubmitByName(task?.params || {},{allowBrowserRecaptcha: true});
                                                           const detailed = await attachMuniFullCaseDetails(candidates);
                                                           const payload = {id: task.id,createdAt: now,candidates: detailed};
                                                           await gmSetValueSafe(MUNI_REMOTE_RESULT_KEY,payload);
@@ -342,14 +344,18 @@
                                                                                                                         listenerId = GM_addValueChangeListener(MUNI_REMOTE_RESULT_KEY,(_key,_oldValue,newValue) => {
                                                                                                                           if (newValue?.id === taskId) resolve(newValue);});});}
                                                                                                          catch {listenerResult = null;}}
-                                                    while (Date.now() - start < waitMs) {const res = await gmGetValueSafe(MUNI_REMOTE_RESULT_KEY,null);
+                                                    while (Date.now() - start < waitMs) {if (isStop()) {if (listenerId !== null && typeof GM_removeValueChangeListener === 'function') GM_removeValueChangeListener(listenerId); throw new DOMException('Stopped by user','AbortError');}
+                                                                                         const res = await gmGetValueSafe(MUNI_REMOTE_RESULT_KEY,null);
                                                                                          if (res?.id === taskId) {if (listenerId !== null && typeof GM_removeValueChangeListener === 'function') GM_removeValueChangeListener(listenerId);
+                                                                                                                 if (res.error && params?.caseNumber) throw new Error(res.error);
                                                                                                                  return Array.isArray(res?.candidates) ? res.candidates : [];}
                                                                                          const wake = listenerResult ? Promise.race([listenerResult,sleep(500)]) : sleep(500);
                                                                                          const changed = await wake;
                                                                                          if (changed?.id === taskId) {if (listenerId !== null && typeof GM_removeValueChangeListener === 'function') GM_removeValueChangeListener(listenerId);
-                                                                                                                       return Array.isArray(changed?.candidates) ? changed.candidates : [];}}
+                                                                                                                       if (changed.error && params?.caseNumber) throw new Error(changed.error);
+                                                                                                                 return Array.isArray(changed?.candidates) ? changed.candidates : [];}}
                                                     if (listenerId !== null && typeof GM_removeValueChangeListener === 'function') GM_removeValueChangeListener(listenerId);
+                                                    if (params?.caseNumber) throw new Error('Municourt search timed out.');
                                                     dbg('municourt_remote_timeout',{waitMs});
                                                     return [];}
 
@@ -367,6 +373,7 @@
                                                                                                                              headers: {'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
                                                                                                                                        'Referer': `${MUNI_BASE_URL}/Results/SubmitByName`},
                                                                                                                              data: payload.toString()});
+                                                                                       if (resp.status >= 400) throw new Error(`Municourt detail HTTP ${resp.status}`);
                                                                                        rec.muniCaseDetailText = parseMuniFullCaseHtmlToCopyText(resp.responseText);
                                                                                        rec.caseUrl = resp.finalUrl || `${MUNI_BASE_URL}/Results/FullCaseView`;
                                                                                        out.push({...item,record: rec});}

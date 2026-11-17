@@ -23,3 +23,7 @@ The visible **Upcoming Court Dates** tool is separate and remains active. Before
 This change also carries forward the reviewed cleanup: ten uncalled helpers removed from the active source, duplicate URL/field parsers consolidated, and three identical Casey logo values shared through aliases. The two original batch draft helpers are preserved with the deferred batch code. Other dormant popup/history structures, Track This Case, network fallback paths, court datasets and the embedded Inter font remain intact.
 
 Rebuild with `python scripts/build_tampermonkey.py`. Run `node --test tests/*.test.cjs`. Full-bundle DOM comparisons against the attachment covered startup for Case.net, Municourt, Jotform and Sheets plus navigation through all four main tools. These are simulated checks, not live authenticated scraping or tracking signups.
+
+## Active case-number overrides (2026-11-17)
+
+The explicitly requested full-case override workflow is now implemented separately in `src/tampermonkey/18d-case-number-override.js`, based on supplied Case.net and Municourt captures. See `docs/case-number-overrides.md`. The older batch scraper remains deferred and is not bundled.

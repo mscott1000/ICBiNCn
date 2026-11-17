@@ -13,7 +13,8 @@
                                              if (id === 'moHomeUpcomingCourtDates') {setAppView('upcoming'); return;}
                                              if (id === 'moHomeTrackThisCase') {setAppView('track'); return;}
                                              if (id === 'moJsonBackBtn') {goHomeView(); return;}
-                                             if (id === 'moJsonNameSearch') {const params = {first: norm(document.getElementById('moNsFirst')?.value || ''),
+                                             if (id === 'moCaseOverrideSearch') {await runCaseNumberOverride(); return;}
+                                             if (id === 'moJsonNameSearch') {if (caseOverrideRunning) {uiStatus('Stop the case-number search first.'); return;} const params = {first: norm(document.getElementById('moNsFirst')?.value || ''),
                                                                                            middle: norm(document.getElementById('moNsMiddle')?.value || ''),
                                                                                            last: norm(document.getElementById('moNsLast')?.value || ''),
                                                                                            yob: norm(document.getElementById('moNsYob')?.value || ''),};
@@ -149,6 +150,7 @@
                                      if (action === 'copyEligibleMessage') {GM_setClipboard(textBuilderFormatCaseData(textBuilderDropInEligibleMessage(false),'eligibleCaseDataVisible'),'text'); return uiStatus('Text Builder eligible cases message copied to clipboard');}});
 
   dock.addEventListener('input',(e) => {const id = e?.target?.id || '';
+                                     if (id === 'moCaseOverrideNumbers') {caseOverrideDraft.text = e.target.value; return;}
                                      if (id === 'moNsSummaryOutput' || id === 'moNsCopyOutput') {if (['historyUndo','historyRedo'].includes(e.inputType)) {handleNameOutputUndo(e,e.inputType === 'historyRedo'); return;}
                                                                                               const output = loadJson(KEY_NAMESEARCH_OUTPUT,null);
                                                                                               if (output) {output[id === 'moNsSummaryOutput' ? 'summary' : 'copy'] = e.target.value;
@@ -294,3 +296,8 @@
                                                                 location.href = canonicalNameSearchUrl();
                                                                 return;}
                                  location.href = canonicalNameSearchUrl();}
+
+  dock.addEventListener('change',(event) => {
+    if (event.target.id === 'moCaseOverrideSource') {caseOverrideDraft.source = event.target.value; render();}
+    if (event.target.id === 'moCaseOverrideCourt') caseOverrideDraft.court = event.target.value;
+  });

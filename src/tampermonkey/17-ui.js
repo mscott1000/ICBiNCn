@@ -1325,6 +1325,13 @@ function render() {const log = loadLog();
         <div style="display:flex; gap:8px; align-items:end; width:100%;"><button class="moBtn moSearchBtn" id="moJsonNameSearch" style="flex:1;">Search</button><button class="moBtn" id="moJsonClearEntries" style="flex:1;">Clear Entries</button></div>
       </div>
       ${nameOutput ? '</details>' : ''}`);
+                   addBlock('Case-number search',`
+      <div class="moField"><label for="moCaseOverrideNumbers">Case numbers</label><textarea id="moCaseOverrideNumbers" rows="2" placeholder="Separate case numbers with new lines or commas">${escapeHtml(caseOverrideDraft.text)}</textarea></div>
+      <div class="moNameRowBottom">
+        <div class="moField"><label for="moCaseOverrideSource">Source</label><select id="moCaseOverrideSource"><option value="casenet" ${caseOverrideDraft.source === 'casenet' ? 'selected' : ''}>Case.net</option><option value="municourt" ${caseOverrideDraft.source === 'municourt' ? 'selected' : ''}>Municourt</option></select></div>
+        <div class="moField" style="${caseOverrideDraft.source === 'municourt' ? '' : 'display:none'}"><label for="moCaseOverrideCourt">Municourt court</label><select id="moCaseOverrideCourt"><option value="">Select court</option>${MUNI_CASE_COURTS.map(([code,name]) => `<option value="${code}" ${caseOverrideDraft.court === code ? 'selected' : ''}>${escapeHtml(name)}</option>`).join('')}</select></div>
+      </div>
+      <button class="moBtn" id="moCaseOverrideSearch" ${caseOverrideRunning ? 'disabled' : ''}>Search Case Numbers</button>`);
                    if (nameOutput) {const panes = document.createElement('div');
                                     panes.className = 'moNameSearchOutputs';
                                     panes.innerHTML = `<div class="moField"><label for="moNsSummaryOutput">Summary</label><textarea id="moNsSummaryOutput">${escapeHtml(nameOutput.summary || '')}</textarea></div><div class="moField"><label for="moNsCopyOutput">Detail</label><textarea id="moNsCopyOutput">${escapeHtml(nameOutput.copy || '')}</textarea></div>`;
