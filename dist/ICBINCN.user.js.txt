@@ -2465,7 +2465,11 @@ async function trackTick() {const st = loadTrackState();
 /************************************************************
    * Build entry via API for one case
    ************************************************************/
-  async function scrapeCaseViaApi({caseKey,caseNumber,courtId},expectedYob4 = '',targetName = null) {let resolvedCourtId = norm(courtId || '').toUpperCase();
+  async function scrapeCaseViaApi({caseKey,caseNumber,courtId},expectedYob4 = '',targetName = null,options = {}) {
+    const keepExcluded = options.includeExcluded === true;
+    const exclusionReasons = [];
+    const exclude = (entry,reason) => {exclusionReasons.push(reason); entry._exclusionReasons = exclusionReasons; entry._skipReason = reason; return !keepExcluded;};
+    let resolvedCourtId = norm(courtId || '').toUpperCase();
                                                                  const resolvedCaseKey = resolvedCourtId ? `${caseNumber}|${resolvedCourtId}` : (caseKey || caseNumber);
                                                                  const entry = {caseKey: resolvedCaseKey,
                                                                                                   caseTitle:'',
@@ -2489,8 +2493,8 @@ async function trackTick() {const st = loadTrackState();
                                                                                                   chargeDescription:'- - -',
                                                                                                   chargeType:'- - -',
                                                                                                   chargeClass:'- - -',};
-                                                                 if (resolvedCourtId === 'CT20') {entry._skipReason = 'ct20_disabled';
-                                                                                                 return entry;}
+                                                                 if (resolvedCourtId === 'CT20') {if (exclude(entry,'ct20_disabled')) {
+                                                                                                 return entry;}}
                                                                  let header;
                                                                  const mkHeaderPayload = (ct) => ({caseNumber,courtId: ct || '',isTicket:'',locnCode:'',isCriminal:'',diposed:'',pleaAndPayInd:'',});
                                                                  try {header = await postFormJsonRetry_tryCourtIds('/casenet/cases/newHeaderData.do',mkHeaderPayload(resolvedCourtId));}
@@ -2508,12 +2512,12 @@ async function trackTick() {const st = loadTrackState();
                                                                  entry.dateFiled = basics.dateFiled;
                                                                  entry.location = basics.location;
                                                                  entry.disposition = basics.disposition;
-                                                                 if (/(?:casefile\s*tranf|bndover)/i.test(String(entry.disposition || ''))) {entry._skipReason = 'transferred_case';
+                                                                 if (/(?:casefile\s*tranf|bndover)/i.test(String(entry.disposition || ''))) {if (exclude(entry,'transferred_case')) {
                                                                                                                                   dbg('skip_transferred_case',{caseKey: entry.caseKey,caseNumber,courtId: resolvedCourtId,disposition: entry.disposition});
-                                                                                                                                  return entry;}
-                                                                 if (!hasRealTitle(entry.caseTitle)) {entry._skipReason = 'blank_title';
+                                                                                                                                  return entry;}}
+                                                                 if (!hasRealTitle(entry.caseTitle)) {if (exclude(entry,'blank_title')) {
                                                                                                       dbg('skip_blank_title',{caseKey: entry.caseKey,caseNumber,courtId: resolvedCourtId});
-                                                                                                      return entry;}
+                                                                                                      return entry;}}
                                                                  const party = await postFormJsonRetry_tryCourtIds('/casenet/cases/party.do',{caseNumber,courtId: resolvedCourtId,isTicket:'',});
                                                                  const addrYob = extractDefendantAddressYob(party,targetName,expectedYob4);
                                                                  entry.address = addrYob.address;
@@ -2539,17 +2543,18 @@ async function trackTick() {const st = loadTrackState();
                                                                             entry.nextDocketDate = 'Case DOcket Unavailable';
                                                                             entry._skipReason = 'docket_unavailable';
                                                                             dbg('skip_docket_unavailable',{caseKey: entry.caseKey,caseNumber,courtId: resolvedCourtId,msg:String(e?.message || e)});
-                                                                            return entry;}
+                                                                            if (!keepExcluded) return entry;
+                                                                            entry._dataWarnings = ['Docket unavailable; docket-based exclusion checks could not be completed.'];}
                                                                  const docketList = docket?.docketTabModelList || [];
                                                                  const hit = findFirstWarrantOrSummons(docketList);
                                                                  const f = countFtas(docketList);
                                                                  const docketBondAmount = findBondAmountInDocketEntries(docketList);
                                                                  const docketStatus = analyzeDocketStatus(docketList);
-                                                                 if (docketStatus.paidInFull) {entry._skipReason = 'paid_in_full';
-                                                                                               return entry;}
+                                                                 if (docketStatus.paidInFull) {if (exclude(entry,'paid_in_full')) {
+                                                                                               return entry;}}
                                                                  entry.ftaDates = f.count === 0 ? ['- - -'] : f.dates;
                                                                  entry.bondAmount = docketBondAmount || '- - -';
-                                                                 entry.nextDocketDate = findFirstCurrentOrFutureScheduledLine(docketList);
+                                                                 entry.nextDocketDate = docket ? findFirstCurrentOrFutureScheduledLine(docketList) : 'Case Docket Unavailable';
                                                                  entry.licenseHoldDate = findLicenseHoldDate(docketList) || '';
                                                                  if (!hit) {entry.warrantSummary = '- - -';
                                                                             entry.initialAppearanceDate = findInitialAppearanceDate(docketList) || '';}
@@ -2559,10 +2564,11 @@ async function trackTick() {const st = loadTrackState();
                                                                        entry.initialAppearanceDate = '';}
                                                                  const hasRecallOrServedLanguage = Boolean(hit?.hasRecallOrServedLanguage);
                                                                  const baseStatus = (!hit || hasRecallOrServedLanguage) ? 'nonwarrant' : (hit.kind === 'warrant' ? 'warrant' : 'nonwarrant');
-                                                                 entry.summaryStatus = docketStatus.hasActiveHold ? `${baseStatus} and HOLD placed on license` : baseStatus;
+                                                                 entry.summaryStatus = !docket ? 'unavailable' : docketStatus.hasActiveHold ? `${baseStatus} and HOLD placed on license` : baseStatus;
                                                                  let chargesResp = null;
                                                                  try {chargesResp = await postFormJsonRetry_tryCourtIds('/casenet/cases/charges.do',{caseNumber,courtId: resolvedCourtId,isTicket:'',tabName:'Charge',});}
-                                                                 catch (e) {dbg('charges_fetch_failed',{caseKey,msg:String(e?.message || e)});}
+                                                                 catch (e) {if (keepExcluded) entry._dataWarnings = [...(entry._dataWarnings || []),'Charges unavailable; charge details may be incomplete.'];
+                                                                            dbg('charges_fetch_failed',{caseKey,msg:String(e?.message || e)});}
                                                                  const chargeParts = extractChargePartsFromChargesResponse(chargesResp,header);
                                                                  entry.chargeDescription = chargeParts.desc || 'No Charges Found';
                                                                  entry.chargeType = chargeParts.type || '- - -';
@@ -2575,8 +2581,8 @@ async function trackTick() {const st = loadTrackState();
                                                                  const isNonwarrantStatus = /^nonwarrant\b/i.test(String(entry.summaryStatus || '').trim());
                                                                  const locationText = String(entry.location || '').toLowerCase();
                                                                  const isCityOfStLouisMunicipal = /city\s+of\s+st\.?\s*louis/.test(locationText) && /municipal/.test(locationText);
-                                                                 if (isGuiltyDisposed && hasZeroBalance && isNonwarrantStatus && !isCityOfStLouisMunicipal) {entry._skipReason = 'guilty_zero_balance_nonwarrant';
-                                                                                                                                                        return entry;}
+                                                                 if (isGuiltyDisposed && hasZeroBalance && isNonwarrantStatus && !isCityOfStLouisMunicipal) {if (exclude(entry,'guilty_zero_balance_nonwarrant')) {
+                                                                                                                                                        return entry;}}
                                                                  return entry;}
   function getMuniFieldFromDetail(detailText,label,nextLabels = []) {const raw = norm(detailText || '');
                                                                      if (!raw || !label) return '';
@@ -4839,6 +4845,13 @@ function render() {const log = loadLog();
         <div style="display:flex; gap:8px; align-items:end; width:100%;"><button class="moBtn moSearchBtn" id="moJsonNameSearch" style="flex:1;">Search</button><button class="moBtn" id="moJsonClearEntries" style="flex:1;">Clear Entries</button></div>
       </div>
       ${nameOutput ? '</details>' : ''}`);
+                   addBlock('Case-number search',`
+      <div class="moField"><label for="moCaseOverrideNumbers">Case numbers</label><textarea id="moCaseOverrideNumbers" rows="2" placeholder="Separate case numbers with new lines or commas">${escapeHtml(caseOverrideDraft.text)}</textarea></div>
+      <div class="moNameRowBottom">
+        <div class="moField"><label for="moCaseOverrideSource">Source</label><select id="moCaseOverrideSource"><option value="casenet" ${caseOverrideDraft.source === 'casenet' ? 'selected' : ''}>Case.net</option><option value="municourt" ${caseOverrideDraft.source === 'municourt' ? 'selected' : ''}>Municourt</option></select></div>
+        <div class="moField" style="${caseOverrideDraft.source === 'municourt' ? '' : 'display:none'}"><label for="moCaseOverrideCourt">Municourt court</label><select id="moCaseOverrideCourt"><option value="">Select court</option>${MUNI_CASE_COURTS.map(([code,name]) => `<option value="${code}" ${caseOverrideDraft.court === code ? 'selected' : ''}>${escapeHtml(name)}</option>`).join('')}</select></div>
+      </div>
+      <button class="moBtn" id="moCaseOverrideSearch" ${caseOverrideRunning ? 'disabled' : ''}>Search Case Numbers</button>`);
                    if (nameOutput) {const panes = document.createElement('div');
                                     panes.className = 'moNameSearchOutputs';
                                     panes.innerHTML = `<div class="moField"><label for="moNsSummaryOutput">Summary</label><textarea id="moNsSummaryOutput">${escapeHtml(nameOutput.summary || '')}</textarea></div><div class="moField"><label for="moNsCopyOutput">Detail</label><textarea id="moNsCopyOutput">${escapeHtml(nameOutput.copy || '')}</textarea></div>`;
@@ -5726,7 +5739,9 @@ GM_addStyle(`
                                                      if (task?.claimedAt && now - Number(task.claimedAt || 0) < 30000) {scheduleMuniRemoteTabClose('claimed_task_fallback',MUNI_REMOTE_CLOSE_FALLBACK_MS);
                                                                                                                         return;}
                                                      await gmSetValueSafe(MUNI_REMOTE_TASK_KEY,{...task,claimedAt: now,claimedUrl: location.href});
-                                                     try {const candidates = await searchMuniViaSubmitByName(task?.params || {},{allowBrowserRecaptcha: true});
+                                                     try {const candidates = task?.params?.caseNumber
+                                                            ? await searchMuniViaSubmitByCase(task.params)
+                                                            : await searchMuniViaSubmitByName(task?.params || {},{allowBrowserRecaptcha: true});
                                                           const detailed = await attachMuniFullCaseDetails(candidates);
                                                           const payload = {id: task.id,createdAt: now,candidates: detailed};
                                                           await gmSetValueSafe(MUNI_REMOTE_RESULT_KEY,payload);
@@ -5749,14 +5764,18 @@ GM_addStyle(`
                                                                                                                         listenerId = GM_addValueChangeListener(MUNI_REMOTE_RESULT_KEY,(_key,_oldValue,newValue) => {
                                                                                                                           if (newValue?.id === taskId) resolve(newValue);});});}
                                                                                                          catch {listenerResult = null;}}
-                                                    while (Date.now() - start < waitMs) {const res = await gmGetValueSafe(MUNI_REMOTE_RESULT_KEY,null);
+                                                    while (Date.now() - start < waitMs) {if (isStop()) {if (listenerId !== null && typeof GM_removeValueChangeListener === 'function') GM_removeValueChangeListener(listenerId); throw new DOMException('Stopped by user','AbortError');}
+                                                                                         const res = await gmGetValueSafe(MUNI_REMOTE_RESULT_KEY,null);
                                                                                          if (res?.id === taskId) {if (listenerId !== null && typeof GM_removeValueChangeListener === 'function') GM_removeValueChangeListener(listenerId);
+                                                                                                                 if (res.error && params?.caseNumber) throw new Error(res.error);
                                                                                                                  return Array.isArray(res?.candidates) ? res.candidates : [];}
                                                                                          const wake = listenerResult ? Promise.race([listenerResult,sleep(500)]) : sleep(500);
                                                                                          const changed = await wake;
                                                                                          if (changed?.id === taskId) {if (listenerId !== null && typeof GM_removeValueChangeListener === 'function') GM_removeValueChangeListener(listenerId);
-                                                                                                                       return Array.isArray(changed?.candidates) ? changed.candidates : [];}}
+                                                                                                                       if (changed.error && params?.caseNumber) throw new Error(changed.error);
+                                                                                                                 return Array.isArray(changed?.candidates) ? changed.candidates : [];}}
                                                     if (listenerId !== null && typeof GM_removeValueChangeListener === 'function') GM_removeValueChangeListener(listenerId);
+                                                    if (params?.caseNumber) throw new Error('Municourt search timed out.');
                                                     dbg('municourt_remote_timeout',{waitMs});
                                                     return [];}
 
@@ -5774,6 +5793,7 @@ GM_addStyle(`
                                                                                                                              headers: {'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
                                                                                                                                        'Referer': `${MUNI_BASE_URL}/Results/SubmitByName`},
                                                                                                                              data: payload.toString()});
+                                                                                       if (resp.status >= 400) throw new Error(`Municourt detail HTTP ${resp.status}`);
                                                                                        rec.muniCaseDetailText = parseMuniFullCaseHtmlToCopyText(resp.responseText);
                                                                                        rec.caseUrl = resp.finalUrl || `${MUNI_BASE_URL}/Results/FullCaseView`;
                                                                                        out.push({...item,record: rec});}
@@ -6457,6 +6477,334 @@ function installWeeklyCallLogButton(isConnected) {
   setInterval(update,600);update();
 }
 /************************************************************
+ * Current-search case-number overrides. Never saved to the name-search log.
+ ************************************************************/
+const MUNI_CASE_COURTS = [
+  [
+    "AR",
+    "Arnold Municipal Court"
+  ],
+  [
+    "BW",
+    "Ballwin Municipal Court"
+  ],
+  [
+    "BE",
+    "Bel-Nor Municipal Court"
+  ],
+  [
+    "BN",
+    "Bellefontaine Neighbors Municipal Court"
+  ],
+  [
+    "BK",
+    "Berkeley Municipal Court"
+  ],
+  [
+    "BJ",
+    "Black Jack Municipal Court"
+  ],
+  [
+    "BC",
+    "Breckenridge Hills Municipal Court"
+  ],
+  [
+    "BR",
+    "Brentwood Municipal Court"
+  ],
+  [
+    "BT",
+    "Bridgeton Municipal Court"
+  ],
+  [
+    "BM",
+    "Byrnes Mill Municipal Court"
+  ],
+  [
+    "CV",
+    "Clarkson Valley Municipal Court"
+  ],
+  [
+    "CL",
+    "Clayton Municipal Court"
+  ],
+  [
+    "CW",
+    "Crestwood Municipal Court"
+  ],
+  [
+    "CC",
+    "Creve Coeur Municipal Court"
+  ],
+  [
+    "DP",
+    "Des Peres Municipal Court"
+  ],
+  [
+    "EU",
+    "Eureka Municipal Court"
+  ],
+  [
+    "FW",
+    "Fairway Kansas Municipal Court"
+  ],
+  [
+    "FN",
+    "Fenton Municipal Court"
+  ],
+  [
+    "FL",
+    "Florissant Municipal Court"
+  ],
+  [
+    "FR",
+    "Frontenac Municipal Court"
+  ],
+  [
+    "GD",
+    "Glendale Municipal Court"
+  ],
+  [
+    "HY",
+    "Hayti Municipal Court"
+  ],
+  [
+    "HA",
+    "Hazelwood Municipal Court"
+  ],
+  [
+    "HB",
+    "Hillsboro Municipal Court"
+  ],
+  [
+    "JC",
+    "Jefferson County Municipal Court"
+  ],
+  [
+    "JN",
+    "Jennings Municipal Court"
+  ],
+  [
+    "KS",
+    "Kansas City Kansas Municipal Court"
+  ],
+  [
+    "KC",
+    "Kansas City Missouri Municipal Court"
+  ],
+  [
+    "KW",
+    "Kirkwood Municipal Court"
+  ],
+  [
+    "LD",
+    "Ladue Municipal Court"
+  ],
+  [
+    "MW",
+    "Maplewood Municipal Court"
+  ],
+  [
+    "MM",
+    "Moscow Mills Municipal Court"
+  ],
+  [
+    "OK",
+    "Oakland Municipal Division"
+  ],
+  [
+    "OL",
+    "Olivette Municipal Court"
+  ],
+  [
+    "PC",
+    "Pacific Municipal Court"
+  ],
+  [
+    "PG",
+    "Pagedale Municipal Court"
+  ],
+  [
+    "RJ",
+    "REJIS Municipal Court"
+  ],
+  [
+    "RH",
+    "Richmond Heights Municipal Court"
+  ],
+  [
+    "RV",
+    "Riverview Municipal Court"
+  ],
+  [
+    "SW",
+    "Shrewsbury Municipal Court"
+  ],
+  [
+    "SH",
+    "Sunset Hills Municipal Court"
+  ],
+  [
+    "SY",
+    "Sycamore Hills Municipal Court"
+  ],
+  [
+    "TC",
+    "Town and Country Municipal Court"
+  ],
+  [
+    "UC",
+    "University City Municipal Court"
+  ],
+  [
+    "VP",
+    "Valley Park Municipal Court"
+  ],
+  [
+    "VH",
+    "Velda Village Hills Municipal Court"
+  ],
+  [
+    "WW",
+    "Warson Woods Municipal Division"
+  ],
+  [
+    "WG",
+    "Webster Groves Municipal Court"
+  ],
+  [
+    "WC",
+    "Winchester Municipal Court"
+  ],
+  [
+    "WT",
+    "Woodson Terrace Municipal Court"
+  ]
+];
+let caseOverrideDraft = {text:'',source:'casenet',court:''};
+let caseOverrideRunning = false;
+
+function parseOverrideNumbers(text) {
+  const tokens = String(text || '').toUpperCase().split(/[\s,;]+/).filter(Boolean);
+  if (tokens.some((token) => !/^[A-Z0-9-]+$/.test(token))) throw new Error('Use case numbers separated by spaces, commas, or new lines.');
+  return [...new Set(tokens)];
+}
+
+async function searchMuniViaSubmitByCase(params) {
+  const home = await gmHttpRequestText({url:`${MUNI_BASE_URL}/?sel=1`});
+  if (home.status >= 400) throw new Error(`Municourt form HTTP ${home.status}`);
+  const token = findVerificationToken(home.responseText);
+  const captcha = await getRecaptchaTokenForSubmit(findRecaptchaSiteKey(home.responseText));
+  if (!token || !captcha) throw new Error('Municourt verification unavailable. Open Municourt and retry.');
+  const payload = new URLSearchParams({__RequestVerificationToken:token,SelectedSearchType:'1',CaseTicketNum:params.caseNumber,AgcyId:params.court,'g-recaptcha-response':captcha});
+  const response = await gmHttpRequestText({method:'POST',url:`${MUNI_BASE_URL}/Results/SubmitByCaseTicket`,
+    headers:{'Content-Type':'application/x-www-form-urlencoded; charset=UTF-8','Referer':`${MUNI_BASE_URL}/?sel=1`},data:payload.toString()});
+  if (response.status >= 400) throw new Error(`Municourt search HTTP ${response.status}`);
+  const pageToken = findVerificationToken(response.responseText);
+  const records = parseMuniNameResultsHtml(response.responseText);
+  if (!records.length && !/no (?:records|results|cases|matches)|no matching/i.test(htmlDocFromText(response.responseText).body.textContent))
+    throw new Error('Municourt returned no readable results; verification may have failed.');
+  return records.map((record) => ({record,source:response.finalUrl,token:pageToken}));
+}
+
+const CASE_EXCLUSION_LABELS = {
+  ct20_disabled:'Court CT20 is disabled in the normal Case.net scraper.',
+  transferred_case:'Disposition indicates a transferred or bound-over case.',
+  blank_title:'Case header has no usable title.',
+  paid_in_full:'Docket indicates paid in full.',
+  guilty_zero_balance_nonwarrant:'Guilty disposition, zero balance, and no active warrant (outside City of St. Louis Municipal).'
+};
+
+function formatOverrideReasons(entry) {
+  const reasons = [...new Set(entry._exclusionReasons || [])].map((key) => CASE_EXCLUSION_LABELS[key] || key);
+  return ['Normal-search exclusion reasons:',...(reasons.length ? reasons.map((reason) => `- ${reason}`) : ['- No applicable log-exclusion rule identified.']),
+    ...(entry._dataWarnings?.length ? ['Data availability:',...entry._dataWarnings.map((warning) => `- ${warning}`)] : [])].join('\n');
+}
+
+function buildOverrideOutput(entries,failures) {
+  const summary = [], detail = [];
+  for (const raw of entries) {
+    const entry = applyMuniDetailFormatting(withPleadAndPayTotal(raw));
+    const groups = [{jurisdiction:entry.location,entries:[entry]}];
+    const standard = buildJurisdictionSummarySections(groups).sections.join('\n').trim();
+    const reasons = formatOverrideReasons(entry);
+    summary.push(standard,reasons,'');
+    detail.push(formatEntry(entry).trim(),reasons,'');
+  }
+  if (failures.length) {
+    const failed = ['Lookup failures:',...failures.map((failure) => `- ${failure}`)].join('\n');
+    summary.push(failed); detail.push(failed);
+  }
+  return {summary:summary.join('\n\n').trim(),copy:detail.join('\n\n').trim()};
+}
+
+async function runCaseNumberOverride() {
+  if (caseOverrideRunning || isRun() || loadNameState()?.active) {uiStatus('Stop the current search before starting a case-number search.'); return;}
+  let numbers;
+  try {numbers = parseOverrideNumbers(caseOverrideDraft.text);} catch (error) {uiStatus(error.message); return;}
+  if (!numbers.length) {uiStatus('Enter at least one case number.'); return;}
+  const {source,court} = caseOverrideDraft;
+  if (source === 'casenet' && /municourt\.net$/i.test(location.hostname || '')) {uiStatus('Open ICBiNCn on Case.net to search Case.net case numbers.'); return;}
+  if (source === 'municourt' && !MUNI_CASE_COURTS.some(([code]) => code === court)) {uiStatus('Select a Municourt court.'); return;}
+  caseOverrideRunning = true; setStop(false); setRun(true);
+  saveNameSearchOutput(null);
+  const entries = [], failures = [], seen = new Set();
+  try {
+    for (const number of numbers) {
+      if (isStop()) break;
+      uiStatus(`Reading case ${number}…`); render();
+      try {
+        if (source === 'municourt') {
+          const candidates = await searchMuniViaRemoteWorker({caseNumber:number,court});
+          if (!candidates.length) failures.push(`${number}: no match in the selected court.`);
+          for (const candidate of candidates) {
+            const entry = mapMuniRecordToEntry(candidate.record,candidate.source,number);
+            if (!candidate.record?.muniCaseDetailText) entry._dataWarnings = ['Full case detail unavailable; some fields could not be checked.'];
+            if (!seen.has(entry.caseKey)) {seen.add(entry.caseKey); entries.push(entry);}
+          }
+        } else {
+          const candidates = await findCaseCandidatesByCaseNumber(number);
+          if (!candidates.length) failures.push(`${number}: no matching case link returned.`);
+          for (const candidate of candidates) {
+            if (isStop()) break;
+            const entry = await scrapeCaseViaApi(candidate,'',null,{includeExcluded:true});
+            if (entry._skipReason === 'backend_jndi_error') {failures.push(`${number}: Case.net backend unavailable.`); continue;}
+            if (!seen.has(entry.caseKey)) {seen.add(entry.caseKey); entries.push(entry);}
+          }
+        }
+      } catch (error) {if (!isStop()) failures.push(`${number}: ${error.message || error}`);}
+    }
+    if (!isStop()) {saveNameSearchOutput(buildOverrideOutput(entries,failures)); uiStatus(`${entries.length} case(s) returned. ${failures.length} lookup failure(s).`);}
+    else uiStatus('Stopped.');
+  } finally {caseOverrideRunning = false; setRun(false); render();}
+}
+
+  function extractCaseLinksFromHtml(htmlText) {const out = [];
+                                               const seen = new Set();
+                                               const doc = new DOMParser().parseFromString(String(htmlText || ''),'text/html');
+                                               const links = [...doc.querySelectorAll('a[href*="caseNumber="],a[href*="inputVO.caseNumber="],a[href*="ci="]')];
+                                               for (const a of links) {const parsed = parseCaseFromUrl(a.href || '');
+                                                                      if (!parsed?.caseKey) continue;
+                                                                      if (seen.has(parsed.caseKey)) continue;
+                                                                      seen.add(parsed.caseKey);
+                                                                      out.push(parsed);}
+                                               return out;}
+
+  async function findCaseCandidatesByCaseNumber(caseNumber) {const url = new URL('/casenet/caseNoSearch.do',location.origin);
+                                                            const body = new URLSearchParams();
+                                                            body.set('caseNumber',caseNumber);
+                                                            body.set('courtType','');
+                                                            body.set('countyCode','');
+                                                            body.set('cortCode','SW');
+                                                            const resp = await stopAwareFetch(url.toString(),{method:'POST',
+                                                                                                     credentials:'include',
+                                                                                                     headers:{'Content-Type':'application/x-www-form-urlencoded; charset=UTF-8'},
+                                                                                                     body: body.toString()});
+                                                            const txt = await resp.text();
+                                                            if (!resp.ok) throw new Error(`HTTP ${resp.status} for caseNoSearch`);
+                                                            const direct = parseCaseFromUrl(resp.url || '');
+                                                            return direct?.caseKey ? [direct] : extractCaseLinksFromHtml(txt);}
+/************************************************************
    * Buttons
    ************************************************************/
   function buildNameSearchPasses(params) {const caseTypePasses = ['criminal','traffic'];
@@ -6471,7 +6819,8 @@ function installWeeklyCallLogButton(isConnected) {
                                              if (id === 'moHomeUpcomingCourtDates') {setAppView('upcoming'); return;}
                                              if (id === 'moHomeTrackThisCase') {setAppView('track'); return;}
                                              if (id === 'moJsonBackBtn') {goHomeView(); return;}
-                                             if (id === 'moJsonNameSearch') {const params = {first: norm(document.getElementById('moNsFirst')?.value || ''),
+                                             if (id === 'moCaseOverrideSearch') {await runCaseNumberOverride(); return;}
+                                             if (id === 'moJsonNameSearch') {if (caseOverrideRunning) {uiStatus('Stop the case-number search first.'); return;} const params = {first: norm(document.getElementById('moNsFirst')?.value || ''),
                                                                                            middle: norm(document.getElementById('moNsMiddle')?.value || ''),
                                                                                            last: norm(document.getElementById('moNsLast')?.value || ''),
                                                                                            yob: norm(document.getElementById('moNsYob')?.value || ''),};
@@ -6607,6 +6956,7 @@ function installWeeklyCallLogButton(isConnected) {
                                      if (action === 'copyEligibleMessage') {GM_setClipboard(textBuilderFormatCaseData(textBuilderDropInEligibleMessage(false),'eligibleCaseDataVisible'),'text'); return uiStatus('Text Builder eligible cases message copied to clipboard');}});
 
   dock.addEventListener('input',(e) => {const id = e?.target?.id || '';
+                                     if (id === 'moCaseOverrideNumbers') {caseOverrideDraft.text = e.target.value; return;}
                                      if (id === 'moNsSummaryOutput' || id === 'moNsCopyOutput') {if (['historyUndo','historyRedo'].includes(e.inputType)) {handleNameOutputUndo(e,e.inputType === 'historyRedo'); return;}
                                                                                               const output = loadJson(KEY_NAMESEARCH_OUTPUT,null);
                                                                                               if (output) {output[id === 'moNsSummaryOutput' ? 'summary' : 'copy'] = e.target.value;
@@ -6752,6 +7102,11 @@ function installWeeklyCallLogButton(isConnected) {
                                                                 location.href = canonicalNameSearchUrl();
                                                                 return;}
                                  location.href = canonicalNameSearchUrl();}
+
+  dock.addEventListener('change',(event) => {
+    if (event.target.id === 'moCaseOverrideSource') {caseOverrideDraft.source = event.target.value; render();}
+    if (event.target.id === 'moCaseOverrideCourt') caseOverrideDraft.court = event.target.value;
+  });
 /************************************************************
  * INIT
  ************************************************************/
