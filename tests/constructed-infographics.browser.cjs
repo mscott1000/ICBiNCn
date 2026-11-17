@@ -156,11 +156,16 @@ const read=f=>fs.readFileSync(path.join(__dirname,'../src/tampermonkey',f),'utf8
  assert.equal(await fsf.locator('text').evaluateAll(nodes=>nodes.filter(node=>(node.getAttribute('aria-label')||'').includes('FRESH START FRIDAYS*')).length),0);
  await page.evaluate(()=>{textBuilderState.data.researchType='Can’tDo: Out of Network';renderTextBuilder();});
  assert.equal(await page.locator('#moJsonTextBuilderBody text[aria-label="Out of TIC Network"]').count(),1);
+ // Private-attorney names render once beneath the case table.
+ await page.evaluate(()=>{appView='text';textBuilderBody.innerHTML='';textBuilderState={screen:'message',history:[],data:{workflow:'postResearch',researchType:'Can’tDo: Private Attorney',staff:'Casey',privateAttorneyCases:"FLORISSANT MUNICIPAL - (314) 921-3322\n- 250344738: Defective Equipment - warrant, attorney MICHELLE FUNKENBUSCH\n- 250344739: Other charge - warrant, attorney MICHELLE FUNKENBUSCH"}};renderTextBuilder();});
+ const attorneyLabel=page.locator('text[aria-label="Attorney Name: Michelle Funkenbusch"]');
+ assert.equal(await attorneyLabel.count(),1);
+ assert.ok((await attorneyLabel.boundingBox()).y>(await page.locator('[data-info-table]').boundingBox()).y+(await page.locator('[data-info-table]').boundingBox()).height);
  // Edit source summaries without losing manually entered Next Steps or prose.
  await page.evaluate(()=>{appView='text';textBuilderBody.innerHTML='';textBuilderState={screen:'message',history:[],data:{workflow:'postResearch',researchType:'CanDo: Everything',staff:'Casey',courts:['Florissant'],eligibleCases:'FLORISSANT MUNICIPAL\\n- 123: Example - warrant'}};renderTextBuilder();});
  await page.locator('[data-info-step]').fill('Keep my next step');
  await page.locator('[data-tb-message="main"]').fill('Keep my message');
- await action('editCaseInformation');await page.locator('[data-tb-input="eligibleCases"]').fill('FLORISSANT MUNICIPAL\n- 456: Updated case - warrant');await action('confirmEligible');
+ await page.evaluate(()=>textBuilderSet('eligibleDropin'));await page.locator('[data-tb-input="eligibleCases"]').fill('FLORISSANT MUNICIPAL\n- 456: Updated case - warrant');await action('confirmEligible');
  assert.equal(await page.locator('[data-tb-action="chooseAddress"]').count(),2); // no automatic seatbelt screen
  await action('chooseAddress','Need Address');
  assert.equal(await page.locator('[data-info-step]').inputValue(),'Keep my next step');
