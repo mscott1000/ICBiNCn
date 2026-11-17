@@ -1,7 +1,7 @@
 // ==UserScript==
-// @name         ICBiNCn 11.16
+// @name         ICBiNCn 11.17
 // @namespace    http://tampermonkey.net/
-// @version      2026-11-16
+// @version      2026-11-17
 // @description  Background Case.net scraper using JSON/XHR endpoints. Navs to search results pages, pulls case data via POST requests, then writes to a persistent log for copying. Now with Track This Case.
 // @author       Mason Scott
 // @match        https://www.courts.mo.gov/casenet/*
@@ -4907,7 +4907,9 @@ function textBuilderInfographicCaseEntry(line) {
   const status = /\s*-\s*(?:open\s*\(no warrant found\)|warrant\b)/i.exec(text);
   let label = status ? text.slice(0,status.index) : text;
   label = label.replace(/\s*(?:[-–—,;]\s*)?hold placed on license\b.*$/i,'').trim();
-  return {label,warrant:open ? 'No' : warrant ? 'Yes' : '—',license:/hold placed on license/i.test(text) ? 'Yes' : 'No'};
+  const attorneyMatch = /\battorney\s+([\p{Lu}][\p{Lu}\p{M} .’'-]*?)\s*$/u.exec(text);
+  const attorney = attorneyMatch ? attorneyMatch[1].trim().toLowerCase().replace(/(^|[\s.’'-])(\p{L})/gu,(_,prefix,letter) => prefix+letter.toUpperCase()) : '';
+  return {attorney,label,warrant:open ? 'No' : warrant ? 'Yes' : '—',license:/hold placed on license/i.test(text) ? 'Yes' : 'No'};
 }
 function textBuilderInfographicCourtGroups(text) {
   const groups = [];
@@ -5008,7 +5010,9 @@ function textBuilderInfographicModel(source,measure) {
     if (!String(summary.cases || '').trim()) continue;
     if (index > 0) {model.sectionRules.push(y);y += 44;}
     if (section.title) add(section.title,36,true,'subheading');
+    const attorneyNames = new Set();
     for (const [groupIndex,group] of textBuilderInfographicCourtGroups(summary.cases).entries()) {
+      if (section.title === 'Private Attorney') for (const entry of group.entries) if (entry.attorney) attorneyNames.add(entry.attorney);
       if (groupIndex > 0) y += 24;
       if (!section.fixedCourtHeader) {
         if (group.court) add(group.court,22,true,'court');
@@ -5022,6 +5026,7 @@ function textBuilderInfographicModel(source,measure) {
         y += table.height + 24;
       }
     }
+    for (const name of attorneyNames) add(`Attorney Name: ${name}`,23,false,'attorney');
     y += 16;
   }
   if (hasUpcoming) {

@@ -195,3 +195,20 @@ test('wider images preserve status-column widths and use smaller case text with 
   assert.ok(svg.includes('width="924"'));assert.ok(svg.includes(type==='eligible'?'#eff9ef':'#f3f4f5'));
  }
 });
+
+test('private-attorney sections list full title-cased names once below their cases in every path',()=>{
+ const c=setup();
+ const cases="FLORISSANT MUNICIPAL - (314) 921-3322\n- 250344738: Defective Equipment - warrant, attorney MICHELLE FUNKENBUSCH\n- 250344739: Another Charge - warrant, attorney MICHELLE FUNKENBUSCH\nOTHER MUNICIPAL\n- 250344740: Third Charge - warrant, attorney JOHN A. O’NEILL-SMITH";
+ for(const researchType of ['Can’tDo: Private Attorney',"Can'tDo: Multiple Reasons",'CanDo + Can’tDo']) {
+  c.textBuilderState.data={researchType,privateAttorneyCases:cases,multipleReasons:['Private Attorney','Out of Network'],multiplePrivateAttorney:cases,multipleOutOfNetwork:'OTHER COURT\n- 123: Other - warrant, attorney OTHER LAWYER'};
+  const source=c.textBuilderInfographicSources().find(s=>s.type==='ineligible');
+  const model=c.textBuilderInfographicModel(source,measure);
+  const names=model.boxes.filter(b=>b.kind==='attorney');
+  assert.deepEqual(Array.from(names,b=>b.text),['Attorney Name: Michelle Funkenbusch','Attorney Name: John A. O’Neill-Smith']);
+  assert.ok(names[0].y>model.tables[1].y+model.tables[1].height);
+  if(researchType!=='Can’tDo: Private Attorney') assert.ok(names[1].y<model.boxes.find(b=>b.kind==='subheading' && b.text==='Out of TIC Network').y);
+ }
+ const blank=c.textBuilderInfographicModel({type:'ineligible',sections:[{title:'Private Attorney',text:'COURT\n- 123: Charge - warrant'}]},measure);
+ assert.equal(blank.boxes.filter(b=>b.kind==='attorney').length,0);
+ assert.equal(c.textBuilderInfographicCaseEntry('- 123: Charge - warrant, attorney Michelle Funkenbusch').attorney,'');
+});
