@@ -203,6 +203,7 @@ const MUNI_CASE_COURTS = [
     "Woodson Terrace Municipal Court"
   ]
 ];
+let nameSearchMode = 'name';
 let caseOverrideDraft = {text:'',source:'casenet',court:''};
 let caseOverrideRunning = false;
 
