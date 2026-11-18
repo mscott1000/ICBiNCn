@@ -3564,6 +3564,12 @@ GM_addStyle(`:root{ --mo-ui-scale: 1.2;         /* uniformly enlarge the complet
             #moJsonDock.moCompactToolDock #moJsonContent{flex:0 1 auto;}
             #moJsonDock.moCompactToolDock #moJsonContent > .moBlock:last-child{margin-bottom:0;}
             #moJsonDock.moCompactToolDock .moFeaturePlaceholder{min-height:0;}
+            .moSearchTabs{display:flex;align-items:end;gap:4px;border-bottom:1px solid var(--mo-border);margin:-4px -4px 12px;padding:0 4px;}
+            .moSearchTab{appearance:none;font:inherit;font-size:16.8px;font-weight:650;color:var(--mo-muted);background:var(--mo-surface-2);border:1px solid var(--mo-border);border-radius:9px 9px 0 0;padding:6px 18px;margin:0 0 -1px;cursor:pointer;}
+            .moSearchTab[aria-selected="true"]{color:var(--mo-text);background:var(--mo-surface);border-bottom-color:var(--mo-surface);padding-top:9px;}
+            .moSearchTab:focus-visible{outline:2px solid var(--mo-primary);outline-offset:-3px;}
+            .moCaseSearchActions select{height:44.8px;box-sizing:border-box;width:100%;min-width:0;border:1px solid var(--mo-border);border-radius:10px;background:var(--mo-surface);color:var(--mo-text);padding:9.8px 12.6px;font:inherit;}
+            #moCaseOverrideClear{height:44.8px;}
             .moNameSearchControls summary{cursor:pointer;
                                            color:var(--mo-muted);
                                            font-size:12px;
@@ -4781,7 +4787,8 @@ function uiStatus(msg) {$status.textContent = msg;
 
 function addBlock(title,htmlInner,headerAction = '') {const div = document.createElement('div');
                                    div.className = 'moBlock';
-                                   div.innerHTML = `${headerAction ? `<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;"><h3 style="margin:0;">${escapeHtml(title)}</h3>${headerAction}</div>` : title ? `<h3>${escapeHtml(title)}</h3>` : ''}${htmlInner}`;
+                                   if (headerAction) {div.id = 'moSearchEntryPanel'; div.setAttribute('role','tabpanel'); div.setAttribute('aria-labelledby',nameSearchMode === 'name' ? 'moSearchTabName' : 'moSearchTabCase');}
+                                   div.innerHTML = `${headerAction || (title ? `<h3>${escapeHtml(title)}</h3>` : '')}${htmlInner}`;
                                    $content.appendChild(div);}
 
 launcher.addEventListener('click',() => {expandDock();});
@@ -4833,7 +4840,7 @@ function render() {const log = loadLog();
                    const ns = loadNameState();
                    const draft = loadDraft();
                    const p = ns?.params || draft;
-                   const searchSwitch = `<button class="moBtn" id="moNameCaseSwitch" type="button">${nameSearchMode === 'name' ? 'Switch to Case Search' : 'Switch to Name Search'}</button>`;
+                   const searchSwitch = `<div class="moSearchTabs" role="tablist" aria-label="Search type">${['name','case'].map((mode) => `<button class="moSearchTab" id="moSearchTab${mode === 'name' ? 'Name' : 'Case'}" type="button" role="tab" aria-selected="${nameSearchMode === mode}" aria-controls="moSearchEntryPanel" tabindex="${nameSearchMode === mode ? '0' : '-1'}">${mode === 'name' ? 'Name' : 'Case'}</button>`).join('')}</div>`;
                    if (nameSearchMode === 'name') addBlock('Name',`
       <div class="moNameRow">
         <div class="moField"><input id="moNsFirst" type="text" placeholder="First" value="${escapeHtml(p?.first || '')}"></div>
@@ -4846,13 +4853,13 @@ function render() {const log = loadLog();
         <div style="display:flex; gap:8px; align-items:end; width:100%;"><button class="moBtn moSearchBtn" id="moJsonNameSearch" style="flex:1;">Search</button><button class="moBtn" id="moJsonClearEntries" style="flex:1;">Clear Entries</button></div>
       </div>
       ${nameOutput ? '</details>' : ''}`,searchSwitch);
-                   else addBlock('Case-number search',`
+                   else addBlock('Case',`
       <div class="moField"><label for="moCaseOverrideNumbers">Case numbers</label><textarea id="moCaseOverrideNumbers" rows="2" placeholder="Separate case numbers with new lines or commas">${escapeHtml(caseOverrideDraft.text)}</textarea></div>
-      <div class="moNameRowBottom">
+      <div class="moNameRowBottom moCaseSearchActions" style="grid-template-columns:minmax(0, 0.36fr) minmax(0, 1.64fr);">
         <div class="moField"><label for="moCaseOverrideSource">Source</label><select id="moCaseOverrideSource"><option value="casenet" ${caseOverrideDraft.source === 'casenet' ? 'selected' : ''}>Case.net</option><option value="municourt" ${caseOverrideDraft.source === 'municourt' ? 'selected' : ''}>Municourt</option></select></div>
-        <div class="moField" style="${caseOverrideDraft.source === 'municourt' ? '' : 'display:none'}"><label for="moCaseOverrideCourt">Municourt court</label><select id="moCaseOverrideCourt"><option value="">Select court</option>${MUNI_CASE_COURTS.map(([code,name]) => `<option value="${code}" ${caseOverrideDraft.court === code ? 'selected' : ''}>${escapeHtml(name)}</option>`).join('')}</select></div>
+        <div style="display:flex;gap:8px;align-items:end;width:100%;"><button class="moBtn moSearchBtn" id="moCaseOverrideSearch" style="flex:1;" ${caseOverrideRunning ? 'disabled' : ''}>Search</button><button class="moBtn" id="moCaseOverrideClear" style="flex:1;">Clear Entries</button></div>
       </div>
-      <button class="moBtn" id="moCaseOverrideSearch" ${caseOverrideRunning ? 'disabled' : ''}>Search Case Numbers</button>`,searchSwitch);
+      <div class="moField" style="${caseOverrideDraft.source === 'municourt' ? '' : 'display:none'}"><label for="moCaseOverrideCourt">Municourt court</label><select id="moCaseOverrideCourt"><option value="">Select court</option>${MUNI_CASE_COURTS.map(([code,name]) => `<option value="${code}" ${caseOverrideDraft.court === code ? 'selected' : ''}>${escapeHtml(name)}</option>`).join('')}</select></div>`,searchSwitch);
                    if (nameOutput) {const panes = document.createElement('div');
                                     panes.className = 'moNameSearchOutputs';
                                     panes.innerHTML = `<div class="moField"><label for="moNsSummaryOutput">Summary</label><textarea id="moNsSummaryOutput">${escapeHtml(nameOutput.summary || '')}</textarea></div><div class="moField"><label for="moNsCopyOutput">Detail</label><textarea id="moNsCopyOutput">${escapeHtml(nameOutput.copy || '')}</textarea></div>`;
@@ -6817,15 +6824,16 @@ async function runCaseNumberOverride() {
 
   dock.addEventListener('click',async (e) => {const id = e?.target?.id;
                                              if (id === 'moHomeNameSearch') {nameSearchMode = 'name'; setAppView('name'); return;}
-                                             if (id === 'moNameCaseSwitch') {
+                                             if (id === 'moSearchTabName' || id === 'moSearchTabCase') {
                                                if (nameSearchMode === 'name') saveDraft({...loadDraft(),...readUiParams()});
-                                               nameSearchMode = nameSearchMode === 'name' ? 'case' : 'name';
-                                               render(); return;
+                                               nameSearchMode = id === 'moSearchTabCase' ? 'case' : 'name';
+                                               render(); document.getElementById(id)?.focus(); return;
                                              }
                                              if (id === 'moHomeTextBuilder') {resetTextBuilder(); setAppView('text'); return;}
                                              if (id === 'moHomeUpcomingCourtDates') {setAppView('upcoming'); return;}
                                              if (id === 'moHomeTrackThisCase') {setAppView('track'); return;}
                                              if (id === 'moJsonBackBtn') {goHomeView(); return;}
+                                             if (id === 'moCaseOverrideClear') {caseOverrideDraft = {...caseOverrideDraft,text:'',court:''}; render(); uiStatus('Entries Cleared'); return;}
                                              if (id === 'moCaseOverrideSearch') {await runCaseNumberOverride(); return;}
                                              if (id === 'moJsonNameSearch') {if (caseOverrideRunning) {uiStatus('Stop the case-number search first.'); return;} const params = {first: norm(document.getElementById('moNsFirst')?.value || ''),
                                                                                            middle: norm(document.getElementById('moNsMiddle')?.value || ''),
@@ -7113,6 +7121,14 @@ async function runCaseNumberOverride() {
   dock.addEventListener('change',(event) => {
     if (event.target.id === 'moCaseOverrideSource') {caseOverrideDraft.source = event.target.value; render();}
     if (event.target.id === 'moCaseOverrideCourt') caseOverrideDraft.court = event.target.value;
+  });
+
+  dock.addEventListener('keydown',(event) => {
+    if (!['moSearchTabName','moSearchTabCase'].includes(event.target.id)) return;
+    if (!['ArrowLeft','ArrowRight','Home','End'].includes(event.key)) return;
+    event.preventDefault();
+    const id = event.key === 'Home' ? 'moSearchTabName' : event.key === 'End' ? 'moSearchTabCase' : event.target.id === 'moSearchTabName' ? 'moSearchTabCase' : 'moSearchTabName';
+    document.getElementById(id)?.click();
   });
 /************************************************************
  * INIT
