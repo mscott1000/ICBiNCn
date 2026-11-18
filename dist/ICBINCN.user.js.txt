@@ -3565,7 +3565,7 @@ GM_addStyle(`:root{ --mo-ui-scale: 1.2;         /* uniformly enlarge the complet
             #moJsonDock.moCompactToolDock #moJsonContent{flex:0 1 auto;}
             #moJsonDock.moCompactToolDock #moJsonContent > .moBlock:last-child{margin-bottom:0;}
             #moJsonDock.moCompactToolDock .moFeaturePlaceholder{min-height:0;}
-            #moSearchEntryPanel{min-height:240px;} /* shared entry height; spare Name space stays empty */
+            #moJsonDock.moSearchEntryDock #moSearchEntryPanel{min-height:240px;} /* reserve animation space only before results */
             .moSearchTabs{display:flex;align-items:end;gap:4px;border-bottom:1px solid var(--mo-border);margin:-4px -4px 12px;padding:0 4px;}
             .moSearchTab{appearance:none;font:inherit;font-size:16.8px;font-weight:650;color:var(--mo-muted);background:var(--mo-surface-2);border:1px solid var(--mo-border);border-radius:9px 9px 0 0;padding:6px 18px;margin:0 0 -1px;cursor:pointer;}
             .moSearchTab[aria-selected="true"]{color:var(--mo-text);background:var(--mo-surface);border-bottom-color:var(--mo-surface);padding-top:9px;}
