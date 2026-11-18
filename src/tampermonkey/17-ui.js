@@ -20,8 +20,8 @@ GM_addStyle(`:root{ --mo-ui-scale: 1.2;         /* uniformly enlarge the complet
             #moJsonHelpPanel,
             #moJsonTextBuilderPanel{zoom:var(--mo-ui-scale);}
 
-            #moJsonDock{position:fixed; left:50%; top:calc(45% + var(--mo-ui-offset-y)); transform:translate(-50%,-50%);
-                        width:min(1112.716px,calc((100dvw - 24px) / var(--mo-ui-scale))); height:min(499px,calc(100vh - 24px));
+            #moJsonDock{position:fixed; left:50%; top:calc(50% + var(--mo-ui-offset-y)); transform:translate(-50%,-50%);
+                        width:min(1112.716px,calc((100dvw - 24px) / var(--mo-ui-scale))); height:min(576px,calc((100dvh - 24px) / var(--mo-ui-scale)));
                         z-index:999999;
                         font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
                         box-shadow:var(--mo-shadow);
@@ -32,12 +32,13 @@ GM_addStyle(`:root{ --mo-ui-scale: 1.2;         /* uniformly enlarge the complet
                         box-sizing:border-box;
                         display:flex;
                         flex-direction:column;}
+            #moJsonDock.moSearchEntryDock,
             #moJsonDock.moStandardHeightDock,
             #moJsonDock.moTextBuilderDock{top:calc(50% + var(--mo-ui-offset-y));
                                          width:min(1112.716px,calc((100dvw - 24px) / var(--mo-ui-scale)));
                                          height:min(576px,calc((100dvh - 24px) / var(--mo-ui-scale)));}
             #moJsonDock.moNameSearchComplete{top:calc(50% + var(--mo-ui-offset-y));
-                                             height:min(576px,calc((100dvh - 24px) / var(--mo-ui-scale)));}
+                                             height:min(778.44px,calc((100dvh - 24px) / var(--mo-ui-scale)));}
             #moJsonDock.moCompactToolDock{height:auto;
                                          max-height:calc((100dvh - 24px) / var(--mo-ui-scale));
                                          top:calc(50% + var(--mo-ui-offset-y));}
@@ -364,7 +365,7 @@ GM_addStyle(`:root{ --mo-ui-scale: 1.2;         /* uniformly enlarge the complet
                              bottom:calc(12px - var(--mo-ui-offset-y));
                              width:460px;
                              max-width:min(460px,calc(100vw - 24px));
-                             height:min(499px,calc(100vh - 24px));
+                             height:min(576px,calc((100dvh - 24px) / var(--mo-ui-scale)));
                              max-height:calc(100vh - 24px);
                              overflow:auto;
                              background:#fffef8;
@@ -1292,7 +1293,8 @@ function render() {const log = loadLog();
                    dock.classList.toggle('moCompactToolDock',appView === 'track');
                    dock.classList.toggle('moNameSearchComplete',appView === 'name' && !!nameOutput);
                    $content.classList.toggle('moUpcomingContent',appView === 'upcoming');
-                   dock.classList.toggle('moStandardHeightDock',['home','upcoming','name'].includes(appView));
+                   dock.classList.toggle('moStandardHeightDock',['home','upcoming'].includes(appView));
+                   dock.classList.toggle('moSearchEntryDock',appView === 'name' && !nameOutput);
                    dock.classList.toggle('moTextBuilderDock',appView === 'text');
                    const caseCount = dock.querySelector('#moJsonCaseCountValue');
                    if (caseCount) caseCount.textContent = `Cases Found: ${log.length}`;
