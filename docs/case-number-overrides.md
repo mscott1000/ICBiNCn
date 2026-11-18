@@ -1,6 +1,6 @@
 # Case-number overrides
 
-In Name Search, the Case-number search block sits below the name fields. Enter case numbers separated by new lines, commas, semicolons, or spaces. Choose Case.net or Municourt; Municourt also requires a court selection. Search Case Numbers generates fresh editable Summary and Detail panes using the existing formatters. Name and birth year fields are ignored.
+Name Search opens with the original name-entry panel. Use “Switch to Case Search” at the top right of that panel to replace the name fields with the case-number fields. “Switch to Name Search” in the same position restores the name fields. Switching preserves entered values and the current Summary/Detail output; returning from Home defaults to Name Search. Enter case numbers separated by new lines, commas, semicolons, or spaces. Choose Case.net or Municourt; Municourt also requires a court selection. Search Case Numbers generates fresh editable Summary and Detail panes using the existing formatters. Name and birth year fields are ignored.
 
 Override results are scoped to this search. They never enter or change the normal appended case log, and no permanent whitelist is stored. Output retains the existing editable-output storage and undo behavior. Run separate searches for different sources or Municourt courts. Duplicate input numbers and duplicate returned case keys are removed. Multiple returned matches are included without a selection dialog. Stop discards an unfinished batch; lookup errors appear in both output panes.
 

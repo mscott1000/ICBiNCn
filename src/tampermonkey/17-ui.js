@@ -1259,9 +1259,9 @@ window.addEventListener('resize',() => {if (!helpPanel.classList.contains('moHid
 function uiStatus(msg) {$status.textContent = msg;
                         setStatus(msg);}
 
-function addBlock(title,htmlInner) {const div = document.createElement('div');
+function addBlock(title,htmlInner,headerAction = '') {const div = document.createElement('div');
                                    div.className = 'moBlock';
-                                   div.innerHTML = `${title ? `<h3>${escapeHtml(title)}</h3>` : ''}${htmlInner}`;
+                                   div.innerHTML = `${headerAction ? `<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;"><h3 style="margin:0;">${escapeHtml(title)}</h3>${headerAction}</div>` : title ? `<h3>${escapeHtml(title)}</h3>` : ''}${htmlInner}`;
                                    $content.appendChild(div);}
 
 launcher.addEventListener('click',() => {expandDock();});
@@ -1313,7 +1313,8 @@ function render() {const log = loadLog();
                    const ns = loadNameState();
                    const draft = loadDraft();
                    const p = ns?.params || draft;
-                   addBlock('Name',`
+                   const searchSwitch = `<button class="moBtn" id="moNameCaseSwitch" type="button">${nameSearchMode === 'name' ? 'Switch to Case Search' : 'Switch to Name Search'}</button>`;
+                   if (nameSearchMode === 'name') addBlock('Name',`
       <div class="moNameRow">
         <div class="moField"><input id="moNsFirst" type="text" placeholder="First" value="${escapeHtml(p?.first || '')}"></div>
         <div class="moField"><input id="moNsMiddle" type="text" placeholder="M.I." value="${escapeHtml(p?.middle || '')}"></div>
@@ -1324,14 +1325,14 @@ function render() {const log = loadLog();
         <div class="moField"><label style="color:var(--mo-text);">Birth Year</label><input id="moNsYob" type="text" placeholder="YYYY" maxlength="4" value="${escapeHtml(p?.yob || '')}"></div>
         <div style="display:flex; gap:8px; align-items:end; width:100%;"><button class="moBtn moSearchBtn" id="moJsonNameSearch" style="flex:1;">Search</button><button class="moBtn" id="moJsonClearEntries" style="flex:1;">Clear Entries</button></div>
       </div>
-      ${nameOutput ? '</details>' : ''}`);
-                   addBlock('Case-number search',`
+      ${nameOutput ? '</details>' : ''}`,searchSwitch);
+                   else addBlock('Case-number search',`
       <div class="moField"><label for="moCaseOverrideNumbers">Case numbers</label><textarea id="moCaseOverrideNumbers" rows="2" placeholder="Separate case numbers with new lines or commas">${escapeHtml(caseOverrideDraft.text)}</textarea></div>
       <div class="moNameRowBottom">
         <div class="moField"><label for="moCaseOverrideSource">Source</label><select id="moCaseOverrideSource"><option value="casenet" ${caseOverrideDraft.source === 'casenet' ? 'selected' : ''}>Case.net</option><option value="municourt" ${caseOverrideDraft.source === 'municourt' ? 'selected' : ''}>Municourt</option></select></div>
         <div class="moField" style="${caseOverrideDraft.source === 'municourt' ? '' : 'display:none'}"><label for="moCaseOverrideCourt">Municourt court</label><select id="moCaseOverrideCourt"><option value="">Select court</option>${MUNI_CASE_COURTS.map(([code,name]) => `<option value="${code}" ${caseOverrideDraft.court === code ? 'selected' : ''}>${escapeHtml(name)}</option>`).join('')}</select></div>
       </div>
-      <button class="moBtn" id="moCaseOverrideSearch" ${caseOverrideRunning ? 'disabled' : ''}>Search Case Numbers</button>`);
+      <button class="moBtn" id="moCaseOverrideSearch" ${caseOverrideRunning ? 'disabled' : ''}>Search Case Numbers</button>`,searchSwitch);
                    if (nameOutput) {const panes = document.createElement('div');
                                     panes.className = 'moNameSearchOutputs';
                                     panes.innerHTML = `<div class="moField"><label for="moNsSummaryOutput">Summary</label><textarea id="moNsSummaryOutput">${escapeHtml(nameOutput.summary || '')}</textarea></div><div class="moField"><label for="moNsCopyOutput">Detail</label><textarea id="moNsCopyOutput">${escapeHtml(nameOutput.copy || '')}</textarea></div>`;

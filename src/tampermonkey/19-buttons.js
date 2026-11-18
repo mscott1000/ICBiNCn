@@ -8,7 +8,12 @@
                                                                             label: middleRaw ? `${caseType} / ${middleRaw}` : `${caseType} / all middle names`}));}
 
   dock.addEventListener('click',async (e) => {const id = e?.target?.id;
-                                             if (id === 'moHomeNameSearch') {setAppView('name'); return;}
+                                             if (id === 'moHomeNameSearch') {nameSearchMode = 'name'; setAppView('name'); return;}
+                                             if (id === 'moNameCaseSwitch') {
+                                               if (nameSearchMode === 'name') saveDraft({...loadDraft(),...readUiParams()});
+                                               nameSearchMode = nameSearchMode === 'name' ? 'case' : 'name';
+                                               render(); return;
+                                             }
                                              if (id === 'moHomeTextBuilder') {resetTextBuilder(); setAppView('text'); return;}
                                              if (id === 'moHomeUpcomingCourtDates') {setAppView('upcoming'); return;}
                                              if (id === 'moHomeTrackThisCase') {setAppView('track'); return;}
