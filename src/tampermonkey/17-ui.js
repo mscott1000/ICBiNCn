@@ -37,7 +37,7 @@ GM_addStyle(`:root{ --mo-ui-scale: 1.2;         /* uniformly enlarge the complet
                                          width:min(1112.716px,calc((100dvw - 24px) / var(--mo-ui-scale)));
                                          height:min(576px,calc((100dvh - 24px) / var(--mo-ui-scale)));}
             #moJsonDock.moNameSearchComplete{top:calc(50% + var(--mo-ui-offset-y));
-                                             height:min(778.44px,calc((100dvh - 24px) / var(--mo-ui-scale)));}
+                                             height:min(576px,calc((100dvh - 24px) / var(--mo-ui-scale)));}
             #moJsonDock.moCompactToolDock{height:auto;
                                          max-height:calc((100dvh - 24px) / var(--mo-ui-scale));
                                          top:calc(50% + var(--mo-ui-offset-y));}
@@ -48,6 +48,7 @@ GM_addStyle(`:root{ --mo-ui-scale: 1.2;         /* uniformly enlarge the complet
             .moSearchTabs{display:flex;align-items:end;gap:4px;border-bottom:1px solid var(--mo-border);margin:-4px -4px 12px;padding:0 4px;}
             .moSearchTab{appearance:none;font:inherit;font-size:16.8px;font-weight:650;color:var(--mo-muted);background:var(--mo-surface-2);border:1px solid var(--mo-border);border-radius:9px 9px 0 0;padding:6px 18px;margin:0 0 -1px;cursor:pointer;}
             .moSearchTab[aria-selected="true"]{color:var(--mo-text);background:var(--mo-surface);border-bottom-color:var(--mo-surface);padding-top:9px;}
+            #moJsonContent.moNameSearchContent .moBirthYearLabel{font-family:inherit;font-size:16.8px;font-weight:650;line-height:normal;padding-left:19px;}
             .moSearchTab:focus-visible{outline:2px solid var(--mo-primary);outline-offset:-3px;}
             .moCaseSearchActions select{height:44.8px;box-sizing:border-box;width:100%;min-width:0;border:1px solid var(--mo-border);border-radius:10px;background:var(--mo-surface);color:var(--mo-text);padding:9.8px 12.6px;font:inherit;}
             #moCaseOverrideClear{height:44.8px;}
@@ -1288,10 +1289,10 @@ function render() {const log = loadLog();
                    $content.classList.toggle('moTextBuilderContent',appView === 'text');
                    $content.classList.remove('moTextBuilderMessageContent');
                    $content.classList.toggle('moNameSearchContent',appView === 'name');
-                   dock.classList.toggle('moCompactToolDock',['name','track'].includes(appView) && !(appView === 'name' && nameOutput));
+                   dock.classList.toggle('moCompactToolDock',appView === 'track');
                    dock.classList.toggle('moNameSearchComplete',appView === 'name' && !!nameOutput);
                    $content.classList.toggle('moUpcomingContent',appView === 'upcoming');
-                   dock.classList.toggle('moStandardHeightDock',['home','upcoming'].includes(appView));
+                   dock.classList.toggle('moStandardHeightDock',['home','upcoming','name'].includes(appView));
                    dock.classList.toggle('moTextBuilderDock',appView === 'text');
                    const caseCount = dock.querySelector('#moJsonCaseCountValue');
                    if (caseCount) caseCount.textContent = `Cases Found: ${log.length}`;
@@ -1330,7 +1331,7 @@ function render() {const log = loadLog();
       </div>
       ${nameOutput ? '<details class="moNameSearchControls"><summary>Birth Year &amp; Search</summary>' : ''}
       <div class="moNameRowBottom" style="grid-template-columns:minmax(0, 0.36fr) minmax(0, 1.64fr);">
-        <div class="moField"><label style="color:var(--mo-text);">Birth Year</label><input id="moNsYob" type="text" placeholder="YYYY" maxlength="4" value="${escapeHtml(p?.yob || '')}"></div>
+        <div class="moField"><label class="moBirthYearLabel" for="moNsYob" style="color:var(--mo-text);">Birth Year</label><input id="moNsYob" type="text" placeholder="YYYY" maxlength="4" value="${escapeHtml(p?.yob || '')}"></div>
         <div style="display:flex; gap:8px; align-items:end; width:100%;"><button class="moBtn moSearchBtn" id="moJsonNameSearch" style="flex:1;">Search</button><button class="moBtn" id="moJsonClearEntries" style="flex:1;">Clear Entries</button></div>
       </div>
       ${nameOutput ? '</details>' : ''}`,searchSwitch);
