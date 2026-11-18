@@ -9,15 +9,16 @@
 
   dock.addEventListener('click',async (e) => {const id = e?.target?.id;
                                              if (id === 'moHomeNameSearch') {nameSearchMode = 'name'; setAppView('name'); return;}
-                                             if (id === 'moNameCaseSwitch') {
+                                             if (id === 'moSearchTabName' || id === 'moSearchTabCase') {
                                                if (nameSearchMode === 'name') saveDraft({...loadDraft(),...readUiParams()});
-                                               nameSearchMode = nameSearchMode === 'name' ? 'case' : 'name';
-                                               render(); return;
+                                               nameSearchMode = id === 'moSearchTabCase' ? 'case' : 'name';
+                                               render(); document.getElementById(id)?.focus(); return;
                                              }
                                              if (id === 'moHomeTextBuilder') {resetTextBuilder(); setAppView('text'); return;}
                                              if (id === 'moHomeUpcomingCourtDates') {setAppView('upcoming'); return;}
                                              if (id === 'moHomeTrackThisCase') {setAppView('track'); return;}
                                              if (id === 'moJsonBackBtn') {goHomeView(); return;}
+                                             if (id === 'moCaseOverrideClear') {caseOverrideDraft = {...caseOverrideDraft,text:'',court:''}; render(); uiStatus('Entries Cleared'); return;}
                                              if (id === 'moCaseOverrideSearch') {await runCaseNumberOverride(); return;}
                                              if (id === 'moJsonNameSearch') {if (caseOverrideRunning) {uiStatus('Stop the case-number search first.'); return;} const params = {first: norm(document.getElementById('moNsFirst')?.value || ''),
                                                                                            middle: norm(document.getElementById('moNsMiddle')?.value || ''),
@@ -305,4 +306,12 @@
   dock.addEventListener('change',(event) => {
     if (event.target.id === 'moCaseOverrideSource') {caseOverrideDraft.source = event.target.value; render();}
     if (event.target.id === 'moCaseOverrideCourt') caseOverrideDraft.court = event.target.value;
+  });
+
+  dock.addEventListener('keydown',(event) => {
+    if (!['moSearchTabName','moSearchTabCase'].includes(event.target.id)) return;
+    if (!['ArrowLeft','ArrowRight','Home','End'].includes(event.key)) return;
+    event.preventDefault();
+    const id = event.key === 'Home' ? 'moSearchTabName' : event.key === 'End' ? 'moSearchTabCase' : event.target.id === 'moSearchTabName' ? 'moSearchTabCase' : 'moSearchTabName';
+    document.getElementById(id)?.click();
   });
