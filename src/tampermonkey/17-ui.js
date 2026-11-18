@@ -2,7 +2,7 @@
  * UI
  ************************************************************/
 GM_addStyle(`:root{ --mo-ui-scale: 1.2;         /* uniformly enlarge the complete tool UI */
-                    --mo-ui-offset-y: 2px;      /* shift the complete tool down the page */
+                    --mo-ui-offset-y: calc(2px - 3dvh / var(--mo-ui-scale)); /* move the complete tool up by 3% of the viewport */
                     --mo-bg: #f5f7fb;          /* page chrome */
                     --mo-surface: #ffffff;     /* cards/panels */
                     --mo-surface-2: #eef2f7;   /* header/footer/status */
@@ -44,6 +44,7 @@ GM_addStyle(`:root{ --mo-ui-scale: 1.2;         /* uniformly enlarge the complet
             #moJsonDock.moCompactToolDock #moJsonContent{flex:0 1 auto;}
             #moJsonDock.moCompactToolDock #moJsonContent > .moBlock:last-child{margin-bottom:0;}
             #moJsonDock.moCompactToolDock .moFeaturePlaceholder{min-height:0;}
+            #moSearchEntryPanel{min-height:240px;} /* shared entry height; spare Name space stays empty */
             .moSearchTabs{display:flex;align-items:end;gap:4px;border-bottom:1px solid var(--mo-border);margin:-4px -4px 12px;padding:0 4px;}
             .moSearchTab{appearance:none;font:inherit;font-size:16.8px;font-weight:650;color:var(--mo-muted);background:var(--mo-surface-2);border:1px solid var(--mo-border);border-radius:9px 9px 0 0;padding:6px 18px;margin:0 0 -1px;cursor:pointer;}
             .moSearchTab[aria-selected="true"]{color:var(--mo-text);background:var(--mo-surface);border-bottom-color:var(--mo-surface);padding-top:9px;}
@@ -1334,7 +1335,7 @@ function render() {const log = loadLog();
       </div>
       ${nameOutput ? '</details>' : ''}`,searchSwitch);
                    else addBlock('Case',`
-      <div class="moField"><label for="moCaseOverrideNumbers">Case numbers</label><textarea id="moCaseOverrideNumbers" rows="2" placeholder="Separate case numbers with new lines or commas">${escapeHtml(caseOverrideDraft.text)}</textarea></div>
+      <div class="moField"><textarea aria-label="Case numbers" id="moCaseOverrideNumbers" rows="2" placeholder="Separate case numbers with new lines or commas">${escapeHtml(caseOverrideDraft.text)}</textarea></div>
       <div class="moNameRowBottom moCaseSearchActions" style="grid-template-columns:minmax(0, 0.36fr) minmax(0, 1.64fr);">
         <div class="moField"><label for="moCaseOverrideSource">Source</label><select id="moCaseOverrideSource"><option value="casenet" ${caseOverrideDraft.source === 'casenet' ? 'selected' : ''}>Case.net</option><option value="municourt" ${caseOverrideDraft.source === 'municourt' ? 'selected' : ''}>Municourt</option></select></div>
         <div style="display:flex;gap:8px;align-items:end;width:100%;"><button class="moBtn moSearchBtn" id="moCaseOverrideSearch" style="flex:1;" ${caseOverrideRunning ? 'disabled' : ''}>Search</button><button class="moBtn" id="moCaseOverrideClear" style="flex:1;">Clear Entries</button></div>
