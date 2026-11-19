@@ -51,113 +51,113 @@
     {
       "id": 1,
       "bodyBob": 0,
-      "rgbaSHA256": "36eb0c76a1dfed5dadf8f4d5f0660b2b77ef49a9c2591d6c76c4d374e7109091",
-      "outsideRequestedEditsIdentical": true
+      "rgbaSHA256": "3bef3987ff6e7877b409b026addcabd1b731cb3503e6673bf16c055e57a3763a",
+      "outsideEyebrowPixelsIdentical": true
     },
     {
       "id": 2,
       "bodyBob": 3,
-      "rgbaSHA256": "a3a2a0fd8702570154b3e71b9b4f55c542376b14206fb39d01d45a3d56b75428",
-      "outsideRequestedEditsIdentical": true
+      "rgbaSHA256": "e781c7ac24bbb92b0d06304042918be0919e259edc6d3d54c93b54e3c9692a5c",
+      "outsideEyebrowPixelsIdentical": true
     },
     {
       "id": 31,
       "bodyBob": 2,
-      "rgbaSHA256": "de74ebec7927672b57dad477474b6e216d765aa7c1002626e74e978fe774aa68",
-      "outsideRequestedEditsIdentical": true
+      "rgbaSHA256": "786456082a9575091df42b80a509768b7eec0eb83287f8fc8469d3ca2491ec9f",
+      "outsideEyebrowPixelsIdentical": true
     },
     {
       "id": 35,
       "bodyBob": 1,
-      "rgbaSHA256": "0ad22edb207598ff0fd0413307ab5bb78b672b5bcbaca2beb318b07805940ab3",
-      "outsideRequestedEditsIdentical": true
+      "rgbaSHA256": "1f4a0ee5b499d1e08f9e26cd367bf6f1a73427ed02134e5e1bb28c4e30605efc",
+      "outsideEyebrowPixelsIdentical": true
     },
     {
       "id": 13,
       "bodyBob": 0,
-      "rgbaSHA256": "f89125e29704cc6202cbca35b424124a0543d45ee4aacf1a10a8b083c7948310",
-      "outsideRequestedEditsIdentical": true
+      "rgbaSHA256": "5342a570552b5a6aee54b42d8639e6264a3b4b6dc150bf430c1d74bdd7644e61",
+      "outsideEyebrowPixelsIdentical": true
     },
     {
       "id": 41,
       "bodyBob": 1,
-      "rgbaSHA256": "5fd96b63cc21b9d67d66e8fc983c240cb32f9b40553466e61ff9ebe46ecb7d96",
-      "outsideRequestedEditsIdentical": true
+      "rgbaSHA256": "d57368b91bab376725037e4be50bb15e204baab35b61e6f41fbbdeb5ef121e99",
+      "outsideEyebrowPixelsIdentical": true
     },
     {
       "id": 42,
       "bodyBob": 2,
-      "rgbaSHA256": "adb1caf2d69c2ac28009a259a084dc98c5b41b5ffba151a637524bafc7bfb156",
-      "outsideRequestedEditsIdentical": true
+      "rgbaSHA256": "b3bdb19e893a3ebe87afaf49b60d01933f45febc473e1026b457a106383cf70e",
+      "outsideEyebrowPixelsIdentical": true
     },
     {
       "id": 21,
       "bodyBob": 2,
-      "rgbaSHA256": "259da181e01d2d36ea697d34dba0779244049c2d28778d0f8b7d72fc5534d128",
-      "outsideRequestedEditsIdentical": true
+      "rgbaSHA256": "529bf381debb2f0e564ed9b43bb5dab3963db6f4c73339e599a5b863eac3f17b",
+      "outsideEyebrowPixelsIdentical": true
     },
     {
       "id": 115,
       "bodyBob": 2,
-      "rgbaSHA256": "d47952df7715125c18150a20ddf0f77476a758d946ef86156d85874b0ca985f4",
-      "outsideRequestedEditsIdentical": true
+      "rgbaSHA256": "3cd478320a35bca7d9694dc97d4876a0e1d7d1b63b296ce93b802267483d7188",
+      "outsideEyebrowPixelsIdentical": true
     },
     {
       "id": 101,
       "bodyBob": 2,
-      "rgbaSHA256": "00fceae90ca3f031425a9ffc8b3608df9b7fe698101c48032fbdedcba5862858",
-      "outsideRequestedEditsIdentical": true
+      "rgbaSHA256": "3efdb2e87f9f9a78c49aa47677840e36bd31d886c75522054b21417545109073",
+      "outsideEyebrowPixelsIdentical": true
     },
     {
       "id": 102,
       "bodyBob": 1,
-      "rgbaSHA256": "4f04c9728828085fce1434023c81061871f494561d253c9ef330203c12e8bce5",
-      "outsideRequestedEditsIdentical": true
+      "rgbaSHA256": "55d10a996f77e578d1ab52a2518bb0ac078461453cbc91708ffa8d32f8748a9d",
+      "outsideEyebrowPixelsIdentical": true
     },
     {
       "id": 103,
       "bodyBob": 0,
-      "rgbaSHA256": "8cfd14ebca6bb8a3bf4e4bdbc432cbdee86b1cf099c54be9abdf0ca0aba16584",
-      "outsideRequestedEditsIdentical": true
+      "rgbaSHA256": "8b62953c3eb1f11e55f18875c6c9967b19d2b6dd5b10282c700e4f22ccc79710",
+      "outsideEyebrowPixelsIdentical": true
     },
     {
       "id": 67,
       "bodyBob": 2,
-      "rgbaSHA256": "ecaa87be39ed29fe7fa99a1d29b041090e481fad12d705477bb35301a42441d8",
-      "outsideRequestedEditsIdentical": true
+      "rgbaSHA256": "229bf3e8f89f28622b79f996b6d22265446ea5b1738bac924a89504cd7686390",
+      "outsideEyebrowPixelsIdentical": true
     },
     {
       "id": 68,
       "bodyBob": 1,
-      "rgbaSHA256": "fb6165ed6ab8c048b1742f82834fe7bf3af5789754d068ea134e35455171d31d",
-      "outsideRequestedEditsIdentical": true
+      "rgbaSHA256": "a259b1d46622d3a30b14b95b9efc4e304f2ee7a8fbd25e65685d2389dc67eafa",
+      "outsideEyebrowPixelsIdentical": true
     },
     {
       "id": 69,
       "bodyBob": 1,
-      "rgbaSHA256": "5605b3e1cf15e48334bdd1c590b735ad6be8cce620ea8337083d7311b4e869b8",
-      "outsideRequestedEditsIdentical": true
+      "rgbaSHA256": "026099d2e3f829b53bc0dcba9d10ae2d98f6046a8a1521fd41564f0e9e6f061b",
+      "outsideEyebrowPixelsIdentical": true
     },
     {
       "id": 70,
       "bodyBob": 0,
-      "rgbaSHA256": "463477f80c76ab61eb31b58920c2ee2aa322a8acf2708edcc994dd44aae42aa2",
-      "outsideRequestedEditsIdentical": true
+      "rgbaSHA256": "711cdd90267c18e391e79e23cdcfa6805d1bfc5c52b8b2249e059f019018d6bb",
+      "outsideEyebrowPixelsIdentical": true
     },
     {
       "id": 54,
       "bodyBob": 0,
-      "rgbaSHA256": "57c0200cf33dbfb04e23f5ab475c9a73fd1a3fa11cbf3adb1034906e9715bfcd",
-      "outsideRequestedEditsIdentical": true
+      "rgbaSHA256": "41a6ac98d7244dd959cea050e0ec2bedad52162c72a04c2413af870ba9a86507",
+      "outsideEyebrowPixelsIdentical": true
     },
     {
       "id": 112,
       "bodyBob": 0,
-      "rgbaSHA256": "125b531870d0d1f696c59232576f2e6c2ff6634aab62099417caeb457e116154",
-      "outsideRequestedEditsIdentical": true
+      "rgbaSHA256": "dde0b5c70c43b48d1d211e8104d07a780e37a2c36c46450b162c5ef38075c304",
+      "outsideEyebrowPixelsIdentical": true
     }
   ],
-  "source": "Approved18-frame heel-contact transition, eyebrow, and smoothed67.",
+  "source": "Approved18-frame loop; approved eyebrow translated113px right/18px up from original; all other artwork exact.",
   "sourceDraft": {
     "schema": "casey-thinking-preview/1",
     "status": "Single frame for placement approval; not applied to the walking loop.",
@@ -191,7 +191,7 @@
   },
   "idle": "Original smiling first pose, unchanged.",
   "sha256": {
-    "sprite.png": "442071014393bd1b25b532ff5f48cff03b61b19bed1f0e0cc7b1729be0ff1df5",
+    "sprite.png": "96d282638bb9bbd2004a44c0626c5b0d225396f4fe1d188bf8b4a17a2cefcbc9",
     "placeholder.png": "db3c0967f1d5e24a628d5668973887f33ebb0410324b90eec638f8f6001d3980",
     "ground.png": "bd2d63ea11966b8e808130afd1168ab9986492c7ec20401ca315c447d5932d3a"
   },
@@ -339,20 +339,25 @@
     "width": 5,
     "points": [
       [
-        161,
-        179
+        274,
+        161
       ],
       [
-        181,
-        160
+        294,
+        142
       ],
       [
-        202,
-        172
+        315,
+        154
       ]
     ],
     "heldThroughout": true,
-    "followsBodyBob": true
+    "followsBodyBob": true,
+    "pixelTranslationFromOriginal": [
+      113,
+      -18
+    ],
+    "side": "viewer-right"
   },
   "leg67": {
     "neighbors": [
