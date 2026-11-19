@@ -291,6 +291,12 @@
                                                                                                                                  uiStatus('Results are still loading; retrying this pass…');
                                                                                                                                  render();
                                                                                                                                  return;}
+                                                                await fadeNameSearchCaseyForPassChange();
+                                                                const currentSearch = loadNameState();
+                                                                if (isStop() || !currentSearch?.active || currentSearch.pullStartedAt !== st.pullStartedAt) {
+                                                                  nameSearchCasey?.cancelPassChange();
+                                                                  return;
+                                                                }
                                                                 st.passIndex = (st.passIndex || 0) + 1;
                                                                 setIcbincnTabTitleText(`Searching (${Math.min(3,(Number(st.passIndex || 0) + 1))}/3)`);
                                                                 st.step = 'go_search';

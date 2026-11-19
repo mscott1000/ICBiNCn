@@ -3930,6 +3930,7 @@ GM_addStyle(`:root{ --mo-ui-scale: 1.2;         /* uniformly enlarge the complet
                                   font-size:14px;
                                   font-weight:900;
                                   margin:24px 0 12px 0;}
+            #moJsonHelpVersion{margin:6px 0 12px;text-align:center;color:#64748b;font:13px/1.5 system-ui,sans-serif;user-select:text;}
             #moJsonHelpBody{text-align:left;
                             font-size:14px;
                             font-weight:850;
@@ -4236,6 +4237,7 @@ const helpPanelTemplate = `
   <button id="moJsonHelpClose" title="Close Help">×</button>
   <img id="moJsonHelpLogo" src="${escapeHtml(LOGO_CASEY_IMAGE)}" alt="ICBiNCn Casey logo" />
   <div id="moJsonHelpHeading">FAQ / Tips</div>
+  <div id="moJsonHelpVersion">Version ${escapeHtml(typeof GM_info !== 'undefined' ? GM_info.script?.version || 'unavailable' : 'unavailable')}</div>
   <div id="moJsonHelpSubheading">Having trouble? Here are some issues related to how the tool works that you might come across:</div>
   <div id="moJsonHelpBody">
 - Only one page of Case.net should be open while the tool is searching - multiple instances of the tool will try to read over each other's shoulder, and they will be bad at it.
@@ -5306,6 +5308,10 @@ function createNameSearchCasey({assets, dock, readState, sizeMode}) {
   const ground = row.querySelector('.moCaseyGround');
   const idle = row.querySelector('.moCaseyIdle');
   const sprite = row.querySelector('.moCaseySprite');
+  const label = document.createElement('div');
+  label.className = 'moCaseyPassLabel';
+  label.hidden = true;
+  row.appendChild(label);
   idle.src = assets.idle;
   sprite.src = assets.sprite;
   ground.style.backgroundImage = `url("${assets.ground}")`;
@@ -5316,6 +5322,78 @@ function createNameSearchCasey({assets, dock, readState, sizeMode}) {
   let lastVisible = false;
   let lastActive = false;
   let resizePending = 0;
+  let displayedColumn = null, displayedLabel = '';
+  let fade = null, fadeTarget = null, fadeGeneration = 0;
+  function cancelFade() {
+    fadeGeneration++;
+    fade?.cancel();
+    fade = fadeTarget = null;
+    row.style.opacity = '1';
+  }
+  function place(column, text) {
+    displayedColumn = column;
+    displayedLabel = text;
+    row.dataset.column = String(column + 1);
+    row.style.setProperty('--mo-casey-center', `${(column + .5) * 100 / 3}%`);
+    label.textContent = text;
+    label.hidden = !text;
+    scene.setAttribute('aria-label', text ? `Casey searching: ${text}` : 'Casey searching cases');
+  }
+  function fadeIn(column, text, generation) {
+    place(column,text);
+    row.style.opacity = '0';
+    fadeTarget = {column,text};
+    fade = row.animate([{opacity:0},{opacity:1}],{duration:100,easing:'ease-in',fill:'forwards'});
+    fade.finished.then(() => {
+      if (generation === fadeGeneration) cancelFade();
+    },() => {});
+  }
+  function updatePlacement(column, text, animate) {
+    if (!animate) {
+      cancelFade(); place(column,text); return;
+    }
+    if (displayedColumn === null) {
+      cancelFade();
+      if (column > 0) fadeIn(column,text,fadeGeneration);
+      else place(column,text);
+      return;
+    }
+    if (fadeTarget?.column === column && fadeTarget.text === text) return;
+    if (displayedColumn === column && displayedLabel === text) {
+      if (fadeTarget) cancelFade();
+      return;
+    }
+    const opacity = Number.parseFloat(getComputedStyle(row).opacity);
+    cancelFade();
+    const generation = fadeGeneration;
+    fadeTarget = {column,text};
+    row.style.opacity = String(opacity);
+    if (opacity === 0) { fadeIn(column,text,generation); return; }
+    fade = row.animate([{opacity},{opacity:0}],{duration:100,easing:'ease-out',fill:'forwards'});
+    fade.finished.then(() => {
+      if (generation !== fadeGeneration || row.hidden || !row.isConnected) return;
+      row.style.opacity = '0';
+      fade.cancel();
+      // Reposition only at zero opacity. The walk and ground keep their phase.
+      fadeIn(column,text,generation);
+    },() => {});
+  }
+  async function preparePassChange() {
+    const state = readState();
+    if (row.hidden || scene.hidden || state.stopped || state.minimized || document.hidden || motion.matches || typeof row.animate !== 'function') return;
+    const opacity = Number.parseFloat(getComputedStyle(row).opacity);
+    cancelFade();
+    const generation = fadeGeneration;
+    fade = row.animate([{opacity},{opacity:0}],{duration:100,easing:'ease-out',fill:'forwards'});
+    // A backgrounded/cancelled animation must never hold up search navigation.
+    let timeout;
+    await Promise.race([fade.finished.catch(() => {}),new Promise(resolve => { timeout = setTimeout(resolve,200); })]);
+    clearTimeout(timeout);
+    if (generation !== fadeGeneration) return;
+    row.style.opacity = '0';
+    fade.cancel();
+    fade = null;
+  }
   // Overlay the measured blank area without changing the entry/results layout.
   dock.insertBefore(row, footer);
   function measure() {
@@ -5325,7 +5403,7 @@ function createNameSearchCasey({assets, dock, readState, sizeMode}) {
     row.style.setProperty('--mo-casey-width', `${width}px`);
     const scale = dock.getBoundingClientRect().width / dock.offsetWidth || 1;
     const entry = content.querySelector('#moSearchEntryPanel');
-    if (!entry) { scene.hidden = true; return; }
+    if (!entry) { scene.hidden = label.hidden = true; return; }
     const dockRect = dock.getBoundingClientRect(), contentRect = content.getBoundingClientRect();
     const top = Math.max(entry.getBoundingClientRect().bottom, contentRect.top);
     const bottom = Math.min(footer.getBoundingClientRect().top, contentRect.bottom);
@@ -5333,6 +5411,11 @@ function createNameSearchCasey({assets, dock, readState, sizeMode}) {
     row.style.top = `${(top-dockRect.top)/scale-dock.clientTop}px`;
     row.style.height = `${height}px`;
     scene.hidden = height < width * assets.frameHeight / assets.frameWidth || dock.clientWidth / 3 < width;
+    label.hidden = !displayedLabel || scene.hidden;
+    if (!label.hidden) {
+      const figureHeight = width * assets.frameHeight / assets.frameWidth;
+      label.hidden = height < figureHeight + 2 * (4 + label.offsetHeight);
+    }
   }
   function sync() {
     const state = readState();
@@ -5340,15 +5423,15 @@ function createNameSearchCasey({assets, dock, readState, sizeMode}) {
     const active = visible;
     row.hidden = !visible;
     const column = [0,1,2].includes(state.column) ? state.column : 1;
-    row.dataset.column = String(column + 1);
-    row.style.setProperty('--mo-casey-center', `${(column + .5) * 100 / 3}%`);
     const playing = active && !state.minimized && !document.hidden && !motion.matches;
+    if (!visible) {
+      cancelFade(); displayedColumn = null; label.hidden = true;
+    } else updatePlacement(column,state.label || '',playing && typeof row.animate === 'function');
     // Pass changes keep the current pose/ground phase. Stopping hides the
     // figure; hidden views do no animation work.
     if (active !== lastActive) row.classList.toggle('moCaseyActive', active);
     row.classList.toggle('moCaseyPlaying', playing);
     row.classList.toggle('moCaseyReducedMotion', motion.matches);
-    scene.setAttribute('aria-label', `Casey searching, column ${column + 1} of 3`);
     if (visible || lastVisible !== visible) {
       if (resizePending) cancelAnimationFrame(resizePending);
       resizePending = requestAnimationFrame(measure);
@@ -5366,7 +5449,8 @@ function createNameSearchCasey({assets, dock, readState, sizeMode}) {
   window.addEventListener('resize', measure);
   document.addEventListener('visibilitychange', sync);
   motion.addEventListener('change', sync);
-  return {sync, element: row, destroy() {
+  return {sync, preparePassChange, cancelPassChange() { cancelFade(); sync(); }, element: row, destroy() {
+    cancelFade();
     observer?.disconnect();
     if (resizePending) cancelAnimationFrame(resizePending);
     window.removeEventListener('resize', measure);
@@ -5382,6 +5466,8 @@ GM_addStyle(`
 #moNameSearchCasey[hidden]{display:none;}
 .moCaseyScene{position:absolute;left:var(--mo-casey-center,50%);top:50%;transform:translate(-50%,-50%);width:var(--mo-casey-width,80px);aspect-ratio:434/440;overflow:hidden;}
 .moCaseyScene[hidden]{display:none;}
+.moCaseyPassLabel{position:absolute;left:var(--mo-casey-center,50%);top:calc(50% + var(--mo-casey-width,80px)*440/434/2 + 4px);transform:translateX(-50%);max-width:calc(100%/3 - 8px);font:600 14px/1.25 system-ui,sans-serif;color:#475569;text-align:center;overflow-wrap:anywhere;}
+.moCaseyPassLabel[hidden]{display:none;}
 .moCaseyIdle,.moCaseySpriteWindow{position:absolute;inset:0;width:100%;height:100%;}
 .moCaseyIdle{object-fit:contain;}
 .moCaseySpriteWindow{display:none;overflow:hidden;}
@@ -5399,6 +5485,7 @@ GM_addStyle(`
 
 var nameSearchCasey;
 function syncNameSearchCasey() { nameSearchCasey?.sync(); }
+async function fadeNameSearchCaseyForPassChange() { await nameSearchCasey?.preparePassChange(); }
 function startNameSearchCasey() {
   if (nameSearchCasey) return;
   nameSearchCasey = createNameSearchCasey({
@@ -5408,11 +5495,13 @@ function startNameSearchCasey() {
     readState: () => {
       const search = loadNameState();
       const index = Number(search?.passIndex) || 0;
+      const column = caseOverrideRunning ? 1 : search?.step === 'municourt_finalizing' ? 2 : Math.min(2,Math.max(0,index));
       return {
       nameView: appView === 'name',
       hasResults: !!loadJson(KEY_NAMESEARCH_OUTPUT, null),
       searching: !!search?.active || caseOverrideRunning,
-      column: caseOverrideRunning ? 1 : search?.step === 'municourt_finalizing' ? 2 : Math.min(2,Math.max(0,index)),
+      column,
+      label: caseOverrideRunning ? '' : ['1. Criminal Cases','2. Traffic/Municipal','3. Municourt'][column],
       stopped: isStop(),
       minimized: dock.classList.contains('moHidden')
       };
@@ -7252,6 +7341,12 @@ async function runCaseNumberOverride() {
                                                                                                                                  uiStatus('Results are still loading; retrying this pass…');
                                                                                                                                  render();
                                                                                                                                  return;}
+                                                                await fadeNameSearchCaseyForPassChange();
+                                                                const currentSearch = loadNameState();
+                                                                if (isStop() || !currentSearch?.active || currentSearch.pullStartedAt !== st.pullStartedAt) {
+                                                                  nameSearchCasey?.cancelPassChange();
+                                                                  return;
+                                                                }
                                                                 st.passIndex = (st.passIndex || 0) + 1;
                                                                 setIcbincnTabTitleText(`Searching (${Math.min(3,(Number(st.passIndex || 0) + 1))}/3)`);
                                                                 st.step = 'go_search';

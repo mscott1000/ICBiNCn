@@ -12,6 +12,25 @@ horizontally in exactly one column:
   immediately when that state changes, including navigation/resume.
 - Case-number search: column 2 throughout, for both Case.net and Municourt.
 
+Name-search captions beneath Casey are exactly:
+
+- `1. Criminal Cases`
+- `2. Traffic/Municipal`
+- `3. Municourt`
+
+Case-number searches do not receive a numbered pass caption. Captions share
+Casey's center and hide if there is insufficient room below her.
+
+Pass changes fade Casey and her caption out for 100 ms, reposition while
+invisible, and fade in for 100 ms. The outgoing fade finishes before search
+navigation; the new page fades in at its persisted pass. Stop/restart, hidden
+views, and reduced motion cancel pending transitions safely. Reduced motion
+changes columns immediately. The underlying walk/ground phase is preserved
+within a page.
+
+Help shows only `Version` and the installed userscript's `GM_info.script.version`
+beneath its heading. It does not display a build identifier or hash.
+
 Her width is 121% of Clear Log’s width, reflecting two successive 10% increases.
 An absolute overlay leaves entry fields,
 buttons, results space and the window height unchanged. She never intercepts
@@ -40,6 +59,7 @@ Validation:
 ```sh
 node --test tests/*.test.cjs
 node tests/name-search-casey.browser.cjs
+node tests/name-search-casey-fade.browser.cjs
 node tests/case-number-override.browser.cjs
 ```
 
