@@ -409,6 +409,7 @@ GM_addStyle(`:root{ --mo-ui-scale: 1.2;         /* uniformly enlarge the complet
                                   font-size:14px;
                                   font-weight:900;
                                   margin:24px 0 12px 0;}
+            #moJsonHelpVersion{margin:6px 0 12px;text-align:center;color:#64748b;font:13px/1.5 system-ui,sans-serif;user-select:text;}
             #moJsonHelpBody{text-align:left;
                             font-size:14px;
                             font-weight:850;
@@ -715,6 +716,7 @@ const helpPanelTemplate = `
   <button id="moJsonHelpClose" title="Close Help">×</button>
   <img id="moJsonHelpLogo" src="${escapeHtml(LOGO_CASEY_IMAGE)}" alt="ICBiNCn Casey logo" />
   <div id="moJsonHelpHeading">FAQ / Tips</div>
+  <div id="moJsonHelpVersion">Version ${escapeHtml(typeof GM_info !== 'undefined' ? GM_info.script?.version || 'unavailable' : 'unavailable')}</div>
   <div id="moJsonHelpSubheading">Having trouble? Here are some issues related to how the tool works that you might come across:</div>
   <div id="moJsonHelpBody">
 - Only one page of Case.net should be open while the tool is searching - multiple instances of the tool will try to read over each other's shoulder, and they will be bad at it.
