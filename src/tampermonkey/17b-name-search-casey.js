@@ -1,10 +1,11 @@
 /************************************************************
  * Casey in the Name Search blank area. Artwork is embedded.
  ************************************************************/
-function createNameSearchCasey({assets, dock, readState, sizeMode, keepOnResults}) {
+function createNameSearchCasey({assets, dock, readState, sizeMode}) {
   if (!['width','height'].includes(sizeMode)) throw new Error('Choose Casey’s button-size reference.');
   const footer = dock.querySelector('#moJsonFooter');
   const clearLog = dock.querySelector('#moJsonClear');
+  const content = dock.querySelector('#moJsonContent');
   const row = document.createElement('div');
   row.id = 'moNameSearchCasey';
   row.hidden = true;
@@ -23,8 +24,7 @@ function createNameSearchCasey({assets, dock, readState, sizeMode, keepOnResults
   let lastVisible = false;
   let lastActive = false;
   let resizePending = 0;
-  // Use the existing blank flex space above the footer. On short windows the
-  // fields scroll in their own pane instead of moving beneath the mascot.
+  // Overlay the measured blank area without changing the entry/results layout.
   dock.insertBefore(row, footer);
   function measure() {
     resizePending = 0;
@@ -32,22 +32,31 @@ function createNameSearchCasey({assets, dock, readState, sizeMode, keepOnResults
     const width = sizeMode === 'width' ? clearLog.offsetWidth : clearLog.offsetHeight * assets.frameWidth / assets.frameHeight;
     row.style.setProperty('--mo-casey-width', `${width}px`);
     const scale = dock.getBoundingClientRect().width / dock.offsetWidth || 1;
-    const dockRect = dock.getBoundingClientRect(), buttonRect = clearLog.getBoundingClientRect();
-    row.style.setProperty('--mo-casey-right', `${Math.max(0,(dockRect.right-buttonRect.right)/scale-dock.clientLeft)}px`);
+    const entry = content.querySelector('#moSearchEntryPanel');
+    if (!entry) { scene.hidden = true; return; }
+    const dockRect = dock.getBoundingClientRect(), contentRect = content.getBoundingClientRect();
+    const top = Math.max(entry.getBoundingClientRect().bottom, contentRect.top);
+    const bottom = Math.min(footer.getBoundingClientRect().top, contentRect.bottom);
+    const height = Math.max(0,(bottom-top)/scale);
+    row.style.top = `${(top-dockRect.top)/scale-dock.clientTop}px`;
+    row.style.height = `${height}px`;
+    scene.hidden = height < width * assets.frameHeight / assets.frameWidth || dock.clientWidth / 3 < width;
   }
   function sync() {
     const state = readState();
-    const visible = state.nameView && (!state.hasResults || keepOnResults);
-    const active = visible && state.searching && !state.stopped;
+    const visible = state.nameView && !state.hasResults && state.searching && !state.stopped;
+    const active = visible;
     row.hidden = !visible;
-    row.classList.toggle('moCaseyResultsRow', visible && state.hasResults);
+    const column = [0,1,2].includes(state.column) ? state.column : 1;
+    row.dataset.column = String(column + 1);
+    row.style.setProperty('--mo-casey-center', `${(column + .5) * 100 / 3}%`);
     const playing = active && !state.minimized && !document.hidden && !motion.matches;
-    // Rerenders keep the current pose/ground phase. Stopping returns to the
-    // smiling first pose; hidden views do no animation work.
+    // Pass changes keep the current pose/ground phase. Stopping hides the
+    // figure; hidden views do no animation work.
     if (active !== lastActive) row.classList.toggle('moCaseyActive', active);
     row.classList.toggle('moCaseyPlaying', playing);
     row.classList.toggle('moCaseyReducedMotion', motion.matches);
-    scene.setAttribute('aria-label', active ? 'Casey searching' : 'Casey ready');
+    scene.setAttribute('aria-label', `Casey searching, column ${column + 1} of 3`);
     if (visible || lastVisible !== visible) {
       if (resizePending) cancelAnimationFrame(resizePending);
       resizePending = requestAnimationFrame(measure);
@@ -60,6 +69,8 @@ function createNameSearchCasey({assets, dock, readState, sizeMode, keepOnResults
   }) : null;
   observer?.observe(clearLog);
   observer?.observe(dock);
+  observer?.observe(content);
+  content.addEventListener('scroll', measure);
   window.addEventListener('resize', measure);
   document.addEventListener('visibilitychange', sync);
   motion.addEventListener('change', sync);
@@ -67,6 +78,7 @@ function createNameSearchCasey({assets, dock, readState, sizeMode, keepOnResults
     observer?.disconnect();
     if (resizePending) cancelAnimationFrame(resizePending);
     window.removeEventListener('resize', measure);
+    content.removeEventListener('scroll', measure);
     document.removeEventListener('visibilitychange', sync);
     motion.removeEventListener('change', sync);
     row.remove();
@@ -74,9 +86,10 @@ function createNameSearchCasey({assets, dock, readState, sizeMode, keepOnResults
 }
 
 GM_addStyle(`
-#moNameSearchCasey{position:relative;flex:0 0 auto;width:100%;height:calc(var(--mo-casey-width,80px)*440/434 + 8px);pointer-events:none;user-select:none;}
+#moNameSearchCasey{position:absolute;left:0;right:0;pointer-events:none;user-select:none;overflow:hidden;}
 #moNameSearchCasey[hidden]{display:none;}
-.moCaseyScene{position:absolute;right:var(--mo-casey-right,10px);bottom:8px;width:var(--mo-casey-width,80px);aspect-ratio:434/440;overflow:hidden;}
+.moCaseyScene{position:absolute;left:var(--mo-casey-center,50%);top:50%;transform:translate(-50%,-50%);width:var(--mo-casey-width,80px);aspect-ratio:434/440;overflow:hidden;}
+.moCaseyScene[hidden]{display:none;}
 .moCaseyIdle,.moCaseySpriteWindow{position:absolute;inset:0;width:100%;height:100%;}
 .moCaseyIdle{object-fit:contain;}
 .moCaseySpriteWindow{display:none;overflow:hidden;}
@@ -100,14 +113,18 @@ function startNameSearchCasey() {
     assets: CASEY_NAME_SEARCH_ASSETS,
     dock,
     sizeMode: 'width',
-    keepOnResults: false,
-    readState: () => ({
+    readState: () => {
+      const search = loadNameState();
+      const index = Number(search?.passIndex) || 0;
+      return {
       nameView: appView === 'name',
       hasResults: !!loadJson(KEY_NAMESEARCH_OUTPUT, null),
-      searching: !!loadNameState()?.active || caseOverrideRunning,
+      searching: !!search?.active || caseOverrideRunning,
+      column: caseOverrideRunning ? 1 : search?.step === 'municourt_finalizing' ? 2 : Math.min(2,Math.max(0,index)),
       stopped: isStop(),
       minimized: dock.classList.contains('moHidden')
-    })
+      };
+    }
   });
   if (typeof GM_addValueChangeListener === 'function') {
     GM_addValueChangeListener(KEY_NAMESEARCH, syncNameSearchCasey);

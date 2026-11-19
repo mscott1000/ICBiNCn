@@ -4,7 +4,8 @@
   function loadNameState() {return loadJson(KEY_NAMESEARCH,null);}
 
   function saveNameState(s) {if (s?.active && !loadNameState()?.active) saveNameSearchOutput(null);
-                             saveJson(KEY_NAMESEARCH,s || null);}
+                             saveJson(KEY_NAMESEARCH,s || null);
+                             if (typeof syncNameSearchCasey === 'function') syncNameSearchCasey();}
 
   function setIcbincnTabTitleText(text) {const cleaned = norm(text || '');
                                         GM_setValue(KEY_TAB_TITLE,cleaned);
