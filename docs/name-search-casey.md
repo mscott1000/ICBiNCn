@@ -12,7 +12,7 @@ horizontally in exactly one column:
   immediately when that state changes, including navigation/resume.
 - Case-number search: column 2 throughout, for both Case.net and Municourt.
 
-Her width continues to match Clear Log. An absolute overlay leaves entry fields,
+Her width is 110% of Clear Log’s width, making her 10% larger in both dimensions. An absolute overlay leaves entry fields,
 buttons, results space and the window height unchanged. She never intercepts
 input. When a viewport leaves insufficient blank space, the figure stays hidden
 rather than covering controls.
