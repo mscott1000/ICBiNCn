@@ -1,0 +1,207 @@
+{
+  "schema": "casey-name-search/1",
+  "frameWidth": 434,
+  "frameHeight": 440,
+  "frameCount": 17,
+  "frameDurationMs": 100,
+  "groundPeriodMs": 6500,
+  "groundY": 380,
+  "groundHeight": 48,
+  "order": [
+    1,
+    2,
+    31,
+    35,
+    13,
+    41,
+    42,
+    21,
+    101,
+    102,
+    103,
+    67,
+    68,
+    69,
+    70,
+    54,
+    112
+  ],
+  "bodyBobPixels": [
+    0,
+    3,
+    2,
+    1,
+    0,
+    1,
+    2,
+    2,
+    2,
+    1,
+    0,
+    2,
+    1,
+    1,
+    0,
+    0,
+    0
+  ],
+  "proof": [
+    {
+      "id": 1,
+      "bodyBob": 0,
+      "sourceSHA256": "2e3bd84368383bfd4a4c189f24015b3488598652d20db2ec8300f3e5b8a845c9",
+      "changedPixels": 9807,
+      "outsideArmEditIdentical": true
+    },
+    {
+      "id": 2,
+      "bodyBob": 3,
+      "sourceSHA256": "c0af3c557f489e1a59bc5a7c3a417ae7033c9f9af104997ea6d92f32f2689d6b",
+      "changedPixels": 9803,
+      "outsideArmEditIdentical": true
+    },
+    {
+      "id": 31,
+      "bodyBob": 2,
+      "sourceSHA256": "b1123447bde7108744c12a6b41d2cbedc5c83df6cfc290c18f717c6ea5ddd6f4",
+      "changedPixels": 9823,
+      "outsideArmEditIdentical": true
+    },
+    {
+      "id": 35,
+      "bodyBob": 1,
+      "sourceSHA256": "f42d686cd6c1c92c7d62b818ad43c38322f79e256e448597759a16f56c650da7",
+      "changedPixels": 9839,
+      "outsideArmEditIdentical": true
+    },
+    {
+      "id": 13,
+      "bodyBob": 0,
+      "sourceSHA256": "e5fef116e31ca313801704635444f6616a7437b2109dffffd2ec0a350500a26e",
+      "changedPixels": 9855,
+      "outsideArmEditIdentical": true
+    },
+    {
+      "id": 41,
+      "bodyBob": 1,
+      "sourceSHA256": "a40d3fa8836a17e384b895dbdd944b9ab2dc378c1abfa39f30c792f976a43be5",
+      "changedPixels": 9834,
+      "outsideArmEditIdentical": true
+    },
+    {
+      "id": 42,
+      "bodyBob": 2,
+      "sourceSHA256": "e7f756e2834765ad5e0461d5add77130eed002a46494e2e58dad038d3d087987",
+      "changedPixels": 9846,
+      "outsideArmEditIdentical": true
+    },
+    {
+      "id": 21,
+      "bodyBob": 2,
+      "sourceSHA256": "36139fe752964a4e1e16bb3f4e5567b0745547eb655080d5287890597aab7776",
+      "changedPixels": 9821,
+      "outsideArmEditIdentical": true
+    },
+    {
+      "id": 101,
+      "bodyBob": 2,
+      "sourceSHA256": "50f437912cd9658803e7a8b9e47fdfe7823b05792b2f350c2b6cb64c7fc4f04a",
+      "changedPixels": 9824,
+      "outsideArmEditIdentical": true
+    },
+    {
+      "id": 102,
+      "bodyBob": 1,
+      "sourceSHA256": "f8467c1cd6cd5771f4c3e928a0491778c0225dc171a56e740e537d44b36efd0f",
+      "changedPixels": 9826,
+      "outsideArmEditIdentical": true
+    },
+    {
+      "id": 103,
+      "bodyBob": 0,
+      "sourceSHA256": "1d3a19d716867d06e23279cb0094d4185344b2f9f4486051b0ae3c9b7c00cfc1",
+      "changedPixels": 9830,
+      "outsideArmEditIdentical": true
+    },
+    {
+      "id": 67,
+      "bodyBob": 2,
+      "sourceSHA256": "d867890e52d04021b3fa9a20f74e6805e7e747c6c94a3ea44f21d57b4af8a37c",
+      "changedPixels": 9849,
+      "outsideArmEditIdentical": true
+    },
+    {
+      "id": 68,
+      "bodyBob": 1,
+      "sourceSHA256": "674a247929f3e05095fe3789c827800c502754e7feaa6bb2a92ba33f9453f552",
+      "changedPixels": 9842,
+      "outsideArmEditIdentical": true
+    },
+    {
+      "id": 69,
+      "bodyBob": 1,
+      "sourceSHA256": "dc47fa4b4a368364029a3312d20e79af8c18e59bf113904fe6b142f27ff62064",
+      "changedPixels": 9833,
+      "outsideArmEditIdentical": true
+    },
+    {
+      "id": 70,
+      "bodyBob": 0,
+      "sourceSHA256": "ee94e61b08f69b0bbb60fb4dcadca41584fd77e85f7baf84f2e355db05452a47",
+      "changedPixels": 9818,
+      "outsideArmEditIdentical": true
+    },
+    {
+      "id": 54,
+      "bodyBob": 0,
+      "sourceSHA256": "40ee9362a560d36139d5f797ea5d1e36d39c5bb8a9385705bfdcccd7fcbc447c",
+      "changedPixels": 9824,
+      "outsideArmEditIdentical": true
+    },
+    {
+      "id": 112,
+      "bodyBob": 0,
+      "sourceSHA256": "638f291e546308a53ca9eaf4346a93ca98aa43c983e0612a5440c2558ef323cd",
+      "changedPixels": 9809,
+      "outsideArmEditIdentical": true
+    }
+  ],
+  "source": "Approved thinking glove, restored first draft with upper finger shortened30%; applied to corrected17-frame loop.",
+  "sourceDraft": {
+    "schema": "casey-thinking-preview/1",
+    "status": "Single frame for placement approval; not applied to the walking loop.",
+    "source": "assets/casey-search/frame-01.png",
+    "sourceSHA256": "2e3bd84368383bfd4a4c189f24015b3488598652d20db2ec8300f3e5b8a845c9",
+    "frame": "assets/casey-thinking-preview/frame-01.png",
+    "layer": "assets/casey-thinking-preview/arm-glove.png",
+    "editMask": "assets/casey-thinking-preview/edit-mask.png",
+    "glove": "assets/casey-thinking-preview/glove.png",
+    "glovePosition": [
+      155,
+      233
+    ],
+    "gloveSize": [
+      60,
+      66
+    ],
+    "armWidth": 24,
+    "scope": "Viewer-left arm/glove only. Exact approved pixels elsewhere; mouth, shoes, legs and static placeholder retained.",
+    "pose": "Held throughout the walking loop after approval.",
+    "uprightFingerEdit": {
+      "basis": "Restored first thinking-hand draft",
+      "finger": "Topmost/largest upright finger",
+      "shorteningPercent": 30,
+      "originalRootToTipPixels": 36.233536802100744,
+      "targetRootToTipPixels": 25.363475761470518,
+      "roundedCapPreserved": true,
+      "thumbAndClosedFingersPixelIdenticalToFirstDraft": true
+    },
+    "firstDraftComparison": "assets/casey-thinking-preview/first-draft.png"
+  },
+  "idle": "Original smiling first pose, unchanged.",
+  "sha256": {
+    "sprite.png": "d7a61da3d206ec8e4923a347001fbf8b57d403ba58fe7199603d9594b5f73a11",
+    "placeholder.png": "db3c0967f1d5e24a628d5668973887f33ebb0410324b90eec638f8f6001d3980",
+    "ground.png": "bd2d63ea11966b8e808130afd1168ab9986492c7ec20401ca315c447d5932d3a"
+  }
+}
