@@ -4562,6 +4562,7 @@ function textBuilderBuildMessage() {const d = textBuilderState.data;
                                       return `This is ${d.staff} from Tap In, thank you for speaking with me today. No case information has been entered.`;
                                     }
                                     if (d.workflow === 'initial') return `Hi, this is ${d.staff}, thank you for contacting the Tap In Center. We assist in recalling warrants for missing a court date in these Courts only:
+
 St. Louis County Circuit (felony/misdemeanor cases)
 City of St. Louis Circuit (felony/misdemeanor cases)
 Bridgeton
@@ -4574,8 +4575,10 @@ Manchester
 Richmond Heights
 University City
 Webster Groves
+
 To get started, complete our intake form:
 https://www.slcl.org/library-services/tap-in-center/intake-form
+
 We operate in-person every Tuesday 6-8 pm at the Florissant Valley Library Branch (195 S New Florissant Rd). Anyone is welcome to walk in during these hours.`;
                                     if (d.researchType === 'Nothing Found') return `Hello, this is ${d.staff} with the Tap In Center. We were unable to find any criminal or ordinance violation cases in warrant status under the information provided. If you feel this is a mistake, please double check this information for accuracy/typos:`;
                                     if (d.researchType === 'Can’tDo: Recent FTA, Not a Warrant Yet') return `Hello, this is ${d.staff} from the Tap In Center - thank you for filling out our intake form! After researching your record, I was able to find a recent court date of ${d.ftaDate || ''}.
