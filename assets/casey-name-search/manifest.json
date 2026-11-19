@@ -2,7 +2,7 @@
   "schema": "casey-name-search/1",
   "frameWidth": 434,
   "frameHeight": 440,
-  "frameCount": 17,
+  "frameCount": 18,
   "frameDurationMs": 100,
   "groundPeriodMs": 6500,
   "groundY": 380,
@@ -16,6 +16,7 @@
     41,
     42,
     21,
+    115,
     101,
     102,
     103,
@@ -36,6 +37,7 @@
     2,
     2,
     2,
+    2,
     1,
     0,
     2,
@@ -49,124 +51,113 @@
     {
       "id": 1,
       "bodyBob": 0,
-      "sourceSHA256": "2e3bd84368383bfd4a4c189f24015b3488598652d20db2ec8300f3e5b8a845c9",
-      "changedPixels": 9807,
-      "outsideArmEditIdentical": true
+      "rgbaSHA256": "36eb0c76a1dfed5dadf8f4d5f0660b2b77ef49a9c2591d6c76c4d374e7109091",
+      "outsideRequestedEditsIdentical": true
     },
     {
       "id": 2,
       "bodyBob": 3,
-      "sourceSHA256": "c0af3c557f489e1a59bc5a7c3a417ae7033c9f9af104997ea6d92f32f2689d6b",
-      "changedPixels": 9803,
-      "outsideArmEditIdentical": true
+      "rgbaSHA256": "a3a2a0fd8702570154b3e71b9b4f55c542376b14206fb39d01d45a3d56b75428",
+      "outsideRequestedEditsIdentical": true
     },
     {
       "id": 31,
       "bodyBob": 2,
-      "sourceSHA256": "b1123447bde7108744c12a6b41d2cbedc5c83df6cfc290c18f717c6ea5ddd6f4",
-      "changedPixels": 9823,
-      "outsideArmEditIdentical": true
+      "rgbaSHA256": "de74ebec7927672b57dad477474b6e216d765aa7c1002626e74e978fe774aa68",
+      "outsideRequestedEditsIdentical": true
     },
     {
       "id": 35,
       "bodyBob": 1,
-      "sourceSHA256": "f42d686cd6c1c92c7d62b818ad43c38322f79e256e448597759a16f56c650da7",
-      "changedPixels": 9839,
-      "outsideArmEditIdentical": true
+      "rgbaSHA256": "0ad22edb207598ff0fd0413307ab5bb78b672b5bcbaca2beb318b07805940ab3",
+      "outsideRequestedEditsIdentical": true
     },
     {
       "id": 13,
       "bodyBob": 0,
-      "sourceSHA256": "e5fef116e31ca313801704635444f6616a7437b2109dffffd2ec0a350500a26e",
-      "changedPixels": 9855,
-      "outsideArmEditIdentical": true
+      "rgbaSHA256": "f89125e29704cc6202cbca35b424124a0543d45ee4aacf1a10a8b083c7948310",
+      "outsideRequestedEditsIdentical": true
     },
     {
       "id": 41,
       "bodyBob": 1,
-      "sourceSHA256": "a40d3fa8836a17e384b895dbdd944b9ab2dc378c1abfa39f30c792f976a43be5",
-      "changedPixels": 9834,
-      "outsideArmEditIdentical": true
+      "rgbaSHA256": "5fd96b63cc21b9d67d66e8fc983c240cb32f9b40553466e61ff9ebe46ecb7d96",
+      "outsideRequestedEditsIdentical": true
     },
     {
       "id": 42,
       "bodyBob": 2,
-      "sourceSHA256": "e7f756e2834765ad5e0461d5add77130eed002a46494e2e58dad038d3d087987",
-      "changedPixels": 9846,
-      "outsideArmEditIdentical": true
+      "rgbaSHA256": "adb1caf2d69c2ac28009a259a084dc98c5b41b5ffba151a637524bafc7bfb156",
+      "outsideRequestedEditsIdentical": true
     },
     {
       "id": 21,
       "bodyBob": 2,
-      "sourceSHA256": "36139fe752964a4e1e16bb3f4e5567b0745547eb655080d5287890597aab7776",
-      "changedPixels": 9821,
-      "outsideArmEditIdentical": true
+      "rgbaSHA256": "259da181e01d2d36ea697d34dba0779244049c2d28778d0f8b7d72fc5534d128",
+      "outsideRequestedEditsIdentical": true
+    },
+    {
+      "id": 115,
+      "bodyBob": 2,
+      "rgbaSHA256": "d47952df7715125c18150a20ddf0f77476a758d946ef86156d85874b0ca985f4",
+      "outsideRequestedEditsIdentical": true
     },
     {
       "id": 101,
       "bodyBob": 2,
-      "sourceSHA256": "50f437912cd9658803e7a8b9e47fdfe7823b05792b2f350c2b6cb64c7fc4f04a",
-      "changedPixels": 9824,
-      "outsideArmEditIdentical": true
+      "rgbaSHA256": "00fceae90ca3f031425a9ffc8b3608df9b7fe698101c48032fbdedcba5862858",
+      "outsideRequestedEditsIdentical": true
     },
     {
       "id": 102,
       "bodyBob": 1,
-      "sourceSHA256": "f8467c1cd6cd5771f4c3e928a0491778c0225dc171a56e740e537d44b36efd0f",
-      "changedPixels": 9826,
-      "outsideArmEditIdentical": true
+      "rgbaSHA256": "4f04c9728828085fce1434023c81061871f494561d253c9ef330203c12e8bce5",
+      "outsideRequestedEditsIdentical": true
     },
     {
       "id": 103,
       "bodyBob": 0,
-      "sourceSHA256": "1d3a19d716867d06e23279cb0094d4185344b2f9f4486051b0ae3c9b7c00cfc1",
-      "changedPixels": 9830,
-      "outsideArmEditIdentical": true
+      "rgbaSHA256": "8cfd14ebca6bb8a3bf4e4bdbc432cbdee86b1cf099c54be9abdf0ca0aba16584",
+      "outsideRequestedEditsIdentical": true
     },
     {
       "id": 67,
       "bodyBob": 2,
-      "sourceSHA256": "d867890e52d04021b3fa9a20f74e6805e7e747c6c94a3ea44f21d57b4af8a37c",
-      "changedPixels": 9849,
-      "outsideArmEditIdentical": true
+      "rgbaSHA256": "ecaa87be39ed29fe7fa99a1d29b041090e481fad12d705477bb35301a42441d8",
+      "outsideRequestedEditsIdentical": true
     },
     {
       "id": 68,
       "bodyBob": 1,
-      "sourceSHA256": "674a247929f3e05095fe3789c827800c502754e7feaa6bb2a92ba33f9453f552",
-      "changedPixels": 9842,
-      "outsideArmEditIdentical": true
+      "rgbaSHA256": "fb6165ed6ab8c048b1742f82834fe7bf3af5789754d068ea134e35455171d31d",
+      "outsideRequestedEditsIdentical": true
     },
     {
       "id": 69,
       "bodyBob": 1,
-      "sourceSHA256": "dc47fa4b4a368364029a3312d20e79af8c18e59bf113904fe6b142f27ff62064",
-      "changedPixels": 9833,
-      "outsideArmEditIdentical": true
+      "rgbaSHA256": "5605b3e1cf15e48334bdd1c590b735ad6be8cce620ea8337083d7311b4e869b8",
+      "outsideRequestedEditsIdentical": true
     },
     {
       "id": 70,
       "bodyBob": 0,
-      "sourceSHA256": "ee94e61b08f69b0bbb60fb4dcadca41584fd77e85f7baf84f2e355db05452a47",
-      "changedPixels": 9818,
-      "outsideArmEditIdentical": true
+      "rgbaSHA256": "463477f80c76ab61eb31b58920c2ee2aa322a8acf2708edcc994dd44aae42aa2",
+      "outsideRequestedEditsIdentical": true
     },
     {
       "id": 54,
       "bodyBob": 0,
-      "sourceSHA256": "40ee9362a560d36139d5f797ea5d1e36d39c5bb8a9385705bfdcccd7fcbc447c",
-      "changedPixels": 9824,
-      "outsideArmEditIdentical": true
+      "rgbaSHA256": "57c0200cf33dbfb04e23f5ab475c9a73fd1a3fa11cbf3adb1034906e9715bfcd",
+      "outsideRequestedEditsIdentical": true
     },
     {
       "id": 112,
       "bodyBob": 0,
-      "sourceSHA256": "638f291e546308a53ca9eaf4346a93ca98aa43c983e0612a5440c2558ef323cd",
-      "changedPixels": 9809,
-      "outsideArmEditIdentical": true
+      "rgbaSHA256": "125b531870d0d1f696c59232576f2e6c2ff6634aab62099417caeb457e116154",
+      "outsideRequestedEditsIdentical": true
     }
   ],
-  "source": "Approved thinking glove, restored first draft with upper finger shortened30%; applied to corrected17-frame loop.",
+  "source": "Approved18-frame heel-contact transition, eyebrow, and smoothed67.",
   "sourceDraft": {
     "schema": "casey-thinking-preview/1",
     "status": "Single frame for placement approval; not applied to the walking loop.",
@@ -200,8 +191,188 @@
   },
   "idle": "Original smiling first pose, unchanged.",
   "sha256": {
-    "sprite.png": "d7a61da3d206ec8e4923a347001fbf8b57d403ba58fe7199603d9594b5f73a11",
+    "sprite.png": "442071014393bd1b25b532ff5f48cff03b61b19bed1f0e0cc7b1729be0ff1df5",
     "placeholder.png": "db3c0967f1d5e24a628d5668973887f33ebb0410324b90eec638f8f6001d3980",
     "ground.png": "bd2d63ea11966b8e808130afd1168ab9986492c7ec20401ca315c447d5932d3a"
+  },
+  "approvedTransitionGeometry": {
+    "status": "Approved and incorporated as frame115",
+    "between": [
+      21,
+      101
+    ],
+    "bodyBob": 2,
+    "front": {
+      "hip": [
+        174.0,
+        284.0
+      ],
+      "knee": [
+        182.4976994354115,
+        308.0783381342347
+      ],
+      "ankle": [
+        190.995398870823,
+        332.15667626846937
+      ],
+      "kneeAngleDegrees": 180.0,
+      "legWidth": 26,
+      "legLength": 51.06769088185342,
+      "legAngleDegrees": 70.56110262899394,
+      "sourceAngleDegrees": [
+        49.953065930080434,
+        91.16913932790742
+      ],
+      "heelContact": [
+        192.93099091993184,
+        390.00000000000006
+      ],
+      "soleSource": "Original five-panel gray-tread sneaker",
+      "shoeScale": 0.7939359719805321,
+      "nativeContact": [
+        265,
+        545
+      ],
+      "shoeTransform": [
+        [
+          0.7195503538144677,
+          -0.33553184041182516,
+          185.11500018354258
+        ],
+        [
+          0.33553184041182516,
+          0.7195503538144677,
+          -91.07088053801857
+        ]
+      ]
+    },
+    "rear": {
+      "hip": [
+        223.0,
+        278.0
+      ],
+      "knee": [
+        196.30686388399548,
+        297.9652689583704
+      ],
+      "ankle": [
+        168.540386853462,
+        316.39724334383226
+      ],
+      "legWidth": 28,
+      "shoeScale": 1,
+      "heel": [
+        156.86824246054056,
+        373.0784663834844
+      ],
+      "toe": [
+        224.83882433240626,
+        375.0784663834844
+      ],
+      "heelAboveToe": 2.0,
+      "heelLiftFromFrame21": 6.921533616515603,
+      "toeLiftFromFrame21": 4.921533616515603
+    },
+    "candidateRGBAHash": "f834aa4f2986ff138b8d4c802722583ffb5c770746e39a9839812e7598f96835",
+    "revised21": {
+      "status": "Approved and incorporated as revised21",
+      "front": {
+        "hip": [
+          174.0,
+          284.0
+        ],
+        "knee": [
+          186.79423264144668,
+          306.2062344856753
+        ],
+        "ankle": [
+          199.58846528289334,
+          328.41246897135056
+        ],
+        "legWidth": 26,
+        "kneeAngleDegrees": 180,
+        "heel": [
+          189.82067108187684,
+          379.7840106254049
+        ],
+        "toe": [
+          247.33857801215598,
+          367.9028203379578
+        ],
+        "shoeTransform": [
+          [
+            0.6405435878544266,
+            -0.47547277149604583,
+            279.2092883948594
+          ],
+          [
+            0.4574932232061475,
+            0.5580653020044747,
+            -45.597297160036554
+          ]
+        ],
+        "shoeSource": "Same original gray-tread shoe as heel-contact pose; midpoint ankle, heel and toe anchors"
+      },
+      "sourceAnkle": [
+        208.18153169496367,
+        324.66826167423176
+      ],
+      "targetAnkle": [
+        190.995398870823,
+        332.15667626846937
+      ],
+      "rgbaHash": "0ebcc8dc950c5b199cdcf84a7dd3a9cd87613a474dc4d00ed43b3cc808361400",
+      "allPixelsOutsideFrontEditIdentical": true,
+      "upperBodyAndRearVisiblePixelsPreserved": true
+    },
+    "lowerLayers": {
+      "image": "legs.png",
+      "width": 868,
+      "height": 440,
+      "heelContactX": 0,
+      "revised21X": 434,
+      "frameWidth": 434,
+      "frameHeight": 440
+    }
+  },
+  "eyebrow": {
+    "width": 5,
+    "points": [
+      [
+        161,
+        179
+      ],
+      [
+        181,
+        160
+      ],
+      [
+        202,
+        172
+      ]
+    ],
+    "heldThroughout": true,
+    "followsBodyBob": true
+  },
+  "leg67": {
+    "neighbors": [
+      103,
+      68
+    ],
+    "hip": [
+      223.0,
+      278.0
+    ],
+    "ankle": [
+      202.242710445525,
+      305.76406733217027
+    ],
+    "control": [
+      226.29286768087587,
+      302.1032861701032
+    ],
+    "width": 28.0,
+    "method": "Mean normalized neighbor bend, quadratic continuous tangent, fixed hip and ankle.",
+    "shoesAndProtectedPixelsIdentical": true
   }
 }

@@ -16,7 +16,7 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
   assert.equal(await page.locator('.moCaseyIdle').evaluate(e=>getComputedStyle(e).display),'block');
   await page.evaluate(()=>caseyTest.start());await page.waitForTimeout(250);
   const run=await page.evaluate(()=>{const e=document.querySelector('.moCaseySprite'),g=document.querySelector('.moCaseyGround');return{active:document.querySelector('#moNameSearchCasey').classList.contains('moCaseyPlaying'),timing:e.getAnimations()[0]?.effect.getTiming(),easing:getComputedStyle(e).animationTimingFunction,ground:g.getAnimations()[0]?.effect.getTiming(),frameCount:caseyTest.assets.frameCount}});
-  assert(run.active);assert.equal(run.timing.duration,1700);assert.equal(run.easing,'steps(17)');assert.equal(run.ground.duration,6500);assert.equal(run.ground.easing,'linear');
+  assert(run.active);assert.equal(run.timing.duration,1800);assert.equal(run.easing,'steps(18)');assert.equal(run.ground.duration,6500);assert.equal(run.ground.easing,'linear');
   const before=await page.locator('.moCaseySprite').evaluate(e=>e.getAnimations()[0].currentTime);await page.evaluate(()=>caseyTest.render());await page.waitForTimeout(80);const after=await page.locator('.moCaseySprite').evaluate(e=>e.getAnimations()[0].currentTime);assert(after>before,'Rerender must not restart walk');
   await page.evaluate(()=>caseyTest.minimize());assert.equal(await page.locator('#moNameSearchCasey').evaluate(e=>e.classList.contains('moCaseyPlaying')),false);await page.evaluate(()=>caseyTest.expand());await page.waitForFunction(()=>document.querySelector('.moCaseySprite').getAnimations()[0]?.playState==='running');
   await page.emulateMedia({reducedMotion:'reduce'});await page.waitForFunction(()=>document.querySelector('#moNameSearchCasey').classList.contains('moCaseyReducedMotion'));assert.equal(await page.locator('.moCaseyIdle').evaluate(e=>getComputedStyle(e).display),'block');assert.equal(await page.locator('.moCaseySprite').evaluate(e=>e.getAnimations().length),0);await page.emulateMedia({reducedMotion:'no-preference'});
@@ -27,5 +27,5 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
   if(sizeMode==='width') {await page.screenshot({path:'/workspace/work/casey-name-search/idle.png'});await page.evaluate(()=>caseyTest.start());await page.waitForTimeout(150);await page.screenshot({path:'/workspace/work/casey-name-search/searching.png'});}
   await page.evaluate(()=>caseyTest.home());assert(await page.locator('#moNameSearchCasey').evaluate(e=>e.hidden));assert.deepEqual(errors,[]);await page.close();
  }
- await browser.close();console.log('PASS: production button-width size, alignment, 17-frame cadence, independent ground, persistent phase, stop/minimize/results/reduced-motion lifecycle and viewport resize');
+ await browser.close();console.log('PASS: production button-width size, alignment, 18-frame cadence, independent ground, persistent phase, stop/minimize/results/reduced-motion lifecycle and viewport resize');
 })().catch(e=>{console.error(e);process.exit(1)});
