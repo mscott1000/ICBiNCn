@@ -29,7 +29,7 @@ function createNameSearchCasey({assets, dock, readState, sizeMode}) {
   function measure() {
     resizePending = 0;
     if (row.hidden || !clearLog.offsetWidth) return;
-    const width = sizeMode === 'width' ? clearLog.offsetWidth : clearLog.offsetHeight * assets.frameWidth / assets.frameHeight;
+    const width = 1.1 * (sizeMode === 'width' ? clearLog.offsetWidth : clearLog.offsetHeight * assets.frameWidth / assets.frameHeight);
     row.style.setProperty('--mo-casey-width', `${width}px`);
     const scale = dock.getBoundingClientRect().width / dock.offsetWidth || 1;
     const entry = content.querySelector('#moSearchEntryPanel');
