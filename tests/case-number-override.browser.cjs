@@ -11,6 +11,7 @@ const source=path.join(__dirname,'../src/tampermonkey');
  const result=await page.evaluate(async(code)=>{
   return await eval(code+`\nreturn (async()=>{
     const assert=(v,m)=>{if(!v)throw new Error(m)};
+    startNameSearchCasey();
     assert(parseOverrideNumbers('180282943, 180282943\\n160553291').length===2,'dedupe');
     assert(MUNI_CASE_COURTS.length===50,'courts');
     appView='name'; render(); expandDock();

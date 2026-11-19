@@ -3,7 +3,8 @@
  ************************************************************/
 if (isWeeklyCallLogSpreadsheet()) {initializeWeeklyCallLogBridge();}
 else if (isJotformTablesPage()) {initializeJotformIntegration();}
-else {startIcbincnTabBrandingObserver();
+else {startNameSearchCasey();
+      startIcbincnTabBrandingObserver();
       consumeWeeklyCallLogLaunch();
       uiStatus(getStatus() || 'Ready');
       restoreActiveNameSearchUiOnLoad();

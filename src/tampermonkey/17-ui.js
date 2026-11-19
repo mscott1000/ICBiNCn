@@ -1230,11 +1230,13 @@ const $status = dock.querySelector('#moJsonStatus');
 const $content = dock.querySelector('#moJsonContent');
 
 function minimizeDock() {dock.classList.add('moHidden');
+                         if (typeof syncNameSearchCasey === 'function') syncNameSearchCasey();
                          launcher.classList.remove('moHidden');
                          closeHelpPanel();
                          closeTextBuilderPanel();}
 
 function expandDock() {dock.classList.remove('moHidden');
+                       if (typeof syncNameSearchCasey === 'function') syncNameSearchCasey();
                        launcher.classList.add('moHidden');}
 
 function restoreActiveNameSearchUiOnLoad() {const ns = loadNameState();
@@ -1281,7 +1283,8 @@ const SHOW_NAME_SEARCH_DEBUG_UI = false; // Keep debug storage, formatting, and 
 
 const SHOW_TRACK_THIS_CASE_UI = false; // Temporarily disconnect visible Track This Case UI without removing its automation architecture.
 
-function render() {const log = loadLog();
+function render() {if (typeof syncNameSearchCasey === 'function') syncNameSearchCasey();
+                   const log = loadLog();
                    const nameOutput = loadJson(KEY_NAMESEARCH_OUTPUT,null);
                    const title = dock.querySelector('#moJsonTitle');
                    if (title) title.textContent = appView === 'text' ? textBuilderScreenTitle() : (APP_VIEWS[appView] || APP_VIEWS.home);
