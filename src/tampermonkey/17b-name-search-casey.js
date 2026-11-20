@@ -107,6 +107,7 @@ function createNameSearchCasey({assets, dock, readState, sizeMode}) {
     if (row.hidden || !clearLog.offsetWidth) return;
     const width = 1.21 * (sizeMode === 'width' ? clearLog.offsetWidth : clearLog.offsetHeight * assets.frameWidth / assets.frameHeight);
     row.style.setProperty('--mo-casey-width', `${width}px`);
+    row.style.setProperty('--mo-casey-lift', `${10 / (dock.getBoundingClientRect().width / dock.offsetWidth || 1)}px`);
     const scale = dock.getBoundingClientRect().width / dock.offsetWidth || 1;
     const entry = content.querySelector('#moSearchEntryPanel');
     if (!entry) { scene.hidden = label.hidden = true; return; }
@@ -168,7 +169,7 @@ function createNameSearchCasey({assets, dock, readState, sizeMode}) {
 }
 
 GM_addStyle(`
-#moNameSearchCasey{position:absolute;left:0;right:0;pointer-events:none;user-select:none;overflow:hidden;}
+#moNameSearchCasey{position:absolute;left:0;right:0;pointer-events:none;user-select:none;overflow:hidden;transform:translateY(calc(-1 * var(--mo-casey-lift,0px)));}
 #moNameSearchCasey[hidden]{display:none;}
 .moCaseyScene{position:absolute;left:var(--mo-casey-center,50%);top:50%;transform:translate(-50%,-50%);width:var(--mo-casey-width,80px);aspect-ratio:434/440;overflow:hidden;}
 .moCaseyScene[hidden]{display:none;}
@@ -207,7 +208,7 @@ function startNameSearchCasey() {
       hasResults: !!loadJson(KEY_NAMESEARCH_OUTPUT, null),
       searching: !!search?.active || caseOverrideRunning,
       column,
-      label: caseOverrideRunning ? '' : ['1. Criminal Cases','2. Traffic/Municipal','3. Municourt'][column],
+      label: caseOverrideRunning ? '' : ['1/3 - Criminal','2/3 - Traffic/Municipal','3/3 - Municourt'][column],
       stopped: isStop(),
       minimized: dock.classList.contains('moHidden')
       };

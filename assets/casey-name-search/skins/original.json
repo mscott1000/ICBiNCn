@@ -1,0 +1,16 @@
+{
+  "id": "original",
+  "name": "Original",
+  "status": "existing approved animation",
+  "manifest": "../manifest.json",
+  "assets": {
+    "idle": "../placeholder.png",
+    "sprite": "../sprite.png",
+    "ground": "../ground.png"
+  },
+  "sha256": {
+    "sprite.png": "96d282638bb9bbd2004a44c0626c5b0d225396f4fe1d188bf8b4a17a2cefcbc9",
+    "placeholder.png": "db3c0967f1d5e24a628d5668973887f33ebb0410324b90eec638f8f6001d3980",
+    "ground.png": "bd2d63ea11966b8e808130afd1168ab9986492c7ec20401ca315c447d5932d3a"
+  }
+}

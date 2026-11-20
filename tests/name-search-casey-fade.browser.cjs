@@ -28,8 +28,8 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
   animation.finish();await animation.finished;await Promise.resolve();
   return {before,after:r.dataset.column,opacity:getComputedStyle(r).opacity,outDuration,inDuration:r.getAnimations()[0]?.effect.getTiming().duration,label:document.querySelector('.moCaseyPassLabel').textContent};
  });
- assert.equal(boundary.before,'1');assert.equal(boundary.after,'2');assert.equal(Number(boundary.opacity),0);assert.equal(boundary.outDuration,100);assert.equal(boundary.inDuration,100);assert.equal(boundary.label,'2. Traffic/Municipal');await settled(2);
- await page.evaluate(()=>{fadeTest.pass(0);fadeTest.pass(2);fadeTest.render()});await settled(3);assert.equal(await page.locator('.moCaseyPassLabel').textContent(),'3. Municourt');
+ assert.equal(boundary.before,'1');assert.equal(boundary.after,'2');assert.equal(Number(boundary.opacity),0);assert.equal(boundary.outDuration,100);assert.equal(boundary.inDuration,100);assert.equal(boundary.label,'2/3 - Traffic/Municipal');await settled(2);
+ await page.evaluate(()=>{fadeTest.pass(0);fadeTest.pass(2);fadeTest.render()});await settled(3);assert.equal(await page.locator('.moCaseyPassLabel').textContent(),'3/3 - Municourt');
  await page.evaluate(()=>fadeTest.start());await settled(1);
  const navigation=page.waitForURL('**/casenet/nameSearch.do?newSearch=Y');
  await page.evaluate(()=>{window.tickPromise=fadeTest.tick()});

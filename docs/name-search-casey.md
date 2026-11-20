@@ -4,7 +4,7 @@ Casey appears only during an active search. She is hidden before searching,
 after Stop or Clear Log, and when Summary/Detail results appear.
 
 The existing blank area between the entry panel and bottom button bar is
-invisibly divided into three equal columns. Casey is centered vertically and
+invisibly divided into three equal columns. Casey is positioned 10 rendered screen pixels above the vertical center and
 horizontally in exactly one column:
 
 - Name search: criminal in column 1, traffic/municipal in column 2, and final
@@ -14,9 +14,9 @@ horizontally in exactly one column:
 
 Name-search captions beneath Casey are exactly:
 
-- `1. Criminal Cases`
-- `2. Traffic/Municipal`
-- `3. Municourt`
+- `1/3 - Criminal`
+- `2/3 - Traffic/Municipal`
+- `3/3 - Municourt`
 
 Case-number searches do not receive a numbered pass caption. Captions share
 Casey's center and hide if there is insufficient room below her.
@@ -72,3 +72,7 @@ uses a smooth leg curve based on its neighbors, keeping its shoe and ankle fixed
 The retained static artwork, shoes, legs and ground are unchanged.
 The eyebrow is translated 113 pixels right and 18 pixels up from its original
 position, matching the approved placement preview in every frame. The asset manifest records exact per-frame pixel hashes.
+
+## Skins
+
+The unchanged approved artwork is recorded as `Original` in `assets/casey-name-search/skins/original.json`. The winter hat/snow variant is stored separately in `assets/casey-name-search/skins/winter/` and is not included in the production bundle. Preview and retooling instructions are in `previews/casey-winter/README.md`. Activating that skin is a separate change; the current asset builder continues to embed only the original artwork.
