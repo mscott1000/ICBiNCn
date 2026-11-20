@@ -1,0 +1,17 @@
+{
+  "source_commit": "92f4bb3",
+  "original_paths": {
+    "18b-jotform-launcher.js": "src/tampermonkey/18b-jotform-launcher.js",
+    "18c-weekly-call-log.js": "src/tampermonkey/18c-weekly-call-log.js"
+  },
+  "preamble_matches": [
+    "// @match        https://www.jotform.com/tables/*\n",
+    "// @match        https://docs.google.com/spreadsheets/d/1TPCAM7rJ9e_YDLrgI4YfjOq_QXZFfo6Sj6c9g9qPth4/*\n"
+  ],
+  "storage_declarations": [
+    "  const KEY_JOTFORM_PENDING = 'mo_casenet_jotform_pending_v1';\n",
+    "  const KEY_JOTFORM_RESULTS = 'mo_casenet_jotform_results_v1';\n"
+  ],
+  "completion_hooks": "                                                if (st.launchedFrom === 'weekly-call-log') {try {persistWeeklyCallLogResult(st);}\n                                                                                           catch (e) {dbg('weekly_call_log_result_error',{msg:String(e?.message || e)});}}\n                                                if (st.launchedFrom === 'jotform') {try {jotformPersistSearchResult(st);}\n                                                                                    catch (e) {dbg('jotform_result_persist_error',{msg:String(e?.message || e)});}}\n",
+  "original_init": "/************************************************************\n * INIT\n ************************************************************/\nif (isWeeklyCallLogSpreadsheet()) {initializeWeeklyCallLogBridge();}\nelse if (isJotformTablesPage()) {initializeJotformIntegration();}\nelse {startNameSearchCasey();\n      startIcbincnTabBrandingObserver();\n      consumeWeeklyCallLogLaunch();\n      uiStatus(getStatus() || 'Ready');\n      restoreActiveNameSearchUiOnLoad();\n      render();\n\n      let nameSearchTickInFlight = false;\n      const kickNameSearchTick = () => {if (nameSearchTickInFlight) return;\n                                       nameSearchTickInFlight = true;\n                                       Promise.resolve(nameSearchTick()).catch(() => {}).finally(() => {nameSearchTickInFlight = false;});};\n      // Run once at page initialization so background-tab timer throttling cannot\n      // stall the next pass. The interval remains only as a recovery watchdog.\n      kickNameSearchTick();\n      window.addEventListener('pageshow',kickNameSearchTick);\n      document.addEventListener('visibilitychange',() => {if (!document.hidden) kickNameSearchTick();});\n      setInterval(() => {kickNameSearchTick();\n                         try {trackTick();}\n                         catch (e) {}},900);}})();\n"
+}

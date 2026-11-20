@@ -34,3 +34,7 @@ Google Voice assistant and the older case-number batch scraper are retained in `
 - Run `python scripts/build_tampermonkey.py` after main userscript source edits.
 - Confirm `git diff -- dist/ICBINCN.user.js.txt` is expected whenever the main bundle is rebuilt.
 - Use `rg --files` to locate repository files quickly; avoid recursive `ls`/`grep` scans.
+
+## Archived integrations
+
+`src/legacy/casey-integrations/` retains the obsolete Jotform and Weekly Call Log modules and their original wiring. These files are excluded from the build. Supporting captures, documentation, Apps Script, and compatibility tests remain in the repo; see the archive README.

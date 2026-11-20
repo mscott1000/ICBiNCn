@@ -15,8 +15,6 @@
   const KEY_TRACK_STATE = 'mo_casenet_track_state_v1';
   const KEY_TRACK_DRAFT = 'mo_casenet_track_draft_v1';
 
-  const KEY_JOTFORM_PENDING = 'mo_casenet_jotform_pending_v1';
-  const KEY_JOTFORM_RESULTS = 'mo_casenet_jotform_results_v1';
   const KEY_TAB_TITLE = 'mo_casenet_tab_title_v1';
 
   const DEFAULT_CONCURRENCY = 7;

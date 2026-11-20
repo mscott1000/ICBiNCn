@@ -36,4 +36,8 @@ The source parts are numbered so they concatenate in the correct order. The curr
 
 ## Casey logo
 
-`assets/images/ICBINCN Logo_Casey.png` is the original transparent PNG supplied on November 10, 2026. Its alpha channel is preserved in the embedded Help, Jotform, Sheets, and tab-icon images. The older opaque JPEG assets have been replaced; the original PNG is stored without re-encoding.
+`assets/images/ICBINCN Logo_Casey.png` is the original transparent PNG supplied on November 10, 2026. Its alpha channel is preserved in the active Help and tab-icon images (also referenced by the archived Jotform/Sheets integrations). The older opaque JPEG assets have been replaced; the original PNG is stored without re-encoding.
+
+## Legacy Casey integrations
+
+The obsolete Weekly Call Log and Jotform integrations are archived outside the active bundle in `src/legacy/casey-integrations/`. See its README for the retained sources, wiring, supporting data, and retooling notes.

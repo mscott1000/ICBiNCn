@@ -1,11 +1,8 @@
 /************************************************************
  * INIT
  ************************************************************/
-if (isWeeklyCallLogSpreadsheet()) {initializeWeeklyCallLogBridge();}
-else if (isJotformTablesPage()) {initializeJotformIntegration();}
-else {startNameSearchCasey();
+startNameSearchCasey();
       startIcbincnTabBrandingObserver();
-      consumeWeeklyCallLogLaunch();
       uiStatus(getStatus() || 'Ready');
       restoreActiveNameSearchUiOnLoad();
       render();
@@ -21,4 +18,4 @@ else {startNameSearchCasey();
       document.addEventListener('visibilitychange',() => {if (!document.hidden) kickNameSearchTick();});
       setInterval(() => {kickNameSearchTick();
                          try {trackTick();}
-                         catch (e) {}},900);}})();
+                         catch (e) {}},900);})();
