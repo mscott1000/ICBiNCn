@@ -1,0 +1,22 @@
+{
+  "id": "winter",
+  "name": "Winter",
+  "status": "stored for later activation; not in production bundle",
+  "baseSkin": "original",
+  "frameWidth": 434,
+  "frameHeight": 440,
+  "frameCount": 18,
+  "frameDurationMs": 100,
+  "groundPeriodMs": 6500,
+  "changes": [
+    "Bow replaced with Santa hat accessory",
+    "Snow layer on existing ground"
+  ],
+  "preservation": "All 18 original walking frames retained; body pixels below y=136 are byte-identical.",
+  "sha256": {
+    "hat.png": "40a0e577e53e146832e923938a6b80b08791613b0a2d98041876061bd6f855d4",
+    "sprite.png": "abf4ceba6c9dc5b3353725f25a8cd33a38d7f39eee53133ea07e6f8230388bd3",
+    "placeholder.png": "e1a5cf58250d36496954b0b81ae8795d4e8aed70cb9a229deb26c86d29265559",
+    "ground.png": "ad99a6d83fd574e588c25ed0c0635915cc6e8ec725f00b6008d0bd46a72fd7f7"
+  }
+}
