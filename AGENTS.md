@@ -1,5 +1,9 @@
 # Repository Agent Rules
 
+## Permanent introductory header
+
+Preserve the user-provided block comment in `src/tampermonkey/00-introduction.js` verbatim in every future release. It must remain the first content of `dist/ICBINCN.user.js.txt`, before the Tampermonkey metadata block. Do not remove, rewrite, or relocate it unless the user explicitly requests that change. The build requires this file to be the first source module.
+
 ## Permanent update rule for `dist/ICBINCN.user.js.txt`
 When Codex updates `dist/ICBINCN.user.js.txt`, it must also update the userscript `@version` and date metadata to the current date.
 
