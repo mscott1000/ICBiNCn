@@ -228,10 +228,6 @@
                                                 if (isStop() || loadNameState()?.finalizingStartedAt !== st.finalizingStartedAt) return;
                                                 const casenetAdded = Number(st.casenetAddedTotal || 0);
                                                 dbg('namesearch_done',{casenetAdded,muniAdded});
-                                                if (st.launchedFrom === 'weekly-call-log') {try {persistWeeklyCallLogResult(st);}
-                                                                                           catch (e) {dbg('weekly_call_log_result_error',{msg:String(e?.message || e)});}}
-                                                if (st.launchedFrom === 'jotform') {try {jotformPersistSearchResult(st);}
-                                                                                    catch (e) {dbg('jotform_result_persist_error',{msg:String(e?.message || e)});}}
                                                 setIcbincnTabTitleText('Complete');
                                                 saveNameSearchOutput({summary:buildSummaryCopyText() || '',copy:buildGroupedCopyText() || ''});
                                                 appView = 'name';

@@ -1,3 +1,5 @@
+> Legacy reference: this integration was removed from the active userscript on 2026-11-20. Sources and wiring are retained in `src/legacy/casey-integrations/`; the Apps Script remains in the repository for reference.
+
 # Lightweight Casey for Weekly Call Log
 
 The hybrid version has one small browser-injected Casey logo. Tampermonkey handles selection, reading the selected row, and launching the existing background search. Apps Script only validates and writes completed Summary/Copy outputs to BB/BC; it does not create images, resize rows, install per-row callbacks, read launch parameters, or poll for results.

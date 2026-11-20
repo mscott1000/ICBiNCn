@@ -1,6 +1,6 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
 const root=path.join(__dirname,'..'),id='1TPCAM7rJ9e_YDLrgI4YfjOq_QXZFfo6Sj6c9g9qPth4',gid=1261396864;
-const source=fs.readFileSync(path.join(root,'src/tampermonkey/18c-weekly-call-log.js'),'utf8');
+const source=fs.readFileSync(path.join(root,'src/legacy/casey-integrations/18c-weekly-call-log.js'),'utf8');
 const appsSource=fs.readFileSync(path.join(root,'src/google-apps-script/WeeklyCallLog.gs'),'utf8');
 function launcher(extra={}){
  const storage={};const c=vm.createContext({LOGO_CASEY_IMAGE:'data:image/png;base64,fixture',URLSearchParams,AbortController,setTimeout,clearTimeout,crypto:require('node:crypto').webcrypto,KEY_NET_STATS:'test-net',
