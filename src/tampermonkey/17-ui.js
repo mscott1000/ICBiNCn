@@ -775,7 +775,7 @@ textBuilderPanel.innerHTML = `
 (document.body || document.documentElement).appendChild(textBuilderPanel);
 const textBuilderBody = textBuilderPanel.querySelector('#moJsonTextBuilderBody');
 const TEXT_BUILDER_STAFF = ['Anna','Dylan','Kyle','Mason','Miranda','Tanya'];
-const TEXT_BUILDER_COURTS = ['St. Louis County Circuit','City of St. Louis Circuit','Bridgeton','City of St. Louis Municipal','Clayton','Florissant','Kirkwood','Lakeshire','Manchester','Richmond Heights','University City','Webster Groves'];
+const TEXT_BUILDER_COURTS = ['St. Louis County Circuit','City of St. Louis Circuit','Bridgeton','City of St. Louis Municipal','Clayton','Creve Coeur','Ferguson','Florissant','Kirkwood','Lakeshire','Manchester','Richmond Heights','University City','Webster Groves'];
 const TEXT_BUILDER_LIMIT_NOTICE = '**GOOGLE VOICE LIMIT - SEPARATE INTO MULTIPLE TEXTS HERE OR EARLIER**';
 let textBuilderState = {screen:'root',history:[],data:{courts:[]}};
 const TEXT_BUILDER_LEGAL_AID_MESSAGES = {
@@ -939,7 +939,7 @@ function textBuilderMultipleReasonsMessage() {
 
 function textBuilderInitialState() {return {screen:'root',history:[],data:{courts:[]}};}
 function resetTextBuilder() {textBuilderState = textBuilderInitialState();}
-function textBuilderCourtLabel(court) {const map = {'Bridgeton':'Bridgeton Municipal','Lakeshire':'Lakeshire Municipal','Clayton':'Clayton Municipal','Florissant':'Florissant Municipal','University City':'University City Municipal','Kirkwood':'Kirkwood Municipal','Manchester':'Manchester Municipal','Richmond Heights':'Richmond Heights Municipal','Webster Groves':'Webster Groves Municipal'};
+function textBuilderCourtLabel(court) {const map = {'Bridgeton':'Bridgeton Municipal','Lakeshire':'Lakeshire Municipal','Clayton':'Clayton Municipal','Creve Coeur':'Creve Coeur Municipal','Ferguson':'Ferguson Municipal','Florissant':'Florissant Municipal','University City':'University City Municipal','Kirkwood':'Kirkwood Municipal','Manchester':'Manchester Municipal','Richmond Heights':'Richmond Heights Municipal','Webster Groves':'Webster Groves Municipal'};
                                       return map[court] || court;}
 function textBuilderList(items) {if (items.length <= 1) return items[0] || '';
                                  if (items.length === 2) return `${items[0]} and ${items[1]}`;
@@ -1050,6 +1050,8 @@ City of St. Louis Circuit (felony/misdemeanor cases)
 Bridgeton
 City of St. Louis Municipal
 Clayton
+Creve Coeur
+Ferguson
 Florissant
 Kirkwood
 Lakeshire
@@ -1074,6 +1076,8 @@ City of St. Louis Circuit (felony/misdemeanor cases)
 Bridgeton
 City of St. Louis Municipal
 Clayton
+Creve Coeur
+Ferguson
 Florissant
 Kirkwood
 Lakeshire
