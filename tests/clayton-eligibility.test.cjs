@@ -38,10 +38,11 @@ test('Text Builder uses short option names and municipal labels in constructed m
   const data = vm.runInContext('textBuilderState.data',c);
   assert.equal(vm.runInContext("TEXT_BUILDER_COURTS.includes('Clayton')",c),true);
   assert.equal(c.textBuilderCourtLabel('Clayton'),'Clayton Municipal');
-  assert.match(c.textBuilderBuildMessage(),/\nClayton\nFlorissant\n/);
+  for(const name of ['Creve Coeur','Ferguson']){assert.equal(vm.runInContext('TEXT_BUILDER_COURTS',c).includes(name),true);assert.equal(c.textBuilderCourtLabel(name),name+' Municipal');}
+  assert.match(c.textBuilderBuildMessage(),/\nClayton\nCreve Coeur\nFerguson\nFlorissant\n/);
   data.workflow = 'postResearch';
   data.researchType = 'Can’tDo: Out of Network';
-  assert.match(c.textBuilderBuildMessage(),/\nClayton\nFlorissant\n/);
+  assert.match(c.textBuilderBuildMessage(),/\nClayton\nCreve Coeur\nFerguson\nFlorissant\n/);
   data.workflow = 'followUpNewCourtDate';
   assert.match(c.textBuilderBuildMessage(),/The Clayton Municipal Court has agreed to recall the warrant/);
 });
@@ -60,4 +61,18 @@ test('CaseNet O Fallon spelling resolves to the existing O’Fallon contact',()=
   for(const name of ['O Fallon Municipal',"O'Fallon Municipal",'O’Fallon Municipal','O Fallon']) {
     assert.equal(c.getMunicipalityHeaderForSummary(name),"O'FALLON MUNICIPAL - (636) 240-8766");
   }
+});
+
+
+test('Creve Coeur and Ferguson follow standard municipal eligibility and upcoming-date rules',()=>{
+ const c=setup();c.getWarrantLabelForSummary=()=> 'warrant';
+ for(const [name,phone] of [['Creve Coeur','(314) 432-8844'],['Ferguson','(314) 524-5264']]){
+  for(const suffix of [' Municipal',' Municipal Court'])assert.equal(c.isEligibleSummaryJurisdiction(name+suffix),true);
+  assert.ok(c.getMunicipalityHeaderForSummary(name+' Municipal').includes(phone));
+  const warrant={location:name+' Municipal',caseNumber:'123',charge:'Example'};
+  const upcoming={...warrant,caseNumber:'456',nextDocketDate:'12/01/2026'};
+  const groups=c.buildOrderedJurisdictionGroups([warrant,upcoming]);
+  assert.equal(groups.eligibleJurisdictions[0].entries[0],warrant);
+  assert.equal(groups.ineligibleJurisdictions[0].entries[0],upcoming);
+ }
 });
